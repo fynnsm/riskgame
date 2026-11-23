@@ -135,7 +135,7 @@ Option:
 | `projekt` | ja | Rahmenfall: `titel`, `beschreibung` (max. 400 Zeichen), `gebaeude` |
 | `lernziele` | ja | 2 bis 4 Einträge mit `id` (`L<Level>-Z<Nummer>`) und `text` |
 | `theorie` | ja | 3 bis 7 Schritte vom Typ `karte` oder `video` |
-| `situationenProDurchgang` | ja | Standard `6` |
+| `situationenProDurchgang` | ja | Standard `8` |
 | `situationen` | ja | Mindestens `situationenProDurchgang + 2` Einträge |
 
 Erlaubte Werte für `projekt.gebaeude`: `"wohnhaus"`, `"buero"`, `"schule"`, `"spital"`, `"turm"`.
@@ -146,7 +146,7 @@ Theorie-Schritt `video`: `typ`, `id`, `titel`, `url` (nur https), `dauerSekunden
 
 ### Beispiel
 
-Gekürzt auf eine Karte und eine Situation. Eine echte Level-Datei braucht mindestens acht Situationen.
+Gekürzt auf eine Karte und eine Situation. Eine echte Level-Datei braucht mindestens zehn Situationen.
 
 ```json
 {
@@ -179,7 +179,7 @@ Gekürzt auf eine Karte und eine Situation. Eine echte Level-Datei braucht minde
       "grafik": "prozess"
     }
   ],
-  "situationenProDurchgang": 6,
+  "situationenProDurchgang": 8,
   "situationen": [
     {
       "id": "L1-S01",
