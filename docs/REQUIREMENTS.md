@@ -1,6 +1,6 @@
 # Risk Tower (Arbeitstitel) – Requirements
 
-Version 0.1 · Stand 23.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
+Version 0.3 · Stand 23.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
 
 ## 1. Zweck
 
@@ -13,7 +13,7 @@ Dieses Dokument ist die verbindliche Grundlage für die Umsetzung. Offene Fragen
 - Priorität: **M** = Muss, **S** = Soll, **K** = Kann
 - Herkunft: **E** = im Gespräch entschieden, **A** = Vorgabe aus dem Auftrag des Dozenten, **V** = Vorschlag von Claude, von Fynn noch nicht bestätigt
 
-Alles mit **V** bitte einmal durchgehen und bestätigen oder streichen.
+Fynn hat am 23.11.2026 alle Punkte mit **V** bestätigt. Sie gelten damit wie **E**. Die Markierung bleibt stehen, damit die Herkunft nachvollziehbar ist.
 
 ## 2. Randbedingungen aus dem Auftrag
 
@@ -69,6 +69,8 @@ Bewertungsraster und Abgabetermine liegen noch nicht vor (siehe `later/BRAINSTOR
 
 Startwerte für die Balance (zu justieren, siehe O-4): Anzeigen beginnen bei 70; klein = 6, mittel = 12, gross = 20 Punkte.
 
+Regel zu F-205 (Vorschlag von Claude, in `src/core/balance.ts` einstellbar): Die Neigung beginnt, sobald die schwächste Anzeige unter 60 fällt, und wächst bis 0. Sie zählt zu 70 %, der Abstand zwischen höchster und tiefster Anzeige zu 30 %. Das Wackeln beginnt unter 45. Das Gebäude neigt sich in die Richtung der schwächsten Anzeige (Budget nach links, Zeit nach rechts, Stabilität nach vorn). Jedes Stockwerk wird um die Neigung des Moments versetzt aufgesetzt.
+
 ### 4.3 AI-Bezug
 
 | ID | Anforderung | Prio | Herk. |
@@ -115,6 +117,13 @@ Startwerte für die Balance (zu justieren, siehe O-4): Anzeigen beginnen bei 70;
 | F-604 | Die Gesamtauswertung zeigt Sterne je Level, Spielzeit und die wichtigsten Lernpunkte | S | V |
 | F-605 | Wie das Feedback der Mitstudierenden zur Gruppe kommt, ist offen (O-2) | – | – |
 
+Regeln zu F-602 und F-603 (Vorschlag von Claude, in `src/core/balance.ts` einstellbar):
+
+- Punkte pro Entscheid: gut = 2, vertretbar = 1, riskant = 0.
+- Sterne: Ein überstandenes Level gibt immer 1 Stern. 2 Sterne ab 50 % der möglichen Punkte und einer tiefsten Anzeige von mindestens 15. 3 Sterne ab 80 % der Punkte und einer tiefsten Anzeige von mindestens 30. Ein Einsturz gibt keinen Stern.
+- Ein Lernziel gilt als erreicht, wenn die Entscheide zu seinen Situationen im Durchgang mindestens 75 % der möglichen Punkte ergeben. Wurde keine seiner Situationen gezogen, gilt es als «nicht geprüft».
+- Aktive Spielzeit (F-108): Gezählt wird die Zeit zwischen zwei Aktionen in einem Level, pro Pause höchstens 2 Minuten.
+
 ### 4.7 Speichern
 
 | ID | Anforderung | Prio | Herk. |
@@ -148,6 +157,10 @@ Startwerte für die Balance (zu justieren, siehe O-4): Anzeigen beginnen bei 70;
 | F-906 | Jede Situation hat einen Status (`entwurf`, `freigegeben`); die veröffentlichte Version zeigt nur freigegebene, lokal sind alle sichtbar | S | V |
 | F-907 | Ein Skript simuliert die Balance pro Level: Wer nur gute Optionen wählt, übersteht jede Ziehung; wer nur riskante wählt, scheitert in jeder | S | V |
 | F-908 | Ein Skript erzeugt aus den JSON-Dateien eine Inhaltsdokumentation als Markdown (für das Lieferobjekt «Dokumentation der Inhalte») | K | V |
+
+Ergänzung zu F-906 (entschieden am 23.11.2026): Ein Build mit der Variable `VITE_SHOW_DRAFTS=1` zeigt auch Entwürfe. Im Spiel tragen sie die Marke «Entwurf». So lässt sich eine Version mit Platzhalter-Fällen online testen. Ohne die Variable gilt F-906 unverändert; ein Level mit zu wenigen freigegebenen Fällen erscheint dann als «noch nicht verfügbar».
+
+Ergänzung zu F-504: Erlaubte Video-Hosts sind `www.youtube-nocookie.com` und `player.vimeo.com` (Vorschlag von Claude, Liste in `src/content/schema.ts` und in der CSP von `index.html`).
 
 ### 4.10 Logging und Fehlerbericht
 
@@ -287,3 +300,71 @@ Das Spiel ist ab Meilenstein 2 ohne 3D spielbar. So kann die Gruppe Fälle schre
 | M4 | Stadt und alle Level | Kulisse, fünf Level, Stadtansicht, Gesamtauswertung |
 | M5 | Feinschliff | Ton, Barrierefreiheit, Performance, Fehlerbericht |
 | M6 | Inhalte fertig | Alle Fälle freigegeben, Balance justiert, Testrunde mit der Gruppe |
+
+## 9. Stand der Umsetzung
+
+Stand 23.11.2026, erste Version (Meilensteine M0 bis M4).
+
+**Umgesetzt:** Gerüst mit Tests und CI; Spiellogik, Schema, Prüf- und Balance-Skript; fünf Level mit je vier Theorie-Karten und acht Situationen (alle als Entwurf von Claude, fachlich nicht geprüft); Einfach-Modus ohne 3D; Speichern, Logging, Fehlerbericht und Fehlerseite; Gebäude in 3D mit Neigung, Wackeln und Einsturz; Stadt mit Kulisse, Stadtansicht und Gesamtauswertung.
+
+Was noch fehlt, steht als Liste zum Abhaken in Kapitel 10.
+
+## 10. To-do
+
+Was bis zur Abgabe noch zu tun ist, in der Reihenfolge, in der es sinnvoll ist. Wer einen Punkt erledigt, hakt ihn im selben Pull Request ab.
+
+### Jetzt: damit die Gruppe testen kann
+
+- [ ] Pull Request 1 durchsehen und mergen
+- [ ] Spiel auf dem eigenen Handy und Laptop durchspielen, nach `docs/CHECKLIST.md` (Q-09)
+- [ ] Repository öffentlich stellen und GitHub Pages einschalten, Schritte im README (B-01)
+- [ ] Variable `SHOW_DRAFTS=1` setzen, solange die Fälle Entwürfe sind (F-906)
+- [ ] Link an die Gruppe schicken
+
+### Gruppe: Inhalte (M6)
+
+- [ ] Entscheiden: Platzhalter-Fälle von Claude überarbeiten oder durch eigene ersetzen
+- [ ] Level 1, Risiken identifizieren: 8 Fälle und 4 Karten prüfen, `status` auf `freigegeben`
+- [ ] Level 2, Risiken bewerten: 8 Fälle und 4 Karten prüfen, `status` auf `freigegeben`
+- [ ] Level 3, Massnahmen planen: 8 Fälle und 4 Karten prüfen, `status` auf `freigegeben`
+- [ ] Level 4, Risiken überwachen: 8 Fälle und 4 Karten prüfen, `status` auf `freigegeben`
+- [ ] Level 5, Grenzen der AI: 8 Fälle und 4 Karten prüfen, `status` auf `freigegeben`
+- [ ] Lernziele pro Level bestätigen oder umformulieren (R-04)
+- [ ] `quelle` bei jedem Fall mit der echten Quelle füllen (Buch, Kapitel, Skript)
+- [ ] Prüfen, ob die Spielzeit auf rund 60 Minuten kommt; sonst mehr Fälle oder Theorie (R-01)
+- [ ] Offene Fragen in `docs/later/BRAINSTORMING.md` in der Gruppe klären
+
+### Entwicklung: Feinschliff (M5)
+
+- [ ] Ton für Bauen, Wahl, Wackeln, Einsturz und Erfolg, im Browser erzeugt (F-801, F-804, F-805)
+- [ ] Stumm-Schalter, immer sichtbar, Wahl gespeichert (F-802, F-803)
+- [ ] Theorie während der Situationen nachschlagen (F-506)
+- [ ] Debug-Overlay mit Bildrate, Anzeigen, Seed und Level-Sprung über `?debug=1` (L-09)
+- [ ] Kontrast nach WCAG AA und Schriftgrössen messen statt schätzen (N-302)
+- [ ] Bildrate auf einem Mittelklasse-Handy messen (N-202)
+- [ ] Safari auf iOS und macOS sowie Firefox von Hand prüfen (N-103)
+- [ ] Skript für die Inhaltsdokumentation aus den JSON-Dateien (F-908)
+
+### Entwicklung: nach der ersten Testrunde
+
+- [ ] Balance mit den echten Fällen justieren: Startwerte, Stufen, Sterne in `src/core/balance.ts` (O-4)
+- [ ] Regeln für Sterne, Lernziele und Neigung in der Gruppe bestätigen oder ändern (F-205, F-602, F-603)
+- [ ] Erlaubte Video-Hosts bestätigen, falls Videos dazukommen (F-504)
+- [ ] Stadtansicht: Kamera und Kulisse nach Rückmeldungen verbessern (F-410, F-411)
+- [ ] Rückmeldungen und Fehlerberichte der Gruppe abarbeiten, je mit einem Test zuerst (Q-08)
+
+### GitHub
+
+- [ ] `main` schützen: Pull Request und grüne CI als Pflicht (S-08)
+- [ ] Secret Scanning mit Push-Schutz einschalten (S-08)
+- [ ] 2FA bei allen mit Schreibrecht prüfen (S-08)
+- [ ] Vor der Abgabe `SHOW_DRAFTS` wieder entfernen, sobald alle Fälle freigegeben sind (F-906)
+
+### Abgabe (aus dem Auftrag)
+
+- [ ] Konzept und Drehbuch (R-05)
+- [ ] Dokumentation der Inhalte, Screenshots zählen (R-05, R-06)
+- [ ] Teaser-Video, höchstens 3 Minuten (R-05)
+- [ ] Evaluation: festlegen, wie das Feedback der Mitstudierenden zur Gruppe kommt, und auswerten (R-05, F-605)
+- [ ] Sicherstellen, dass die Seite mindestens 60 Tage online bleibt (R-02)
+- [ ] Bewertungsraster und Abgabetermine beim Dozenten einholen (O-10)

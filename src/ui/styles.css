@@ -1,0 +1,595 @@
+:root {
+  --ink: #17202b;
+  --ink-soft: #4a5868;
+  --paper: #f6f7f9;
+  --card: #ffffff;
+  --line: #c3cbd5;
+  --accent: #1b4b82;
+  --accent-ink: #ffffff;
+  --sky: #bfe3f5;
+  --topbar: #1d2733;
+  --good: #1c6b3a;
+  --ok: #72560a;
+  --risky: #9b2226;
+  --radius: 10px;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #dfe4ea;
+}
+
+#app {
+  height: 100%;
+}
+
+/* N-102: one portrait column, centred on wider screens. */
+.column {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--paper);
+  box-shadow: 0 0 24px rgb(0 0 0 / 18%);
+  overflow: hidden;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  padding-top: max(6px, env(safe-area-inset-top));
+  background: var(--topbar);
+  color: #fff;
+  flex: none;
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.stage {
+  position: relative;
+  flex: none;
+  background: var(--sky);
+}
+
+.canvas-host {
+  height: 36dvh;
+  min-height: 200px;
+}
+
+.canvas-host canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Simple mode (N-207): no canvas, the stage shrinks to the gauges. */
+#app[data-renderer='none'] .canvas-host {
+  display: none;
+}
+
+#app[data-renderer='none'] .stage {
+  background: var(--topbar);
+}
+
+.hud-host {
+  position: absolute;
+  inset: 0 0 auto 0;
+}
+
+#app[data-renderer='none'] .hud-host {
+  position: static;
+}
+
+.hud {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 8px;
+}
+
+.gauge {
+  background: rgb(255 255 255 / 94%);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px 6px 6px;
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.gauge-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 6px;
+}
+
+.gauge-label {
+  font-weight: 700;
+}
+
+.gauge-bar {
+  height: 8px;
+  margin-top: 3px;
+  background: #d5dbe3;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* All three gauges share one colour: the value, not a traffic light, carries the meaning. */
+.gauge-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+.gauge-critical {
+  border-color: var(--ink);
+  border-width: 2px;
+}
+
+.gauge-critical .gauge-fill {
+  background: repeating-linear-gradient(45deg, var(--ink) 0 4px, #6b7785 4px 8px);
+}
+
+.panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px calc(24px + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling: touch;
+}
+
+.screen > :first-child {
+  margin-top: 0;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  margin: 1.1em 0 0.35em;
+}
+
+h1 {
+  font-size: 1.45rem;
+}
+
+h2 {
+  font-size: 1.05rem;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+p {
+  margin: 0.4em 0 0.7em;
+}
+
+/* Headings receive focus from script only, to move screen readers along; they are not controls. */
+.screen-title:focus {
+  outline: none;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lead {
+  font-size: 1.05rem;
+}
+
+.muted {
+  color: var(--ink-soft);
+}
+
+.small {
+  font-size: 0.94rem;
+}
+
+.plain-list {
+  list-style: none;
+  margin: 0.4em 0;
+  padding: 0;
+}
+
+.btn {
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.btn:hover {
+  background: #e8eef6;
+}
+
+.btn:focus-visible {
+  outline: 3px solid #f2a900;
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn-primary:hover {
+  background: #143a66;
+}
+
+.btn-danger {
+  border-color: var(--risky);
+  color: var(--risky);
+}
+
+.btn-menu {
+  min-height: 44px;
+  padding: 6px 14px;
+  border-color: #fff;
+  background: transparent;
+  color: #fff;
+}
+
+.btn-menu:hover {
+  background: rgb(255 255 255 / 15%);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 6px;
+}
+
+.actions .btn {
+  flex: 1 1 160px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 10px 0;
+}
+
+.level-card h3 {
+  margin-top: 0;
+}
+
+.level-card .btn {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.level-locked {
+  background: #eceff3;
+}
+
+.status {
+  font-weight: 600;
+}
+
+.stars {
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.result-stars {
+  font-size: 1.3rem;
+}
+
+.options {
+  display: grid;
+  gap: 10px;
+}
+
+/* F-207: every option looks the same; nothing hints at the rating. */
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  border-color: #56657a;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.option-key {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--topbar);
+  color: #fff;
+  text-align: center;
+  line-height: 28px;
+  font-weight: 700;
+}
+
+.keyboard-hint {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .keyboard-hint {
+    display: block;
+  }
+}
+
+.ai-output {
+  background: #eef2f7;
+  border-left: 4px solid var(--topbar);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 8px 12px;
+  margin: 10px 0;
+}
+
+.ai-output h2 {
+  margin-top: 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+.ai-answer {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.92rem;
+}
+
+.draft-badge {
+  display: inline-block;
+  margin: 0 0 4px;
+  padding: 1px 8px;
+  border: 1px dashed var(--ink-soft);
+  border-radius: 6px;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.chosen {
+  font-weight: 600;
+}
+
+.rating {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.94rem;
+}
+
+.rating-gut {
+  background: var(--good);
+}
+
+.rating-vertretbar {
+  background: var(--ok);
+}
+
+.rating-riskant {
+  background: var(--risky);
+}
+
+.cause-loss {
+  font-weight: 600;
+}
+
+.deltas li {
+  padding: 2px 0;
+}
+
+.decisions {
+  padding-left: 1.3em;
+}
+
+.decisions li {
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.decisions h3 {
+  margin-top: 0;
+}
+
+.goals li {
+  padding: 4px 0;
+}
+
+.notices {
+  margin: 10px 0;
+}
+
+.notice {
+  background: #fff4d6;
+  border: 1px solid #b98900;
+  border-radius: var(--radius);
+  padding: 8px 12px;
+}
+
+.notice-strong {
+  background: #fde8e8;
+  border-color: var(--risky);
+  font-weight: 600;
+}
+
+.error-list {
+  font-size: 0.94rem;
+}
+
+.report {
+  width: 100%;
+  min-height: 150px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  resize: vertical;
+}
+
+.report-block .btn {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.graphic {
+  margin: 12px 0;
+  padding: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.graphic figcaption {
+  margin-top: 8px;
+  color: var(--ink-soft);
+  font-size: 0.94rem;
+}
+
+.process {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.process li {
+  counter-increment: step;
+  padding: 8px;
+  background: #eef2f7;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.process li::before {
+  content: counter(step) '. ';
+}
+
+.matrix,
+.register {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.94rem;
+}
+
+.matrix th,
+.matrix td,
+.register th,
+.register td {
+  border: 1px solid var(--line);
+  padding: 6px;
+  text-align: center;
+}
+
+.register th,
+.register td {
+  text-align: left;
+}
+
+.matrix thead th:first-child {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Shade doubles the cell label; the label alone already says tief, mittel or hoch. */
+.weight-0,
+.weight-1 {
+  background: #e7edf4;
+}
+
+.weight-2 {
+  background: #b9c9dc;
+}
+
+.weight-3,
+.weight-4 {
+  background: #2f4a6b;
+  color: #fff;
+  font-weight: 700;
+}
+
+.strategies {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.strategies li {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  background: #eef2f7;
+  border-radius: 8px;
+  font-size: 0.94rem;
+}
+
+.video-frame {
+  aspect-ratio: 16 / 9;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: #e3e8ee;
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.video-frame iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gauge-fill {
+    transition: none;
+  }
+}

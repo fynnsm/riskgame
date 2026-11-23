@@ -1,0 +1,437 @@
+import type { PlayableLevel } from '../content/load.ts';
+import type { Level, Option } from '../content/schema.ts';
+import type { Action, LevelRun } from '../core/game.ts';
+import { currentOptions, currentSituation, isRunConsistent, startRun, step } from '../core/game.ts';
+import type { Progress } from '../core/progress.ts';
+import {
+  addPlayTime,
+  clearRun,
+  emptyProgress,
+  finishRun,
+  isUnlocked,
+  levelProgress,
+  withRun,
+} from '../core/progress.ts';
+import type { SceneView } from '../core/scene.ts';
+import { sceneModel } from '../core/scene.ts';
+import { starsFor } from '../core/scoring.ts';
+import type { Logger } from '../logging/logger.ts';
+import { errorData } from '../logging/logger.ts';
+import { buildErrorReport } from '../logging/report.ts';
+import type { ProgressStore } from '../storage/progress-store.ts';
+import { clear, button, el } from './dom.ts';
+import {
+  briefingScreen,
+  cityScreen,
+  confirmResetScreen,
+  errorScreen,
+  feedbackScreen,
+  hud,
+  menuScreen,
+  resultScreen,
+  situationScreen,
+  theoryScreen,
+} from './screens.ts';
+import { T } from './texts.ts';
+
+/** Longer pauses between two actions do not count as active play time (F-108). */
+const IDLE_CAP_MS = 120_000;
+
+export interface AppEnvironment {
+  /** Monotonic clock in milliseconds, used for play time only. */
+  now(): number;
+  /** Wall-clock time as ISO string, for the error report. */
+  timestamp(): string;
+  userAgent: string;
+  viewport(): { width: number; height: number };
+  copyText(text: string): Promise<void>;
+  reload(): void;
+  /** A fresh 32-bit seed per run. Comes from outside core so core stays deterministic. */
+  nextSeed(): number;
+}
+
+export interface AppOptions {
+  root: HTMLElement;
+  levels: PlayableLevel[];
+  contentErrors: string[];
+  store: ProgressStore;
+  logger: Logger;
+  env: AppEnvironment;
+  build: { version: string; commit: string };
+  rendererName: string;
+  /** Called once with the element the 3D canvas goes into. */
+  createView(host: HTMLElement): SceneView;
+  startupNotices?: string[];
+}
+
+export interface App {
+  start(): void;
+  /** L-08: switches to the error page. Safe to call at any time, even repeatedly. */
+  showFatal(cause: unknown): void;
+}
+
+type Overlay = 'none' | 'menu' | 'confirm-reset' | 'error';
+
+export function createApp(options: AppOptions): App {
+  const { root, levels, store, logger, env } = options;
+  const levelOrder = levels.map((l) => l.level.id);
+
+  let progress: Progress = emptyProgress();
+  let overlay: Overlay = 'none';
+  let notices: string[] = [...(options.startupNotices ?? [])];
+  let lastActionAt = env.now();
+  let view: SceneView | null = null;
+
+  const stage = el('div', { class: 'stage' });
+  const canvasHost = el('div', { class: 'canvas-host', attrs: { 'aria-hidden': 'true' } });
+  const hudHost = el('div', { class: 'hud-host' });
+  const panel = el('main', { class: 'panel' });
+  const menuButton = button(T.menu, () => toggleMenu(), { class: 'btn-menu', testId: 'menu' });
+
+  function findLevel(id: string): Level | null {
+    return levels.find((l) => l.level.id === id)?.level ?? null;
+  }
+
+  function activeRun(): { run: LevelRun; level: Level } | null {
+    const run = progress.currentRun;
+    if (!run) return null;
+    const level = findLevel(run.levelId);
+    return level ? { run, level } : null;
+  }
+
+  function addNotice(message: string): void {
+    if (!notices.includes(message)) notices.push(message);
+  }
+
+  function save(): void {
+    if (!store.save(progress)) addNotice(T.notices.saveFailed);
+  }
+
+  /** Counts the time since the last action as play time, but only while a level is running. */
+  function trackTime(): void {
+    const now = env.now();
+    if (progress.currentRun) {
+      progress = addPlayTime(progress, Math.min(now - lastActionAt, IDLE_CAP_MS));
+    }
+    lastActionAt = now;
+  }
+
+  function report(): string {
+    const run = progress.currentRun;
+    return buildErrorReport({
+      version: options.build.version,
+      commit: options.build.commit,
+      time: env.timestamp(),
+      userAgent: env.userAgent,
+      viewport: env.viewport(),
+      renderer: options.rendererName,
+      playTimeMs: progress.playTimeMs,
+      levels: Object.entries(progress.levels).map(([id, lp]) => ({
+        id,
+        completed: lp.completed,
+        stars: lp.best?.stars ?? 0,
+        attempts: lp.attempts,
+      })),
+      run: run
+        ? {
+            levelId: run.levelId,
+            seed: run.seed,
+            recentIds: run.recentIds,
+            choices: run.history.map((c) => c.optionId),
+            phase: run.phase,
+            outcome: run.outcome,
+            gauges: { ...run.gauges },
+          }
+        : null,
+      entries: logger.entries(),
+    });
+  }
+
+  function copyReport(text: string, status: HTMLElement): void {
+    logger.info('report.copy.requested');
+    env.copyText(text).then(
+      () => {
+        logger.info('report.copy.ok');
+        status.textContent = T.menuScreen.copied;
+      },
+      (cause: unknown) => {
+        // No clipboard access (permissions, insecure context): the visible text field is the fallback.
+        logger.warn('report.copy.failed', errorData(cause));
+        status.textContent = T.menuScreen.copyFailed;
+      },
+    );
+  }
+
+  function startLevel(levelId: string): void {
+    const entry = levels.find((l) => l.level.id === levelId);
+    if (!entry || !entry.available || !isUnlocked(progress, levelOrder, levelId)) {
+      logger.warn('level.start.rejected', { levelId });
+      return;
+    }
+    trackTime();
+    const lp = levelProgress(progress, levelId);
+    const seed = env.nextSeed();
+    const run = startRun(entry.level, seed, {
+      recentIds: lp.recentIds,
+      canSkipTheory: lp.theorySeen,
+    });
+    logger.info('level.start', { levelId, seed, attempt: lp.attempts + 1 });
+    progress = withRun(progress, run);
+    lastActionAt = env.now();
+    save();
+    render();
+  }
+
+  function dispatch(action: Action): void {
+    const active = activeRun();
+    if (!active) return;
+    trackTime();
+    const before = active.run;
+    const after = step(before, active.level, action);
+    if (action.type === 'choose') {
+      const choice = after.history[after.history.length - 1];
+      logger.info('choice.made', {
+        levelId: after.levelId,
+        situationId: choice?.situationId,
+        optionId: action.optionId,
+        rating: choice?.rating,
+        budget: after.gauges.budget,
+        zeit: after.gauges.zeit,
+        stabilitaet: after.gauges.stabilitaet,
+        outcome: after.outcome,
+      });
+    } else {
+      logger.info(action.type === 'skipTheory' ? 'theory.skipped' : 'phase.changed', {
+        levelId: after.levelId,
+        from: before.phase,
+        to: after.phase,
+        step: after.step,
+        theoryIndex: after.theoryIndex,
+      });
+    }
+    if (after.phase === 'result' && before.phase !== 'result') {
+      progress = finishRun(progress, after, active.level);
+      logger.info(after.outcome === 'collapsed' ? 'level.collapsed' : 'level.completed', {
+        levelId: after.levelId,
+        stars: starsFor(after),
+        budget: after.gauges.budget,
+        zeit: after.gauges.zeit,
+        stabilitaet: after.gauges.stabilitaet,
+      });
+    } else {
+      progress = withRun(progress, after);
+    }
+    save();
+    render();
+  }
+
+  function leaveRun(): void {
+    trackTime();
+    logger.info('level.left', {
+      levelId: progress.currentRun?.levelId,
+      phase: progress.currentRun?.phase,
+    });
+    progress = clearRun(progress);
+    overlay = 'none';
+    save();
+    render();
+  }
+
+  function toggleMenu(): void {
+    if (overlay === 'error') return;
+    overlay = overlay === 'none' ? 'menu' : 'none';
+    logger.info('menu.toggled', { open: overlay === 'menu' });
+    render();
+  }
+
+  function resetProgress(): void {
+    logger.info('progress.reset');
+    const cleared = store.clear();
+    progress = emptyProgress();
+    notices = [cleared ? T.notices.resetDone : T.notices.resetFailed];
+    overlay = 'none';
+    render();
+  }
+
+  function nextLevelAfter(level: Level): (() => void) | null {
+    const next = levels[levelOrder.indexOf(level.id) + 1];
+    if (!next || !next.available || !isUnlocked(progress, levelOrder, next.level.id)) return null;
+    return () => startLevel(next.level.id);
+  }
+
+  function buildScreen(): HTMLElement {
+    if (overlay === 'error') {
+      return errorScreen(report(), { copy: copyReport, reload: () => env.reload() });
+    }
+    if (overlay === 'confirm-reset') {
+      return confirmResetScreen({
+        yes: resetProgress,
+        no: () => {
+          overlay = 'menu';
+          render();
+        },
+      });
+    }
+    const active = activeRun();
+    if (overlay === 'menu') {
+      return menuScreen(report(), options.build, notices, {
+        copy: copyReport,
+        back: toggleMenu,
+        abort: active ? leaveRun : null,
+        askReset: () => {
+          overlay = 'confirm-reset';
+          render();
+        },
+      });
+    }
+    if (!active) {
+      const screen = cityScreen(levels, progress, notices, options.contentErrors, { startLevel });
+      // Notices are shown once; after that they would only be noise.
+      notices = [];
+      return screen;
+    }
+    const { run, level } = active;
+    const handlers = {
+      next: () => dispatch({ type: 'continue' }),
+      skipTheory: () => dispatch({ type: 'skipTheory' }),
+      choose: (option: Option) => dispatch({ type: 'choose', optionId: option.id }),
+    };
+    switch (run.phase) {
+      case 'briefing':
+        return briefingScreen(level, run, handlers);
+      case 'theory':
+        return theoryScreen(level, run, handlers);
+      case 'situation':
+        return situationScreen(
+          level,
+          run,
+          currentSituation(run, level),
+          currentOptions(run, level),
+          handlers,
+        );
+      case 'feedback':
+        return feedbackScreen(level, run, handlers);
+      case 'result':
+        return resultScreen(level, run, {
+          restart: () => startLevel(level.id),
+          toCity: leaveRun,
+          nextLevel: run.outcome === 'completed' ? nextLevelAfter(level) : null,
+        });
+    }
+  }
+
+  function render(): void {
+    try {
+      const screen = buildScreen();
+      clear(panel);
+      panel.append(screen);
+      panel.scrollTop = 0;
+
+      clear(hudHost);
+      const active = activeRun();
+      if (active && overlay !== 'error') {
+        const last = active.run.history[active.run.history.length - 1];
+        const delta = active.run.phase === 'feedback' && last ? last.delta : null;
+        hudHost.append(hud(active.run.gauges, delta));
+      }
+      root.dataset.mode = active ? 'level' : 'city';
+      menuButton.hidden = overlay === 'error';
+
+      view?.render(sceneModel(levels, progress, active?.run ?? null));
+      screen.querySelector<HTMLElement>('[data-focus]')?.focus({ preventScroll: true });
+    } catch (cause) {
+      showFatal(cause);
+    }
+  }
+
+  function showFatal(cause: unknown): void {
+    logger.error('app.fatal', errorData(cause));
+    if (overlay === 'error') return;
+    overlay = 'error';
+    try {
+      clear(hudHost);
+      clear(panel);
+      panel.append(errorScreen(report(), { copy: copyReport, reload: () => env.reload() }));
+      menuButton.hidden = true;
+    } catch (inner) {
+      // Last resort: even the error page failed. Leave a plain sentence rather than a white page.
+      logger.error('app.fatal.render', errorData(inner));
+      panel.textContent = `${T.error.heading}. ${T.error.lead}`;
+    }
+  }
+
+  /** N-104: keys 1 to 3 choose an option, Enter triggers the primary button. */
+  function onKeyDown(event: KeyboardEvent): void {
+    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+    const target = event.target as HTMLElement | null;
+    const tag = target?.tagName ?? '';
+    if (tag === 'TEXTAREA' || tag === 'INPUT') return;
+    if (['1', '2', '3'].includes(event.key)) {
+      const option = panel.querySelector<HTMLButtonElement>(`button[data-key="${event.key}"]`);
+      if (option) {
+        event.preventDefault();
+        option.click();
+      }
+      return;
+    }
+    // On a focused button or link, Enter already does the right thing natively.
+    if (event.key === 'Enter' && tag !== 'BUTTON' && tag !== 'A') {
+      const primary = panel.querySelector<HTMLButtonElement>('button[data-primary]');
+      if (primary) {
+        event.preventDefault();
+        primary.click();
+      }
+    }
+  }
+
+  function restore(): void {
+    const outcome = store.load();
+    progress = outcome.progress;
+    if (outcome.status === 'invalid') addNotice(T.notices.invalid);
+    if (outcome.status === 'outdated') addNotice(T.notices.outdated);
+    if (outcome.status === 'unavailable') addNotice(T.notices.unavailable);
+
+    const run = progress.currentRun;
+    if (!run) return;
+    const entry = levels.find((l) => l.level.id === run.levelId);
+    if (!entry || !entry.available || !isRunConsistent(run, entry.level)) {
+      logger.warn('storage.run.stale', { levelId: run.levelId });
+      progress = clearRun(progress);
+      addNotice(T.notices.staleRun);
+      save();
+      return;
+    }
+    logger.info('level.resumed', { levelId: run.levelId, phase: run.phase, step: run.step });
+  }
+
+  return {
+    start(): void {
+      clear(root);
+      stage.append(canvasHost, hudHost);
+      root.append(
+        el('div', { class: 'column' }, [
+          el('header', { class: 'topbar' }, [
+            el('span', { class: 'brand', text: T.appTitle }),
+            menuButton,
+          ]),
+          stage,
+          panel,
+        ]),
+      );
+      restore();
+      try {
+        view = options.createView(canvasHost);
+      } catch (cause) {
+        // The game must stay playable without graphics (N-207).
+        logger.error('render.init.failed', errorData(cause));
+        addNotice(T.notices.noWebgl);
+        view = null;
+      }
+      root.dataset.renderer = view ? options.rendererName : 'none';
+      document.addEventListener('keydown', onKeyDown);
+      logger.info('app.ready', { levels: levels.length, renderer: options.rendererName });
+      render();
+    },
+    showFatal,
+  };
+}

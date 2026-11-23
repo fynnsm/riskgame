@@ -1,0 +1,425 @@
+{
+  "schemaVersion": 1,
+  "id": "level-1",
+  "nummer": 1,
+  "titel": "Risiken mit AI identifizieren",
+  "prozessschritt": "identifizieren",
+  "projekt": {
+    "titel": "Einführung eines neuen ERP-Systems",
+    "beschreibung": "Ein Handelsbetrieb mit 120 Mitarbeitenden löst sein altes ERP ab. Du leitest das Projekt und stehst am Anfang der Planung. Bevor es losgeht, willst du wissen, was schiefgehen kann.",
+    "gebaeude": "buero"
+  },
+  "lernziele": [
+    {
+      "id": "L1-Z1",
+      "text": "Du kannst AI-Vorschläge für Risiken als Ausgangspunkt nutzen und weisst, warum sie geprüft und ergänzt werden müssen."
+    },
+    {
+      "id": "L1-Z2",
+      "text": "Du kannst einen Prompt so formulieren, dass die AI projektspezifische statt allgemeine Risiken liefert."
+    },
+    {
+      "id": "L1-Z3",
+      "text": "Du kannst ein Risiko mit Ursache, Ereignis und Auswirkung formulieren und im Risikoregister festhalten."
+    }
+  ],
+  "theorie": [
+    {
+      "typ": "karte",
+      "id": "L1-T1",
+      "titel": "Was ist ein Risiko?",
+      "text": "Ein Risiko ist ein unsicheres Ereignis, das die Ziele deines Projekts beeinflusst, wenn es eintritt. Bevor du Risiken bewerten oder behandeln kannst, musst du sie kennen. Darum beginnt Risikomanagement mit dem Identifizieren und dem Festhalten im Risikoregister.",
+      "grafik": "prozess"
+    },
+    {
+      "typ": "karte",
+      "id": "L1-T2",
+      "titel": "AI als Ideengeber",
+      "text": "Ein AI-Tool liefert in Sekunden eine breite Liste möglicher Risiken. Das hilft gegen blinde Flecken. Die AI kennt aber dein Projekt, deine Leute und deine Altlasten nicht. Ihre Liste ist ein Startpunkt, kein fertiges Register. Die Menschen im Projekt streichen, was nicht passt, und ergänzen, was nur sie wissen können."
+    },
+    {
+      "typ": "karte",
+      "id": "L1-T3",
+      "titel": "Der Prompt entscheidet",
+      "text": "Je allgemeiner die Frage, desto allgemeiner die Antwort. Gib der AI Kontext: Branche, Grösse, Termine, Besonderheiten. Lass sie verschiedene Blickwinkel einnehmen, etwa Lager, Finanzen und IT. Gib aber nichts Vertrauliches ein, zum Beispiel Verträge, Preise oder Namen."
+    },
+    {
+      "typ": "karte",
+      "id": "L1-T4",
+      "titel": "Das Risikoregister",
+      "text": "Im Risikoregister steht jedes Risiko so, dass alle dasselbe darunter verstehen: Ursache, Ereignis und Auswirkung. Statt «Datenmigration» also: «Weil die Altdaten Dubletten enthalten, können beim Import Fehler entstehen, wodurch sich der Start verzögert.» Ein gutes Register ist kurz genug, dass man es liest.",
+      "grafik": "register"
+    }
+  ],
+  "situationenProDurchgang": 6,
+  "situationen": [
+    {
+      "id": "L1-S01",
+      "lernziel": "L1-Z1",
+      "titel": "Die schnelle Risikoliste",
+      "situation": "Morgen ist der Kick-off. Du hast noch kein Risikoregister und bittest ein AI-Tool um Hilfe. In wenigen Sekunden liefert es eine Liste mit 15 Risiken. Sie klingt professionell, könnte aber zu fast jedem IT-Projekt passen. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Nenne mir die wichtigsten Risiken für ein ERP-Einführungsprojekt.",
+        "antwort": "1. Unklare Anforderungen 2. Widerstand der Mitarbeitenden 3. Budgetüberschreitung 4. Probleme bei der Datenmigration 5. Abhängigkeit vom Lieferanten ... (15 Punkte)"
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du übernimmst die Liste unverändert ins Risikoregister.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Du sparst Zeit, aber die Liste kennt dein Projekt nicht. Spezifische Risiken wie eure Altdaten oder die Hochsaison im Lager fehlen, und niemand im Team steht hinter dem Register."
+        },
+        {
+          "id": "B",
+          "text": "Du nutzt die Liste als Start und prüfst sie in einem kurzen Workshop mit dem Team.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Die AI liefert die Breite, das Team das Wissen über euer Projekt. Ihr streicht Unpassendes, ergänzt Spezifisches, und das Register wird von den Beteiligten getragen."
+        },
+        {
+          "id": "C",
+          "text": "Du verwirfst die Liste und sammelst die Risiken wie immer allein von Hand.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Dein Register passt zum Projekt, kostet aber viel Zeit, und allein übersiehst du leichter etwas. Die AI hätte dir als Checkliste gegen blinde Flecken geholfen."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L1-S02",
+      "lernziel": "L1-Z2",
+      "titel": "Der knappe Prompt",
+      "situation": "Du willst die Risikosuche vertiefen und tippst eine kurze Frage ins AI-Tool. Die Antwort ist richtig, aber so allgemein, dass du nichts Neues erfährst. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Welche Risiken gibt es bei IT-Projekten?",
+        "antwort": "Typische Risiken sind unklare Ziele, fehlende Ressourcen, technische Probleme, mangelnde Kommunikation und Verzögerungen. Eine gute Planung hilft, diese Risiken zu verringern."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du beauftragst eine externe Beratung, die Risiken für euch zusammenzustellen.",
+          "wirkung": {
+            "budget": "-mittel",
+            "zeit": "-klein",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Die Beratung bringt Erfahrung mit, kostet aber Geld und kennt euren Betrieb ebenfalls erst von aussen. Mit einem besseren Prompt wärst du schneller und günstiger weitergekommen."
+        },
+        {
+          "id": "B",
+          "text": "Du nimmst die Antwort, wie sie ist. Die grossen Themen sind ja abgedeckt.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Allgemeine Risiken gelten für jedes Projekt und helfen dir kaum beim Steuern. Die Risiken, die nur dein Projekt hat, bleiben unentdeckt."
+        },
+        {
+          "id": "C",
+          "text": "Du fragst neu und nennst Branche, Betriebsgrösse, Zeitplan und die Altdaten.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Mit Kontext kann die AI gezielter antworten, zum Beispiel zur Datenübernahme oder zum Starttermin. Du investierst ein paar Minuten und bekommst Vorschläge, die zu deinem Projekt passen."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L1-S03",
+      "lernziel": "L1-Z2",
+      "titel": "Vertrauliche Unterlagen",
+      "situation": "Damit die AI wirklich projektspezifische Risiken findet, möchtest du ihr den Vertrag mit dem ERP-Lieferanten samt Preisen und Konditionen geben. Das Tool ist ein öffentlicher Dienst im Internet. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du fasst den Vertrag in eigenen Worten zusammen und lässt Preise und Namen weg.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Die AI braucht den Kern der Sache, nicht die vertraulichen Details. Mit einer neutralen Zusammenfassung bekommst du gute Hinweise, ohne dass Geschäftsgeheimnisse den Betrieb verlassen."
+        },
+        {
+          "id": "B",
+          "text": "Du lädst den ganzen Vertrag hoch. So bekommt die AI am meisten Kontext.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Du gibst vertrauliche Daten an einen Dienst ausserhalb des Betriebs. Das kann Geheimhaltungspflichten verletzen und schafft ein neues Risiko, das grösser ist als der Nutzen."
+        },
+        {
+          "id": "C",
+          "text": "Du verzichtest ganz auf die AI und liest den Vertrag selbst auf Risiken durch.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Das ist sicher, braucht aber deutlich mehr Zeit. Mit einer anonymisierten Zusammenfassung hättest du Sicherheit und Tempo verbinden können."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L1-S04",
+      "lernziel": "L1-Z1",
+      "titel": "Das fehlende Risiko",
+      "situation": "Du zeigst die AI-Liste dem Lagerleiter. Er sagt: «Die Umstellung fällt genau in unsere Hochsaison. Das steht nirgends.» Die AI konnte das nicht wissen. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du trägst sein Risiko nach und belässt es dabei.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Das eine Risiko ist jetzt erfasst. Der Hinweis zeigt aber, dass der Liste Wissen aus dem Betrieb fehlt. Wahrscheinlich gibt es in anderen Abteilungen weitere Lücken."
+        },
+        {
+          "id": "B",
+          "text": "Du nimmst das Risiko auf und fragst auch die anderen Abteilungen nach Lücken.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Ein übersehenes Risiko ist selten das einzige. Wenn du gezielt bei den Fachleuten nachfragst, findest du, was nur der Betrieb wissen kann."
+        },
+        {
+          "id": "C",
+          "text": "Du lässt die Liste, wie sie ist. Die AI hat die wichtigsten Punkte erfasst.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Du vertraust der AI mehr als dem Menschen, der das Lager kennt. Ein Risiko, das nicht im Register steht, wird weder bewertet noch behandelt."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L1-S05",
+      "lernziel": "L1-Z3",
+      "titel": "Ein Wort ist kein Risiko",
+      "situation": "Im Entwurf des Registers steht als Risiko nur das Stichwort aus der AI-Liste. Im Team versteht jede Person etwas anderes darunter. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Nenne die Risiken in Stichworten.",
+        "antwort": "Datenmigration. Schulung. Schnittstellen. Lieferant. Akzeptanz."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du lässt die Stichworte stehen. Alle wissen ungefähr, was gemeint ist.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Ungefähr reicht nicht. Wenn unklar ist, was genau passieren kann, lässt sich das Risiko weder bewerten noch jemandem zuweisen."
+        },
+        {
+          "id": "B",
+          "text": "Du lässt die AI alle Einträge ausformulieren und prüfst nur einzelne davon.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "0"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Die Einträge lesen sich besser, aber die AI rät bei Ursache und Auswirkung. Ohne Prüfung durch das Team stehen plausible, aber falsche Annahmen im Register."
+        },
+        {
+          "id": "C",
+          "text": "Du formulierst jeden Eintrag mit dem Team als Ursache, Ereignis und Auswirkung.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Aus «Datenmigration» wird ein klarer Satz, den alle gleich verstehen. Erst so kann man das Risiko einschätzen und gezielt etwas dagegen tun."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L1-S06",
+      "lernziel": "L1-Z3",
+      "titel": "Hundert Risiken",
+      "situation": "Du hast die AI mehrmals gefragt und nun über hundert Risiken gesammelt. Viele ähneln sich, einige sind sehr unwahrscheinlich. Das Register ist unübersichtlich geworden. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du fasst Doppeltes zusammen, bildest Gruppen und behältst, was für euch gilt.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Ein Register muss lesbar bleiben. Wenn du bündelst und Unpassendes streichst, bleiben die Risiken sichtbar, die für euer Projekt wirklich zählen."
+        },
+        {
+          "id": "B",
+          "text": "Du behältst alle Einträge. Lieber ein Risiko zu viel als eines zu wenig.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Ein Register mit hundert Einträgen liest niemand. Die wichtigen Risiken gehen in der Menge unter, und die Pflege frisst Zeit."
+        },
+        {
+          "id": "C",
+          "text": "Du kürzt nach Gefühl auf die zehn Einträge, die dir am wichtigsten scheinen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Das Register ist wieder handlich. Aber du hast allein und ohne Kriterien entschieden. Was dir unwichtig scheint, kann für eine andere Abteilung zentral sein."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L1-S07",
+      "lernziel": "L1-Z1",
+      "titel": "Workshop oder nicht?",
+      "situation": "Der Auftraggeber findet die AI-Liste überzeugend: «Damit können wir uns den Risiko-Workshop sparen.» Der Workshop würde einen halben Tag und die Zeit von acht Personen kosten. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du streichst den Workshop und nimmst die Liste als Register.",
+          "wirkung": {
+            "budget": "+klein",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Du sparst Geld und Zeit, verlierst aber das Wissen der Fachleute. Zudem fühlt sich niemand für ein Register verantwortlich, das eine AI geschrieben hat."
+        },
+        {
+          "id": "B",
+          "text": "Du schickst die Liste per Mail herum und bittest um Ergänzungen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Besser als nichts, aber per Mail antworten nur wenige, und es entsteht keine Diskussion. Wichtige Risiken zeigen sich oft erst im Gespräch."
+        },
+        {
+          "id": "C",
+          "text": "Du hältst den Workshop kürzer und nutzt die AI-Liste als vorbereitete Grundlage.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "-klein",
+            "stabilitaet": "+gross"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Die Liste spart Vorarbeit, der Workshop bringt das Wissen des Betriebs und die Zustimmung der Beteiligten. So nutzt du beides."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L1-S08",
+      "lernziel": "L1-Z2",
+      "titel": "Die AI in fremden Rollen",
+      "situation": "Du bittest die AI, das Projekt aus der Sicht verschiedener Rollen zu betrachten. Die Antworten wirken erstaunlich echt. Was tust du damit?",
+      "aiAusgabe": {
+        "prompt": "Du bist Leiterin Finanzen eines Handelsbetriebs. Welche Risiken siehst du bei der ERP-Einführung?",
+        "antwort": "Ich befürchte, dass der Monatsabschluss im neuen System nicht rechtzeitig funktioniert und dass während der Umstellung Zahlen doppelt oder gar nicht verbucht werden."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du nimmst die Antworten als Meinung der Abteilungen und sparst dir die Gespräche.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Die AI spielt eine Rolle, sie kennt eure Finanzchefin nicht. Wenn du gespielte Antworten als echte Meinung behandelst, übergehst du die Menschen, die es wissen."
+        },
+        {
+          "id": "B",
+          "text": "Du verwirfst die Antworten. Rollenspiele mit einer AI sind dir zu unsicher.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du gehst kein Risiko ein, verschenkst aber gute Fragen. Als Vorbereitung für Gespräche wären die Antworten nützlich gewesen."
+        },
+        {
+          "id": "C",
+          "text": "Du nimmst die Antworten als Fragen mit in die Gespräche mit den echten Abteilungen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Der Rollenwechsel bringt neue Blickwinkel. Als Gesprächsleitfaden hilft er dir, gezielt nachzufragen. Die Antwort geben dann die Menschen, die es betrifft."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    }
+  ]
+}

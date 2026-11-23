@@ -1,0 +1,146 @@
+import { z } from 'zod';
+import { bundledLevelFiles } from './content/bundle.ts';
+import { loadLevels } from './content/load.ts';
+import { BALANCE } from './core/balance.ts';
+import type { SceneView } from './core/scene.ts';
+import { consoleSink } from './logging/console-sink.ts';
+import type { LogEntry } from './logging/logger.ts';
+import { createLogger, errorData } from './logging/logger.ts';
+import { createNullView } from './render/null-view.ts';
+import {
+  browserLocalStorage,
+  browserSessionStorage,
+  createLocalStorageStore,
+  createLogPersistence,
+} from './storage/local-storage-store.ts';
+import { createApp } from './ui/app.ts';
+import { T } from './ui/texts.ts';
+
+/** URL parameters are outside input and get the same treatment as any other (CLAUDE.md, security). */
+const paramsSchema = z.object({
+  renderer: z.enum(['none', '3d']).optional(),
+  seed: z.coerce.number().int().min(0).max(0xffffffff).optional(),
+});
+
+function sink(entry: LogEntry): void {
+  // In production only problems reach the console; everything stays in the ring buffer anyway.
+  if (import.meta.env.DEV || entry.level === 'warn' || entry.level === 'error') consoleSink(entry);
+}
+
+const logger = createLogger({
+  now: () => Date.now(),
+  persistence: createLogPersistence(browserSessionStorage),
+  sink,
+});
+
+function readParams(): z.infer<typeof paramsSchema> {
+  const raw = Object.fromEntries(new URLSearchParams(window.location.search));
+  const parsed = paramsSchema.safeParse(raw);
+  if (parsed.success) return parsed.data;
+  logger.warn('params.invalid', { issues: parsed.error.issues.length });
+  return {};
+}
+
+function hasWebGl(): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    return Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'));
+  } catch (cause) {
+    logger.warn('render.webgl.probe.failed', errorData(cause));
+    return false;
+  }
+}
+
+async function boot(): Promise<void> {
+  const root = document.getElementById('app');
+  if (!root) throw new Error('Missing #app element');
+
+  logger.info('app.start', { version: __APP_VERSION__, commit: __APP_COMMIT__ });
+  const params = readParams();
+
+  const showDrafts = import.meta.env.DEV || import.meta.env.VITE_SHOW_DRAFTS === '1';
+  const content = loadLevels(bundledLevelFiles(), BALANCE.effectPoints, showDrafts);
+  logger.info('content.loaded', {
+    levels: content.levels.length,
+    errors: content.errors.length,
+    warnings: content.warnings.length,
+    showDrafts,
+  });
+  content.errors.forEach((message) => logger.error('content.invalid', { message }));
+  content.warnings.forEach((message) => logger.warn('content.warning', { message }));
+
+  const startupNotices: string[] = [];
+  let rendererName = 'none';
+  let createView: (host: HTMLElement) => SceneView = () => createNullView();
+
+  if (params.renderer !== 'none') {
+    if (hasWebGl()) {
+      try {
+        // Loaded on demand so the simple mode never downloads Three.js.
+        const { createThreeView } = await import('./render/three-view.ts');
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        createView = (host) => createThreeView(host, { logger, reducedMotion });
+        rendererName = '3d';
+      } catch (cause) {
+        logger.error('render.load.failed', errorData(cause));
+        startupNotices.push(T.notices.noWebgl);
+      }
+    } else {
+      logger.warn('render.webgl.unavailable');
+      startupNotices.push(T.notices.noWebgl);
+    }
+  }
+  logger.info('render.mode', { renderer: rendererName });
+
+  let fixedSeed = params.seed;
+  const app = createApp({
+    root,
+    levels: content.levels,
+    contentErrors: content.errors,
+    store: createLocalStorageStore(browserLocalStorage, logger),
+    logger,
+    build: { version: __APP_VERSION__, commit: __APP_COMMIT__ },
+    rendererName,
+    createView,
+    startupNotices,
+    env: {
+      now: () => performance.now(),
+      timestamp: () => new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      viewport: () => ({ width: window.innerWidth, height: window.innerHeight }),
+      copyText: (text) => navigator.clipboard.writeText(text),
+      reload: () => window.location.reload(),
+      nextSeed: () => {
+        // `?seed=` pins the first run only, so a repeat still draws anew.
+        if (fixedSeed !== undefined) {
+          const seed = fixedSeed;
+          fixedSeed = undefined;
+          return seed;
+        }
+        return crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
+      },
+    },
+  });
+
+  window.addEventListener('error', (event) => {
+    logger.error('window.error', {
+      message: event.message,
+      line: event.lineno,
+      column: event.colno,
+    });
+    app.showFatal(event.error ?? event.message);
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    logger.error('window.unhandledrejection', errorData(event.reason));
+    app.showFatal(event.reason);
+  });
+
+  app.start();
+}
+
+boot().catch((cause: unknown) => {
+  logger.error('app.boot.failed', errorData(cause));
+  const root = document.getElementById('app');
+  // No app instance exists yet, so there is no error page to show: fall back to plain text.
+  if (root) root.textContent = `${T.error.heading}. ${T.error.lead}`;
+});

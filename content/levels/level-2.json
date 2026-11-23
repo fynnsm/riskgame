@@ -1,0 +1,420 @@
+{
+  "schemaVersion": 1,
+  "id": "level-2",
+  "nummer": 2,
+  "titel": "Risiken bewerten und priorisieren",
+  "prozessschritt": "bewerten",
+  "projekt": {
+    "titel": "Neue Lernplattform für eine Berufsschule",
+    "beschreibung": "Eine Berufsschule mit 900 Lernenden führt auf das neue Schuljahr eine digitale Lernplattform ein. Das Risikoregister steht. Jetzt musst du entscheiden, welche Risiken wirklich wichtig sind.",
+    "gebaeude": "schule"
+  },
+  "lernziele": [
+    {
+      "id": "L2-Z1",
+      "text": "Du kannst Eintrittswahrscheinlichkeit und Auswirkung getrennt einschätzen und ein Risiko in die Risikomatrix einordnen."
+    },
+    {
+      "id": "L2-Z2",
+      "text": "Du kannst Bewertungen einer AI hinterfragen, eine Begründung verlangen und sie mit eigenen Daten abgleichen."
+    },
+    {
+      "id": "L2-Z3",
+      "text": "Du kannst Risiken priorisieren und den Aufwand auf die wichtigsten konzentrieren."
+    }
+  ],
+  "theorie": [
+    {
+      "typ": "karte",
+      "id": "L2-T1",
+      "titel": "Zwei Fragen pro Risiko",
+      "text": "Ein Risiko bewertest du mit zwei getrennten Fragen: Wie wahrscheinlich tritt es ein? Und wie stark trifft es das Projekt, wenn es eintritt? Erst beide Antworten zusammen zeigen, wie wichtig ein Risiko ist. In der Risikomatrix siehst du das auf einen Blick.",
+      "grafik": "risikomatrix"
+    },
+    {
+      "typ": "karte",
+      "id": "L2-T2",
+      "titel": "Eine gemeinsame Skala",
+      "text": "Was heisst «hoch»? Für die eine Person sind das CHF 5’000, für die andere CHF 50’000. Legt darum vor dem Bewerten fest, was die Stufen bedeuten, in Franken und in Wochen. Sonst vergleicht ihr Einschätzungen, die nicht vergleichbar sind."
+    },
+    {
+      "typ": "karte",
+      "id": "L2-T3",
+      "titel": "AI beim Bewerten",
+      "text": "Eine AI nennt dir auf Wunsch eine Wahrscheinlichkeit auf die Kommastelle genau. Das wirkt präzise, ist aber oft nur geschätzt, denn die AI kennt deine Projektdaten nicht. Frag nach der Begründung und vergleiche mit dem, was ihr aus früheren Projekten wisst."
+    },
+    {
+      "typ": "karte",
+      "id": "L2-T4",
+      "titel": "Priorisieren",
+      "text": "Nicht jedes Risiko verdient gleich viel Aufmerksamkeit. Die Risiken oben rechts in der Matrix behandelst du zuerst. Achtung bei seltenen Risiken mit sehr grosser Auswirkung: Sie stehen nicht zuoberst, dürfen aber nie vergessen gehen."
+    }
+  ],
+  "situationenProDurchgang": 6,
+  "situationen": [
+    {
+      "id": "L2-S01",
+      "lernziel": "L2-Z2",
+      "titel": "Die Zahl mit Komma",
+      "situation": "Du fragst die AI, wie wahrscheinlich ein Lieferverzug bei den neuen Tablets ist. Die Antwort kommt sofort und klingt sehr genau. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Wie wahrscheinlich ist ein Lieferverzug bei 900 Tablets bis August?",
+        "antwort": "Die Wahrscheinlichkeit für einen Lieferverzug beträgt 37.5 %."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du fragst nach der Begründung und vergleichst mit euren letzten Beschaffungen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Die Kommastelle täuscht Genauigkeit vor. Mit der Begründung und euren eigenen Erfahrungen merkst du, ob die Zahl trägt oder aus der Luft gegriffen ist."
+        },
+        {
+          "id": "B",
+          "text": "Du trägst 37.5 % ins Register ein. Eine genauere Zahl hast du nicht.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Die AI kennt weder euren Lieferanten noch die Marktlage. Eine erfundene Zahl im Register führt zu Entscheiden, die auf nichts beruhen."
+        },
+        {
+          "id": "C",
+          "text": "Du ignorierst die AI und schätzt die Wahrscheinlichkeit allein nach Gefühl.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Dein Gefühl beruht immerhin auf Erfahrung im Betrieb. Allein und ohne Vergleichswerte bleibt die Einschätzung aber wacklig."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L2-S02",
+      "lernziel": "L2-Z3",
+      "titel": "Alles ist hoch",
+      "situation": "Du lässt die AI alle 15 Risiken bewerten. Zwölf davon stuft sie als «hoch» ein. Das Team hat nur Kapazität, um sich um wenige Risiken richtig zu kümmern. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Bewerte diese 15 Risiken als tief, mittel oder hoch.",
+        "antwort": "Lieferverzug: hoch. Datenschutz: hoch. Überlastung der Lehrpersonen: hoch. Netzwerkkapazität: hoch. Akzeptanz: hoch. (12 von 15 Risiken: hoch)"
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du behandelst alle zwölf als hoch und verteilst das Team auf alle.",
+          "wirkung": {
+            "budget": "-mittel",
+            "zeit": "-klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Wenn alles wichtig ist, ist nichts wichtig. Das Team verzettelt sich, das Budget schmilzt, und die wirklich kritischen Risiken bekommen zu wenig Aufmerksamkeit."
+        },
+        {
+          "id": "B",
+          "text": "Du legst mit dem Team fest, was «hoch» in Franken und Wochen heisst, und bewertest neu.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "-klein",
+            "stabilitaet": "+gross"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Mit klaren Kriterien trennt sich das Feld. Die AI hatte keine Skala und stufte vorsichtshalber fast alles hoch ein. Nun seht ihr, welche Risiken wirklich oben stehen."
+        },
+        {
+          "id": "C",
+          "text": "Du wählst aus den zwölf die drei aus, die dir am gefährlichsten scheinen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du schaffst Fokus, aber ohne Kriterien und ohne Team. Ob du die richtigen drei erwischt hast, bleibt offen."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L2-S03",
+      "lernziel": "L2-Z1",
+      "titel": "Wahrscheinlich oder schlimm?",
+      "situation": "Im Team wird gestritten. Die einen nennen den Serverausfall ein hohes Risiko, weil er verheerend wäre. Die anderen nennen ihn tief, weil er fast nie vorkommt. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du lässt abstimmen und trägst pro Risiko einen einzigen Gesamtwert ein.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Beide Seiten haben recht, sie reden nur von verschiedenen Dingen. Ein einziger Wert verdeckt, ob ein Risiko häufig oder verheerend ist. Das braucht ihr aber für die Massnahmen."
+        },
+        {
+          "id": "B",
+          "text": "Du lässt Wahrscheinlichkeit und Auswirkung getrennt bewerten und trägst beides in die Matrix ein.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Der Streit löst sich auf: selten, aber verheerend. In der Matrix sieht man das sofort, und es wird klar, dass hier ein Notfallplan mehr bringt als Vorbeugung."
+        },
+        {
+          "id": "C",
+          "text": "Du lässt alle einzeln einen Wert schätzen und nimmst den Durchschnitt.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Der Durchschnitt glättet Ausreisser, aber auch er vermischt Wahrscheinlichkeit und Auswirkung. Ihr habt eine Zahl, aber kein besseres Verständnis."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L2-S04",
+      "lernziel": "L2-Z1",
+      "titel": "Der laute Experte",
+      "situation": "Im Bewertungs-Workshop nennt der IT-Leiter zu jedem Risiko sofort seine Einschätzung. Die anderen nicken. Du hast den Eindruck, dass einige anderer Meinung sind, aber schweigen. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du lässt zuerst alle für sich schätzen und besprichst dann die Unterschiede.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Wer zuerst allein schätzt, lässt sich nicht von der lautesten Stimme leiten. Die Unterschiede zeigen, wo Wissen fehlt oder Annahmen auseinandergehen."
+        },
+        {
+          "id": "B",
+          "text": "Du übernimmst seine Einschätzungen. Er kennt die Technik am besten.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Er kennt die Technik, aber nicht den Schulalltag. Wenn eine Person alles bewertet, fliessen ihre blinden Flecken direkt ins Register."
+        },
+        {
+          "id": "C",
+          "text": "Du brichst ab und verschiebst die Bewertung auf eine spätere Sitzung.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du verhinderst eine einseitige Bewertung, verlierst aber Zeit. Ohne andere Methode läuft die nächste Sitzung gleich ab."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L2-S05",
+      "lernziel": "L2-Z3",
+      "titel": "Selten, aber verheerend",
+      "situation": "Ein Risiko im Register: Die Prüfungsnoten gehen bei einem Datenverlust verloren. Die Wahrscheinlichkeit ist sehr klein, die Auswirkung wäre enorm. Nach Wahrscheinlichkeit sortiert steht es ganz unten. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du streichst es von der Liste. Es ist zu unwahrscheinlich, um Zeit darauf zu verwenden.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Seltene Risiken mit sehr grosser Auswirkung sind genau die, die ein Projekt zu Fall bringen. Wer nur auf die Wahrscheinlichkeit schaut, übersieht sie."
+        },
+        {
+          "id": "B",
+          "text": "Du gibst allen Risiken dieselbe Priorität, damit keines untergeht.",
+          "wirkung": {
+            "budget": "-mittel",
+            "zeit": "-klein",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Nichts geht vergessen, aber du verteilst Geld und Zeit auch auf Risiken, die es nicht wert sind. Priorisieren heisst auswählen."
+        },
+        {
+          "id": "C",
+          "text": "Du stufst es wegen der Auswirkung hoch ein und bestimmst, wer es im Auge behält.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "0",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Die Auswirkung rechtfertigt die Aufmerksamkeit, auch wenn der Fall selten ist. Eine zuständige Person und eine geprüfte Datensicherung kosten wenig im Vergleich zum Schaden."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L2-S06",
+      "lernziel": "L2-Z2",
+      "titel": "Prognose auf Knopfdruck",
+      "situation": "Für die Sitzung des Lenkungsausschusses brauchst du eine Aussage zum Terminrisiko. Die AI liefert eine eindrückliche Zahl. Deinen Zeitplan hat sie nie gesehen. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Wie wahrscheinlich ist es, dass unsere Lernplattform verspätet startet?",
+        "antwort": "Basierend auf vergleichbaren Projekten beträgt die Wahrscheinlichkeit für eine Verspätung 82 %."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du präsentierst die 82 % im Lenkungsausschuss.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Die Zahl hat keine Grundlage in deinem Projekt, und die «vergleichbaren Projekte» kannst du nicht nachprüfen. Fragt jemand nach, steht deine Glaubwürdigkeit auf dem Spiel."
+        },
+        {
+          "id": "B",
+          "text": "Du gibst eine externe Terminanalyse in Auftrag.",
+          "wirkung": {
+            "budget": "-mittel",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Die Analyse wäre fundiert, kostet aber Geld und Zeit. Für eine erste Aussage hätten dein eigener Zeitplan und die Puffer gereicht."
+        },
+        {
+          "id": "C",
+          "text": "Du schätzt das Terminrisiko anhand deines Zeitplans, der Puffer und der Abhängigkeiten.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Deine eigenen Projektdaten sind die beste Grundlage. Die AI kann dir beim Strukturieren helfen, die Einschätzung muss aber auf deinem Plan beruhen."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L2-S07",
+      "lernziel": "L2-Z3",
+      "titel": "Die Bewertung von gestern",
+      "situation": "Vor zwei Monaten habt ihr alle Risiken bewertet. Seither hat der Tablet-Lieferant gewechselt, und der Starttermin wurde vorgezogen. Das Register ist unverändert. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du bewertest die Risiken neu, die vom Wechsel und vom Termin betroffen sind.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Eine Bewertung gilt für den Moment, in dem sie gemacht wurde. Wenn sich die Lage ändert, ändern sich auch die Risiken. Gezielt nachführen reicht."
+        },
+        {
+          "id": "B",
+          "text": "Du setzt einen ganztägigen Workshop an und bewertest alle Risiken von Grund auf neu.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "-mittel",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Danach ist alles aktuell, aber der Aufwand ist gross. Die meisten Risiken sind vom Wechsel gar nicht betroffen."
+        },
+        {
+          "id": "C",
+          "text": "Du lässt die Bewertung stehen. Sie wurde vom Lenkungsausschuss abgenommen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Abgenommen heisst nicht aktuell. Ihr steuert nun nach einer Einschätzung, die zur alten Lage gehört."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L2-S08",
+      "lernziel": "L2-Z1",
+      "titel": "Was heisst «mittel»?",
+      "situation": "Beim Bewerten fällt dir auf: Die Leiterin Administration stuft einen Schaden von CHF 5’000 als «hoch» ein, der IT-Leiter einen von CHF 40’000 als «mittel». Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du machst weiter. Über alle Risiken gleicht sich das schon aus.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Es gleicht sich nicht aus. Die Bewertungen sind nicht vergleichbar, und die Rangliste der Risiken hängt davon ab, wer gerade bewertet hat."
+        },
+        {
+          "id": "B",
+          "text": "Du lässt die AI eine Skala vorschlagen und übernimmst sie.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Ihr habt nun eine einheitliche Skala. Sie stammt aber nicht aus eurem Budget und eurem Zeitplan. Ob CHF 20’000 für diese Schule viel sind, weiss die AI nicht."
+        },
+        {
+          "id": "C",
+          "text": "Du legst mit dem Team die Stufen mit Beispielen in Franken und Wochen fest.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Eine gemeinsame Skala macht Einschätzungen vergleichbar. Mit Beispielen aus dem eigenen Projekt wissen alle, was mit «hoch» gemeint ist."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    }
+  ]
+}

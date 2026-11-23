@@ -1,0 +1,415 @@
+{
+  "schemaVersion": 1,
+  "id": "level-5",
+  "nummer": 5,
+  "titel": "Grenzen der AI",
+  "prozessschritt": "grenzen",
+  "projekt": {
+    "titel": "AI-Assistent für den Kundendienst einer Versicherung",
+    "beschreibung": "Eine Versicherung führt im Kundendienst einen AI-Assistenten ein. Du leitest das Projekt und nutzt selbst AI-Tools für dein Risikomanagement. Dabei stösst du auf die Grenzen der Technik: erfundene Fakten, heikle Daten und die Frage, wer am Ende verantwortlich ist.",
+    "gebaeude": "turm"
+  },
+  "lernziele": [
+    {
+      "id": "L5-Z1",
+      "text": "Du kannst Halluzinationen erkennen und Aussagen einer AI anhand von Quellen überprüfen."
+    },
+    {
+      "id": "L5-Z2",
+      "text": "Du weisst, welche Daten nicht in ein AI-Tool gehören, und kannst Personendaten und Vertrauliches schützen."
+    },
+    {
+      "id": "L5-Z3",
+      "text": "Du weisst, dass die Verantwortung für Entscheide beim Menschen bleibt, und legst den Einsatz von AI offen."
+    }
+  ],
+  "theorie": [
+    {
+      "typ": "karte",
+      "id": "L5-T1",
+      "titel": "Halluzinationen",
+      "text": "Eine AI erzeugt Text, der plausibel klingt. Ob er stimmt, prüft sie nicht. So entstehen Halluzinationen: erfundene Studien, Zahlen oder Vorschriften, vorgetragen mit voller Überzeugung. Je genauer und selbstsicherer eine Aussage wirkt, desto wichtiger ist es, die Quelle zu suchen. Findest du keine, verwende die Aussage nicht."
+    },
+    {
+      "typ": "karte",
+      "id": "L5-T2",
+      "titel": "Datenschutz und Vertraulichkeit",
+      "text": "Was du in ein öffentliches AI-Tool eingibst, verlässt deinen Betrieb. Personendaten wie Namen, Policennummern oder Gesundheitsangaben gehören nicht hinein, ebenso wenig Geschäftsgeheimnisse. Anonymisiere die Daten oder nutze ein Tool, das dein Betrieb freigegeben hat."
+    },
+    {
+      "typ": "karte",
+      "id": "L5-T3",
+      "titel": "Verantwortung bleibt beim Menschen",
+      "text": "Eine AI kann vorschlagen, zusammenfassen und rechnen. Entscheiden und dafür geradestehen kann sie nicht. Wenn du eine Bewertung oder einen Bericht der AI übernimmst, ist es deine Bewertung und dein Bericht. Lege offen, wo du AI eingesetzt und was du geprüft hast."
+    },
+    {
+      "typ": "karte",
+      "id": "L5-T4",
+      "titel": "Verzerrungen und altes Wissen",
+      "text": "Eine AI lernt aus Daten der Vergangenheit. Was in diesen Daten fehlt oder einseitig ist, fehlt auch in ihren Antworten. Zudem endet ihr Wissen an einem Stichtag: Neue Vorschriften oder interne Weisungen kennt sie nicht, ausser du gibst sie ihr."
+    }
+  ],
+  "situationenProDurchgang": 6,
+  "situationen": [
+    {
+      "id": "L5-S01",
+      "lernziel": "L5-Z1",
+      "titel": "Die Studie, die niemand findet",
+      "situation": "Für deinen Antrag an die Geschäftsleitung suchst du Argumente für mehr Testaufwand. Die AI liefert eine eindrückliche Zahl samt Quelle. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Gibt es Zahlen dazu, wie oft AI-Projekte im Kundendienst scheitern?",
+        "antwort": "Laut einer Branchenstudie von 2023 scheitern 68 % aller AI-Projekte im Kundendienst an ungenügenden Tests vor der Einführung."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du suchst die Studie. Findest du sie nicht, verwendest du die Zahl nicht.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Eine Quelle ohne Titel und Herausgeber ist ein Warnzeichen. Nur was du nachprüfen kannst, gehört in einen Antrag. Eine erfundene Zahl würde dein ganzes Anliegen entwerten."
+        },
+        {
+          "id": "B",
+          "text": "Du übernimmst die Zahl in den Antrag. Sie stützt dein Anliegen perfekt.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Gerade weil die Zahl so gut passt, ist Vorsicht nötig. Fragt die Geschäftsleitung nach der Studie und es gibt sie nicht, ist deine Glaubwürdigkeit dahin."
+        },
+        {
+          "id": "C",
+          "text": "Du lässt die Zahl weg und argumentierst ohne Beleg.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du verbreitest nichts Falsches. Dein Antrag ist aber schwächer als nötig. Mit etwas Suche hättest du vielleicht eine echte Quelle gefunden."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L5-S02",
+      "lernziel": "L5-Z2",
+      "titel": "Kundendaten im Prompt",
+      "situation": "Ein Kollege will 200 echte Kundenreklamationen mit Namen und Policennummern in ein öffentliches AI-Tool kopieren, um daraus Risiken für das Projekt abzuleiten. Er fragt dich, ob das in Ordnung ist. Was antwortest du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Ja. Die Daten werden ja nur ausgewertet und nicht veröffentlicht.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Sobald die Daten im Tool sind, habt ihr die Kontrolle darüber verloren. Personendaten ohne Grundlage an Dritte zu geben, verletzt den Datenschutz und das Vertrauen der Kundschaft."
+        },
+        {
+          "id": "B",
+          "text": "Nein. Er soll die Reklamationen von Hand durchgehen und gruppieren.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Das ist sicher, dauert bei 200 Reklamationen aber lange. Mit anonymisierten Daten oder einem freigegebenen Tool wäre beides möglich gewesen."
+        },
+        {
+          "id": "C",
+          "text": "Nur anonymisiert oder mit einem Tool, das der Betrieb dafür freigegeben hat.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Für die Auswertung braucht es den Inhalt der Reklamationen, nicht die Namen. Anonymisiert oder in einem freigegebenen Tool lassen sich die Daten nutzen, ohne jemanden zu gefährden."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L5-S03",
+      "lernziel": "L5-Z3",
+      "titel": "Wer hat das entschieden?",
+      "situation": "Nach einer Panne fragt der Lenkungsausschuss, warum dieses Risiko als «tief» eingestuft war. Die Wahrheit: Die AI hat es so bewertet, und du hast es übernommen. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du erklärst, das Tool habe das Risiko falsch eingeschätzt.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Ein Tool kann keine Verantwortung tragen. Wer die Bewertung übernimmt, steht dafür ein. Die Schuld auf die AI zu schieben, kostet dich das Vertrauen des Lenkungsausschusses."
+        },
+        {
+          "id": "B",
+          "text": "Du verbietest ab sofort jede Bewertung durch AI im Projekt.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "So passiert derselbe Fehler nicht mehr. Das Problem war aber nicht die AI, sondern die fehlende Prüfung. Mit dem Verbot verlierst du auch den Nutzen."
+        },
+        {
+          "id": "C",
+          "text": "Du stehst zur Bewertung, legst offen, wie sie entstand, und führst eine Prüfung durch Menschen ein.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Du übernimmst die Verantwortung, die ohnehin bei dir liegt. Offenheit und ein besserer Ablauf schaffen mehr Vertrauen als jede Ausrede."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L5-S04",
+      "lernziel": "L5-Z1",
+      "titel": "Die selbstsichere Antwort",
+      "situation": "Du fragst die AI nach einer rechtlichen Pflicht für euren Assistenten. Die Antwort ist klar, ausführlich und ohne jeden Zweifel formuliert. Davon hängt ab, ob ihr einen zusätzlichen Arbeitsschritt einplanen müsst. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Müssen wir Kundinnen und Kunden darüber informieren, dass sie mit einem AI-Assistenten schreiben?",
+        "antwort": "Nein. Eine solche Pflicht besteht nicht, solange der Assistent keine verbindlichen Entscheide trifft. Sie können auf einen Hinweis verzichten."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du stellst die Frage noch zweimal anders und nimmst die häufigste Antwort.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Wenn sich die Antworten widersprechen, weisst du, dass du nicht trauen kannst. Stimmen sie überein, beweist das aber nichts. Auch dreimal dieselbe Antwort kann falsch sein."
+        },
+        {
+          "id": "B",
+          "text": "Du lässt die Frage vom Rechtsdienst klären, bevor du planst.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "-klein",
+            "stabilitaet": "+gross"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Ein überzeugender Ton ist kein Beleg. Rechtliche Fragen gehören zu Fachleuten, die dafür geradestehen. Die AI kann dir helfen, die Frage vorzubereiten."
+        },
+        {
+          "id": "C",
+          "text": "Du verlässt dich auf die Antwort und planst ohne Hinweis.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Die AI klingt bei richtigen und falschen Antworten gleich sicher. Liegt sie falsch, verstösst ihr gegen eine Pflicht, und niemand hat es geprüft."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L5-S05",
+      "lernziel": "L5-Z1",
+      "titel": "Wissen von gestern",
+      "situation": "Die AI empfiehlt dir ein Vorgehen für die Freigabe des Assistenten. Dir fällt ein, dass die Versicherung dieses Jahr eine neue interne Weisung zum Einsatz von AI erlassen hat. Davon erwähnt die AI nichts. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du folgst der Empfehlung. Sie entspricht dem üblichen Vorgehen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Die AI kennt eure neue Weisung nicht. Ihr Wissen endet an einem Stichtag, und Internes hat sie nie gesehen. Ihr plant an den eigenen Regeln vorbei."
+        },
+        {
+          "id": "B",
+          "text": "Du gleichst die Empfehlung mit der neuen Weisung ab und passt das Vorgehen an.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Du nutzt die Struktur der AI und ergänzt, was sie nicht wissen kann. Aktuelle und interne Vorgaben musst du selbst einbringen."
+        },
+        {
+          "id": "C",
+          "text": "Du verwirfst die Empfehlung und erarbeitest das Vorgehen allein aus der Weisung.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Das Ergebnis stimmt mit der Weisung überein. Du hast aber mehr Zeit gebraucht als nötig, denn die Empfehlung wäre ein brauchbares Gerüst gewesen."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L5-S06",
+      "lernziel": "L5-Z3",
+      "titel": "Einseitige Daten",
+      "situation": "Die AI hat frühere Reklamationen ausgewertet und daraus die grössten Risiken für den Assistenten abgeleitet. Dir fällt auf: Fast alle Reklamationen stammen aus der Deutschschweiz. Romandie und Tessin kommen kaum vor. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du übernimmst die Auswertung. Die Datenmenge ist gross genug.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Viele Daten sind nicht dasselbe wie ausgewogene Daten. Risiken, die vor allem französisch- oder italienischsprachige Kundschaft betreffen, fehlen in der Auswertung."
+        },
+        {
+          "id": "B",
+          "text": "Du verwirfst die ganze Auswertung als unbrauchbar.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du vermeidest einseitige Schlüsse, wirfst aber auch die brauchbaren Erkenntnisse weg. Die Lücke hätte sich gezielt schliessen lassen."
+        },
+        {
+          "id": "C",
+          "text": "Du holst bei den Teams in der Romandie und im Tessin ein, was in den Daten fehlt.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Eine AI kann nur finden, was in ihren Daten steckt. Wenn du weisst, wer fehlt, kannst du die Lücke gezielt mit dem Wissen der Menschen vor Ort schliessen."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L5-S07",
+      "lernziel": "L5-Z3",
+      "titel": "Wie ist der Bericht entstanden?",
+      "situation": "Deinen Risikobericht hat zu einem grossen Teil eine AI entworfen. Du hast ihn geprüft und angepasst. Die Auftraggeberin lobt den Bericht und fragt, wie du ihn erstellt hast. Was antwortest du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du sagst, du habest ihn von Grund auf selbst geschrieben.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Kommt später heraus, dass das nicht stimmt, steht mehr auf dem Spiel als dieser Bericht. Vertrauen ist im Risikomanagement die wichtigste Währung."
+        },
+        {
+          "id": "B",
+          "text": "Du sagst offen, dass eine AI den Entwurf geschrieben hat und was du geprüft hast.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Offenheit schafft Vertrauen. Die Auftraggeberin kann einschätzen, wie der Bericht entstand, und sieht, dass du die Verantwortung für den Inhalt trägst."
+        },
+        {
+          "id": "C",
+          "text": "Du weichst aus: «Mit verschiedenen Hilfsmitteln.»",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Gelogen ist das nicht. Aber du verpasst die Gelegenheit, zu zeigen, dass du AI kontrolliert einsetzt, und lässt eine Frage im Raum stehen."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L5-S08",
+      "lernziel": "L5-Z2",
+      "titel": "Das praktische Gratis-Tool",
+      "situation": "Eine Mitarbeiterin im Projekt nutzt eine kostenlose AI-Erweiterung im Browser, die jede geöffnete Seite mitliest und zusammenfasst, auch das interne Projekt-Wiki. Sie ist begeistert, wie viel Zeit sie spart. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du verbietest alle AI-Tools im Projekt, bis auf Weiteres.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Die Gefahr ist gebannt, aber auch der Nutzen. Ein pauschales Verbot führt oft dazu, dass Tools heimlich weiter genutzt werden."
+        },
+        {
+          "id": "B",
+          "text": "Du lässt sie machen. Die Zeitersparnis kommt dem Projekt zugute.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Die Erweiterung schickt interne Inhalte an einen unbekannten Anbieter. Welche Daten wohin fliessen, weiss niemand. Das ist ein Datenschutz- und Sicherheitsrisiko für den ganzen Betrieb."
+        },
+        {
+          "id": "C",
+          "text": "Du stoppst die Erweiterung und klärst mit der IT-Sicherheit, welche Tools freigegeben sind.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Nicht jedes AI-Tool ist ein Problem, aber jedes muss geprüft sein. Mit einem freigegebenen Tool bleibt der Zeitgewinn, ohne dass interne Daten abfliessen."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    }
+  ]
+}
