@@ -1,6 +1,6 @@
 # Risk Tower (Arbeitstitel) – Requirements
 
-Version 0.2 · Stand 23.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
+Version 0.3 · Stand 23.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
 
 ## 1. Zweck
 
@@ -307,16 +307,64 @@ Stand 23.11.2026, erste Version (Meilensteine M0 bis M4).
 
 **Umgesetzt:** Gerüst mit Tests und CI; Spiellogik, Schema, Prüf- und Balance-Skript; fünf Level mit je vier Theorie-Karten und acht Situationen (alle als Entwurf von Claude, fachlich nicht geprüft); Einfach-Modus ohne 3D; Speichern, Logging, Fehlerbericht und Fehlerseite; Gebäude in 3D mit Neigung, Wackeln und Einsturz; Stadt mit Kulisse, Stadtansicht und Gesamtauswertung.
 
-**Noch offen:**
+Was noch fehlt, steht als Liste zum Abhaken in Kapitel 10.
 
-| ID | Was fehlt |
-|---|---|
-| F-801 bis F-805 | Ton und Stumm-Schalter (M5) |
-| F-506 | Theorie während der Situationen nachschlagen |
-| F-908 | Skript für die Inhaltsdokumentation |
-| L-09 | Debug-Overlay und Level-Sprung; vorhanden ist nur `?seed=` |
-| N-302 | Kontrast und Schriftgrössen sind nach Augenmass gewählt, nicht gemessen |
-| S-08 | Einstellungen auf GitHub (Schutz von `main`, Secret Scanning, 2FA) |
-| B-01 | Veröffentlichung ist vorbereitet, aber ausgeschaltet (siehe README) |
-| M6 | Fälle fachlich prüfen und freigeben, Balance mit echten Fällen justieren |
+## 10. To-do
 
+Was bis zur Abgabe noch zu tun ist, in der Reihenfolge, in der es sinnvoll ist. Wer einen Punkt erledigt, hakt ihn im selben Pull Request ab.
+
+### Jetzt: damit die Gruppe testen kann
+
+- [ ] Pull Request 1 durchsehen und mergen
+- [ ] Spiel auf dem eigenen Handy und Laptop durchspielen, nach `docs/CHECKLIST.md` (Q-09)
+- [ ] Repository öffentlich stellen und GitHub Pages einschalten, Schritte im README (B-01)
+- [ ] Variable `SHOW_DRAFTS=1` setzen, solange die Fälle Entwürfe sind (F-906)
+- [ ] Link an die Gruppe schicken
+
+### Gruppe: Inhalte (M6)
+
+- [ ] Entscheiden: Platzhalter-Fälle von Claude überarbeiten oder durch eigene ersetzen
+- [ ] Level 1, Risiken identifizieren: 8 Fälle und 4 Karten prüfen, `status` auf `freigegeben`
+- [ ] Level 2, Risiken bewerten: 8 Fälle und 4 Karten prüfen, `status` auf `freigegeben`
+- [ ] Level 3, Massnahmen planen: 8 Fälle und 4 Karten prüfen, `status` auf `freigegeben`
+- [ ] Level 4, Risiken überwachen: 8 Fälle und 4 Karten prüfen, `status` auf `freigegeben`
+- [ ] Level 5, Grenzen der AI: 8 Fälle und 4 Karten prüfen, `status` auf `freigegeben`
+- [ ] Lernziele pro Level bestätigen oder umformulieren (R-04)
+- [ ] `quelle` bei jedem Fall mit der echten Quelle füllen (Buch, Kapitel, Skript)
+- [ ] Prüfen, ob die Spielzeit auf rund 60 Minuten kommt; sonst mehr Fälle oder Theorie (R-01)
+- [ ] Offene Fragen in `docs/later/BRAINSTORMING.md` in der Gruppe klären
+
+### Entwicklung: Feinschliff (M5)
+
+- [ ] Ton für Bauen, Wahl, Wackeln, Einsturz und Erfolg, im Browser erzeugt (F-801, F-804, F-805)
+- [ ] Stumm-Schalter, immer sichtbar, Wahl gespeichert (F-802, F-803)
+- [ ] Theorie während der Situationen nachschlagen (F-506)
+- [ ] Debug-Overlay mit Bildrate, Anzeigen, Seed und Level-Sprung über `?debug=1` (L-09)
+- [ ] Kontrast nach WCAG AA und Schriftgrössen messen statt schätzen (N-302)
+- [ ] Bildrate auf einem Mittelklasse-Handy messen (N-202)
+- [ ] Safari auf iOS und macOS sowie Firefox von Hand prüfen (N-103)
+- [ ] Skript für die Inhaltsdokumentation aus den JSON-Dateien (F-908)
+
+### Entwicklung: nach der ersten Testrunde
+
+- [ ] Balance mit den echten Fällen justieren: Startwerte, Stufen, Sterne in `src/core/balance.ts` (O-4)
+- [ ] Regeln für Sterne, Lernziele und Neigung in der Gruppe bestätigen oder ändern (F-205, F-602, F-603)
+- [ ] Erlaubte Video-Hosts bestätigen, falls Videos dazukommen (F-504)
+- [ ] Stadtansicht: Kamera und Kulisse nach Rückmeldungen verbessern (F-410, F-411)
+- [ ] Rückmeldungen und Fehlerberichte der Gruppe abarbeiten, je mit einem Test zuerst (Q-08)
+
+### GitHub
+
+- [ ] `main` schützen: Pull Request und grüne CI als Pflicht (S-08)
+- [ ] Secret Scanning mit Push-Schutz einschalten (S-08)
+- [ ] 2FA bei allen mit Schreibrecht prüfen (S-08)
+- [ ] Vor der Abgabe `SHOW_DRAFTS` wieder entfernen, sobald alle Fälle freigegeben sind (F-906)
+
+### Abgabe (aus dem Auftrag)
+
+- [ ] Konzept und Drehbuch (R-05)
+- [ ] Dokumentation der Inhalte, Screenshots zählen (R-05, R-06)
+- [ ] Teaser-Video, höchstens 3 Minuten (R-05)
+- [ ] Evaluation: festlegen, wie das Feedback der Mitstudierenden zur Gruppe kommt, und auswerten (R-05, F-605)
+- [ ] Sicherstellen, dass die Seite mindestens 60 Tage online bleibt (R-02)
+- [ ] Bewertungsraster und Abgabetermine beim Dozenten einholen (O-10)
