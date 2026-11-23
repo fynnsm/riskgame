@@ -42,18 +42,15 @@ jobs:
   # Publishes only from main and only after a green check (Q-04, B-01).
   # Stays off until the repository variable PAGES_ENABLED is set to "true",
   # because GitHub Pages needs a public repository on the free plan.
-  deploy:
+  #
+  # Building and deploying are two jobs on purpose: deploy-pages looks the artifact up by
+  # name, and that lookup can come back empty when it runs a moment after the upload in the
+  # same job (actions/deploy-pages issue 451). A job boundary puts seconds in between.
+  package:
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PAGES_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -66,9 +63,21 @@ jobs:
         env:
           # F-906: set the repository variable SHOW_DRAFTS to "1" to publish draft situations too.
           VITE_SHOW_DRAFTS: ${{ vars.SHOW_DRAFTS }}
-      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
+
+  deploy:
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v6
       - id: deployment
         uses: actions/deploy-pages@v5
