@@ -1,4 +1,4 @@
-import type { BuildingKind } from '../content/schema.ts';
+import type { BuildingKind, Rating } from '../content/schema.ts';
 import { BALANCE } from './balance.ts';
 import type { Gauges } from './gauges.ts';
 import { highestValue, lowestValue, weakestGauge } from './gauges.ts';
@@ -17,6 +17,14 @@ export interface FloorModel {
   /** Sideways offset of this floor from the foundation, in floor widths. */
   offsetX: number;
   offsetZ: number;
+  /** 0 = clean, 1 = badly battered. Shows which decisions were poor (F-408). */
+  damage: number;
+}
+
+/** What one decision leaves behind in the building. */
+export interface FloorRecord {
+  gauges: Gauges;
+  rating: Rating;
 }
 
 /** Everything the renderer needs to draw one building. It contains no rules, only results. */
@@ -52,16 +60,16 @@ export function computeLean(gauges: Gauges): Lean {
  * One floor per decision (F-407). Each floor is set down shifted by the lean at that moment,
  * so the finished building shows where in the project things went crooked (F-408).
  */
-export function buildingModel(kind: BuildingKind, gaugeHistory: readonly Gauges[]): BuildingModel {
+export function buildingModel(kind: BuildingKind, records: readonly FloorRecord[]): BuildingModel {
   const floors: FloorModel[] = [];
   let offsetX = 0;
   let offsetZ = 0;
   let last: Lean = { tilt: 0, wobble: 0, dirX: 0, dirZ: 0 };
-  for (const gauges of gaugeHistory) {
-    last = computeLean(gauges);
+  for (const record of records) {
+    last = computeLean(record.gauges);
     offsetX += last.dirX * last.tilt * BALANCE.lean.maxFloorShift;
     offsetZ += last.dirZ * last.tilt * BALANCE.lean.maxFloorShift;
-    floors.push({ offsetX, offsetZ });
+    floors.push({ offsetX, offsetZ, damage: BALANCE.lean.damage[record.rating] });
   }
   return {
     kind,

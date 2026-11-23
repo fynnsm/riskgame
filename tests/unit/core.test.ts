@@ -97,7 +97,7 @@ describe('drawSituations (F-105, F-106)', () => {
 
 describe('gauges (F-201, F-203, F-204)', () => {
   it('starts every gauge at the configured value', () => {
-    expect(startGauges()).toEqual({ budget: 70, zeit: 70, stabilitaet: 70 });
+    expect(startGauges()).toEqual({ budget: 60, zeit: 60, stabilitaet: 60 });
   });
 
   it('applies step sizes as points', () => {
@@ -106,8 +106,8 @@ describe('gauges (F-201, F-203, F-204)', () => {
       zeit: '-mittel',
       stabilitaet: '+gross',
     });
-    expect(gauges).toEqual({ budget: 64, zeit: 58, stabilitaet: 90 });
-    expect(delta).toEqual({ budget: -6, zeit: -12, stabilitaet: 20 });
+    expect(gauges).toEqual({ budget: 54, zeit: 46, stabilitaet: 86 });
+    expect(delta).toEqual({ budget: -6, zeit: -14, stabilitaet: 26 });
   });
 
   it('never exceeds 100 and reports what really changed', () => {
@@ -182,12 +182,14 @@ describe('lean (F-205, F-206)', () => {
 
   it('builds one floor per decision and accumulates the shift', () => {
     const model = buildingModel('turm', [
-      { budget: 70, zeit: 70, stabilitaet: 70 },
-      { budget: 70, zeit: 30, stabilitaet: 70 },
-      { budget: 70, zeit: 10, stabilitaet: 70 },
+      { gauges: { budget: 70, zeit: 70, stabilitaet: 70 }, rating: 'gut' },
+      { gauges: { budget: 70, zeit: 30, stabilitaet: 70 }, rating: 'vertretbar' },
+      { gauges: { budget: 70, zeit: 10, stabilitaet: 70 }, rating: 'riskant' },
     ]);
     expect(model.floors).toHaveLength(3);
-    expect(model.floors[0]).toEqual({ offsetX: 0, offsetZ: 0 });
+    expect(model.floors[0]).toEqual({ offsetX: 0, offsetZ: 0, damage: 0 });
+    // The poorer the decision, the more battered the floor it built.
+    expect(model.floors.map((f) => f.damage)).toEqual([0, 0.4, 1]);
     expect(model.floors[2]?.offsetX).toBeGreaterThan(model.floors[1]?.offsetX as number);
     expect(model.tiltDegrees).toBeGreaterThan(0);
     expect(model.tiltDegrees).toBeLessThanOrEqual(BALANCE.lean.maxTiltDegrees);
@@ -219,7 +221,7 @@ describe('game flow (F-104, F-202, F-207, F-208)', () => {
       run = step(run, level, { type: 'continue' });
     }
     expect(run).toMatchObject({ phase: 'result', outcome: 'completed' });
-    expect(run.gauges).toEqual({ budget: 34, zeit: 34, stabilitaet: 100 });
+    expect(run.gauges).toEqual({ budget: 24, zeit: 24, stabilitaet: 100 });
   });
 
   it('records rating, real change and gauges for each choice', () => {
@@ -227,8 +229,8 @@ describe('game flow (F-104, F-202, F-207, F-208)', () => {
     expect(run.history[0]).toMatchObject({
       optionId: 'B',
       rating: 'riskant',
-      delta: { budget: 0, zeit: 6, stabilitaet: -20 },
-      gaugesAfter: { budget: 70, zeit: 76, stabilitaet: 50 },
+      delta: { budget: 0, zeit: 6, stabilitaet: -26 },
+      gaugesAfter: { budget: 60, zeit: 66, stabilitaet: 34 },
     });
   });
 
@@ -247,15 +249,28 @@ describe('game flow (F-104, F-202, F-207, F-208)', () => {
 
   it('collapses the moment a gauge reaches zero and ends the level early (F-204)', () => {
     let run = atFirstSituation();
-    run = play(run, ['B', 'B', 'B']);
+    run = play(run, ['B', 'B']);
     expect(run).toMatchObject({ phase: 'situation', outcome: 'running' });
-    expect(run.gauges.stabilitaet).toBe(10);
+    expect(run.gauges.stabilitaet).toBe(8);
     run = step(run, level, { type: 'choose', optionId: 'B' });
     expect(run).toMatchObject({ phase: 'feedback', outcome: 'collapsed' });
     expect(run.gauges.stabilitaet).toBe(0);
     run = step(run, level, { type: 'continue' });
     expect(run.phase).toBe('result');
-    expect(run.history).toHaveLength(4);
+    expect(run.history).toHaveLength(3);
+  });
+
+  it('rejects a building that stands but was built on too many poor decisions (F-211)', () => {
+    // 6 of 12 points: below the 65 % the final inspection asks for, and no gauge at zero.
+    const run = play(atFirstSituation(), ['B', 'C', 'B', 'C', 'A', 'A']);
+    expect(run).toMatchObject({ phase: 'result', outcome: 'rejected' });
+    expect(run.gauges).toEqual({ budget: 36, zeit: 32, stabilitaet: 48 });
+  });
+
+  it('accepts a building at exactly the required share of points', () => {
+    // 8 of 12 points is 66.7 %; one point less (7 of 12) fails.
+    expect(play(atFirstSituation(), ['A', 'A', 'A', 'C', 'C', 'B']).outcome).toBe('completed');
+    expect(play(atFirstSituation(), ['A', 'A', 'A', 'C', 'B', 'B']).outcome).toBe('rejected');
   });
 
   it('skips the theory only when the run allows it (F-505)', () => {
@@ -315,7 +330,7 @@ describe('replay (L-07, Q-06)', () => {
   it('stops at the collapse even if more choices follow', () => {
     const run = replay(level, 5, [], ['B', 'B', 'B', 'B', 'A', 'A']);
     expect(run).toMatchObject({ phase: 'result', outcome: 'collapsed' });
-    expect(run.history).toHaveLength(4);
+    expect(run.history).toHaveLength(3);
   });
 
   it('stays in the open situation if the choices end early', () => {

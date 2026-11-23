@@ -50,7 +50,7 @@
       "text": "Nicht jedes Risiko verdient gleich viel Aufmerksamkeit. Die Risiken oben rechts in der Matrix behandelst du zuerst. Achtung bei seltenen Risiken mit sehr grosser Auswirkung: Sie stehen nicht zuoberst, dürfen aber nie vergessen gehen."
     }
   ],
-  "situationenProDurchgang": 6,
+  "situationenProDurchgang": 8,
   "situationen": [
     {
       "id": "L2-S01",
@@ -410,6 +410,186 @@
           },
           "einstufung": "gut",
           "erklaerung": "Eine gemeinsame Skala macht Einschätzungen vergleichbar. Mit Beispielen aus dem eigenen Projekt wissen alle, was mit «hoch» gemeint ist."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L2-S09",
+      "lernziel": "L2-Z3",
+      "titel": "Zu viele rote Felder",
+      "situation": "Neun Risiken stehen im roten Bereich der Matrix. Das Team kann sich in den nächsten Wochen um vier davon ernsthaft kümmern. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du nimmst zuerst die vier, die sich am einfachsten erledigen lassen.",
+          "wirkung": {
+            "budget": "+klein",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Schnelle Erfolge fühlen sich gut an. Aber einfach heisst nicht wichtig. Die gefährlichsten Risiken bleiben liegen, weil sie mühsam sind."
+        },
+        {
+          "id": "B",
+          "text": "Du ordnest die neun nach Schaden und Dringlichkeit, gehst vier an und terminierst den Rest.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Auch im roten Bereich gibt es eine Reihenfolge. Du setzt die knappen Kräfte dort ein, wo am meisten auf dem Spiel steht, und der Rest hat einen Termin."
+        },
+        {
+          "id": "C",
+          "text": "Du beantragst mehr Budget, um alle neun gleichzeitig anzugehen.",
+          "wirkung": {
+            "budget": "-mittel",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Wenn das Geld kommt, ist alles abgedeckt. Der Antrag kostet aber Zeit, und mehr Geld ersetzt nicht den Entscheid, was zuerst kommt."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L2-S10",
+      "lernziel": "L2-Z2",
+      "titel": "Zweimal gefragt, zwei Antworten",
+      "situation": "Du lässt die AI dasselbe Risiko zweimal bewerten. Beim ersten Mal sagt sie «mittel», beim zweiten Mal «hoch». Die Begründungen klingen beide vernünftig. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Bewerte das Risiko «Überlastung der Lehrpersonen in der Einführungsphase».",
+        "antwort": "Erste Antwort: mittel, da Schulungen geplant sind. Zweite Antwort: hoch, da die Einführung mit dem Semesterstart zusammenfällt."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du nimmst die Argumente aus beiden Antworten und bewertest mit dem Team nach eurer Skala.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Die schwankende Antwort zeigt, dass die AI schätzt und nicht weiss. Ihre Argumente sind aber brauchbar. Die Bewertung selbst gehört zum Team, das die Schule kennt."
+        },
+        {
+          "id": "B",
+          "text": "Du nimmst die erste Antwort. Die erste Einschätzung ist meist die richtige.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Welche Antwort zuerst kommt, ist Zufall. Du lässt den Zufall über die Wichtigkeit eines Risikos entscheiden."
+        },
+        {
+          "id": "C",
+          "text": "Du nimmst vorsichtshalber die höhere Bewertung.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "0",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Vorsicht schadet hier nicht. Machst du das aber bei allen Risiken, ist am Ende wieder alles hoch, und du gibst Geld für Massnahmen aus, die es nicht braucht."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L2-S11",
+      "lernziel": "L2-Z1",
+      "titel": "Auswirkung worauf?",
+      "situation": "Ein Risiko: Die Lehrpersonen nutzen die Plattform kaum. Das Team stuft die Auswirkung als «tief» ein, denn Termin und Budget wären nicht betroffen. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du bewertest die Auswirkung je Ziel: Termin, Kosten und Nutzen. Es zählt der höchste Wert.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Ein Projekt hat mehr Ziele als Termin und Budget. Eine Plattform, die pünktlich fertig ist und niemand nutzt, hat ihr wichtigstes Ziel verfehlt."
+        },
+        {
+          "id": "B",
+          "text": "Du lässt es bei «tief». Gemessen wird das Projekt an Termin und Budget.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Ihr bewertet nur, was sich leicht messen lässt. Das grösste Risiko für den Erfolg der Plattform verschwindet so aus dem Blickfeld."
+        },
+        {
+          "id": "C",
+          "text": "Du setzt als Kompromiss «mittel» ein.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Das Risiko bekommt etwas mehr Aufmerksamkeit. Warum es «mittel» ist, kann aber niemand begründen, und die eigentliche Frage bleibt offen."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L2-S12",
+      "lernziel": "L2-Z3",
+      "titel": "Bauchgefühl gegen Matrix",
+      "situation": "Die Rektorin will ein tief bewertetes Risiko ganz oben sehen: einen Stromausfall am Starttag. Sie hat das an einer anderen Schule erlebt. Die Matrix sagt etwas anderes. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du bleibst bei der Matrix. Die Bewertung wurde gemeinsam gemacht.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du schützt die Methode. Vielleicht weiss die Rektorin aber etwas, das in der Bewertung fehlt, und du verlierst ihre Unterstützung."
+        },
+        {
+          "id": "B",
+          "text": "Du setzt es an die Spitze und nimmst dafür ein anderes Risiko aus dem Fokus.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Wer am lautesten oder am höchsten ist, bestimmt nun die Reihenfolge. Die Matrix verliert ihren Wert, und ein wichtiges Risiko bleibt unbehandelt."
+        },
+        {
+          "id": "C",
+          "text": "Du fragst nach, was damals passiert ist, prüfst die Bewertung und entscheidest gemeinsam.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Erfahrung ist eine Datenquelle. Vielleicht war die Bewertung zu tief, vielleicht reicht eine kleine Massnahme. In beiden Fällen ist der Entscheid danach begründet."
         }
       ],
       "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",

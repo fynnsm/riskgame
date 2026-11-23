@@ -4,6 +4,7 @@ import type { SceneView } from '../core/scene.ts';
 export function createNullView(): SceneView {
   return {
     render: () => undefined,
+    setInsets: () => undefined,
     dispose: () => undefined,
   };
 }

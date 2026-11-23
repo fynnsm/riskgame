@@ -22,12 +22,12 @@ function raw(level: Level): Record<string, unknown> {
 
 describe('effects', () => {
   it('maps every step size to its points with the right sign', () => {
-    expect(EFFECT_LEVELS.map((l) => effectValue(l, POINTS))).toEqual([-20, -12, -6, 0, 6, 12, 20]);
+    expect(EFFECT_LEVELS.map((l) => effectValue(l, POINTS))).toEqual([-26, -14, -6, 0, 6, 14, 26]);
   });
 
   it('sums effects and detects a missing cost', () => {
-    expect(effectSum(GOOD, POINTS)).toBe(0);
-    expect(effectSum(RISKY, POINTS)).toBe(-14);
+    expect(effectSum(GOOD, POINTS)).toBe(2);
+    expect(effectSum(RISKY, POINTS)).toBe(-20);
     expect(hasNegativeEffect(GOOD)).toBe(true);
     expect(hasNegativeEffect({ budget: '0', zeit: '+klein', stabilitaet: '+gross' })).toBe(false);
   });

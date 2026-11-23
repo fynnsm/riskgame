@@ -7,7 +7,13 @@ import type { Gauges } from '../core/gauges.ts';
 import type { Progress } from '../core/progress.ts';
 import { isUnlocked, levelProgress } from '../core/progress.ts';
 import type { Stars } from '../core/scoring.ts';
-import { collapseCauses, collapsedGauges, goalResults, starsFor } from '../core/scoring.ts';
+import {
+  acceptance,
+  collapseCauses,
+  collapsedGauges,
+  goalResults,
+  starsFor,
+} from '../core/scoring.ts';
 import { formatDuration } from '../logging/report.ts';
 import { button, el } from './dom.ts';
 import { theoryGraphic } from './graphics.ts';
@@ -58,44 +64,83 @@ function signed(value: number): string {
   return value > 0 ? `+${value}` : `−${Math.abs(value)}`;
 }
 
-/** The three gauges as HTML above the canvas (N-301), each with label and number (N-303). */
-export function hud(gauges: Gauges, delta: Gauges | null): HTMLElement {
+/** Colour band of a gauge. The number and the word «kritisch» carry the same information (N-303). */
+function gaugeBand(value: number): string {
+  if (value < CRITICAL_BELOW) return 'low';
+  return value < 50 ? 'mid' : 'high';
+}
+
+/** One chip per decision, like a site plan: done, current, still to come. */
+function stepper(run: LevelRun): HTMLElement {
+  const total = run.situationIds.length;
+  const current = Math.min(run.history.length + (run.phase === 'situation' ? 1 : 0), total);
   return el(
-    'div',
-    { class: 'hud', attrs: { 'data-testid': 'hud' } },
-    GAUGE_KEYS.map((key) => {
-      const value = gauges[key];
-      const critical = value < CRITICAL_BELOW;
-      const fill = el('div', { class: 'gauge-fill' });
-      fill.style.width = `${value}%`;
-      const change = delta && delta[key] !== 0 ? ` (${signed(delta[key])})` : '';
-      return el(
-        'div',
-        {
-          class: `gauge${critical ? ' gauge-critical' : ''}`,
-          attrs: {
-            role: 'meter',
-            'aria-label': T.gauges[key],
-            'aria-valuemin': '0',
-            'aria-valuemax': '100',
-            'aria-valuenow': String(value),
-            'data-testid': `gauge-${key}`,
-            'data-value': String(value),
+    'ol',
+    {
+      class: 'stepper',
+      attrs: { 'aria-label': T.stepper(Math.max(1, current), total), 'data-testid': 'stepper' },
+    },
+    run.situationIds.map((_, index) => {
+      const choice = run.history[index];
+      if (choice) {
+        return el('li', {
+          class: `step step-done step-${choice.rating}`,
+          text: T.ratingSymbols[choice.rating],
+          attrs: { title: T.ratings[choice.rating] },
+        });
+      }
+      const isCurrent = run.phase === 'situation' && index === run.step;
+      return el('li', {
+        class: `step${isCurrent ? ' step-current' : ''}`,
+        text: String(index + 1),
+      });
+    }),
+  );
+}
+
+/** The three gauges as HTML above the canvas (N-301), each with label and number (N-303). */
+export function hud(run: LevelRun): HTMLElement {
+  const gauges = run.gauges;
+  const last = run.history[run.history.length - 1];
+  const delta = run.phase === 'feedback' && last ? last.delta : null;
+  const started = run.phase !== 'briefing' && run.phase !== 'theory';
+  return el('div', { class: 'hud', attrs: { 'data-testid': 'hud' } }, [
+    el(
+      'div',
+      { class: 'gauges' },
+      GAUGE_KEYS.map((key) => {
+        const value = gauges[key];
+        const critical = value < CRITICAL_BELOW;
+        const fill = el('div', { class: `gauge-fill gauge-${gaugeBand(value)}` });
+        fill.style.width = `${value}%`;
+        const change = delta && delta[key] !== 0 ? ` (${signed(delta[key])})` : '';
+        return el(
+          'div',
+          {
+            class: `gauge${critical ? ' gauge-critical' : ''}`,
+            attrs: {
+              role: 'meter',
+              'aria-label': T.gauges[key],
+              'aria-valuemin': '0',
+              'aria-valuemax': '100',
+              'aria-valuenow': String(value),
+              'data-testid': `gauge-${key}`,
+              'data-value': String(value),
+            },
           },
-        },
-        [
-          el('div', { class: 'gauge-head' }, [
+          [
             el('span', { class: 'gauge-label', text: T.gauges[key] }),
+            el('div', { class: 'gauge-bar', attrs: { 'aria-hidden': 'true' } }, [fill]),
             el('span', {
               class: 'gauge-value',
               text: `${value}${change}${critical ? ` · ${T.gaugeCritical}` : ''}`,
             }),
-          ]),
-          el('div', { class: 'gauge-bar', attrs: { 'aria-hidden': 'true' } }, [fill]),
-        ],
-      );
-    }),
-  );
+          ],
+        );
+      }),
+    ),
+    started ? stepper(run) : null,
+  ]);
 }
 
 function notices(messages: readonly string[]): HTMLElement | null {
@@ -233,6 +278,7 @@ function eyebrow(level: Level, extra?: string): HTMLElement {
 }
 
 export function briefingScreen(level: Level, run: LevelRun, handlers: RunHandlers): HTMLElement {
+  const rules = acceptance([], run.situationIds.length);
   return el('div', { class: 'screen', attrs: { 'data-screen': 'briefing' } }, [
     eyebrow(level),
     heading(level.projekt.titel),
@@ -244,6 +290,11 @@ export function briefingScreen(level: Level, run: LevelRun, handlers: RunHandler
       {},
       level.lernziele.map((goal) => el('li', { text: goal.text })),
     ),
+    el('h2', { text: T.briefing.rulesHeading }),
+    el('p', {
+      attrs: { 'data-testid': 'rules' },
+      text: T.briefing.rules(rules.max / 2, rules.required, rules.max),
+    }),
     el('div', { class: 'actions' }, [
       button(T.briefing.start, handlers.next, { primary: true, testId: 'next' }),
       run.canSkipTheory
@@ -411,6 +462,13 @@ export function feedbackScreen(level: Level, run: LevelRun, handlers: RunHandler
           attrs: { role: 'alert' },
         })
       : null,
+    run.outcome === 'rejected'
+      ? el('p', {
+          class: 'notice notice-strong',
+          text: T.feedback.rejected,
+          attrs: { role: 'alert' },
+        })
+      : null,
     el('div', { class: 'actions' }, [
       button(done ? T.feedback.toResult : T.next, handlers.next, { primary: true, testId: 'next' }),
     ]),
@@ -441,47 +499,66 @@ export interface ResultHandlers {
   nextLevel: (() => void) | null;
 }
 
+function causeItem(level: Level, choice: ChoiceRecord, note: string): HTMLElement {
+  const situation = findSituation(level, choice.situationId);
+  const option = findOption(situation, choice.optionId);
+  return el('li', {}, [
+    el('h3', { text: situation.titel }),
+    el('p', { class: 'chosen', text: option.text }),
+    el('p', {}, [
+      ratingBadge(choice.rating),
+      el('span', { class: 'cause-loss', text: ` ${note}` }),
+    ]),
+    el('p', { text: option.erklaerung }),
+  ]);
+}
+
 export function resultScreen(level: Level, run: LevelRun, handlers: ResultHandlers): HTMLElement {
-  const collapsed = run.outcome === 'collapsed';
+  const failed = run.outcome !== 'completed';
+  const score = acceptance(run.history, run.situationIds.length);
   const children: (HTMLElement | null)[] = [eyebrow(level)];
 
-  if (collapsed) {
-    const failed: GaugeKey[] = collapsedGauges(run.gauges);
-    const causes = collapseCauses(run.history, failed);
+  if (run.outcome === 'collapsed') {
+    const gauges: GaugeKey[] = collapsedGauges(run.gauges);
     children.push(
       heading(T.result.collapsed),
       el('p', {
         class: 'lead',
         attrs: { 'data-testid': 'collapse-reason' },
-        text: T.result.collapsedLead(failed.map((key) => T.gauges[key]).join(', ')),
+        text: T.result.collapsedLead(gauges.map((key) => T.gauges[key]).join(', ')),
       }),
       el('h2', { text: T.result.causes }),
       el(
         'ol',
         { class: 'decisions', attrs: { 'data-testid': 'causes' } },
-        causes.map(({ choice, gauge, loss }) => {
-          const situation = findSituation(level, choice.situationId);
-          const option = findOption(situation, choice.optionId);
-          return el('li', {}, [
-            el('h3', { text: situation.titel }),
-            el('p', { class: 'chosen', text: option.text }),
-            el('p', {}, [
-              ratingBadge(choice.rating),
-              el('span', {
-                class: 'cause-loss',
-                text: ` ${T.result.causeLoss(T.gauges[gauge], loss)}`,
-              }),
-            ]),
-            el('p', { text: option.erklaerung }),
-          ]);
-        }),
+        collapseCauses(run.history, gauges).map(({ choice, gauge, loss }) =>
+          causeItem(level, choice, T.result.causeLoss(T.gauges[gauge], loss)),
+        ),
+      ),
+    );
+  } else if (run.outcome === 'rejected') {
+    children.push(
+      heading(T.result.rejected),
+      el('p', {
+        class: 'lead',
+        attrs: { 'data-testid': 'rejected-reason' },
+        text: T.result.rejectedLead(score.points, score.required, score.max),
+      }),
+      el('h2', { text: T.result.rejectedCauses }),
+      el(
+        'ol',
+        { class: 'decisions', attrs: { 'data-testid': 'causes' } },
+        run.history.filter((c) => c.rating !== 'gut').map((choice) => causeItem(level, choice, '')),
       ),
     );
   } else {
     children.push(
       heading(T.result.completed),
       el('p', { class: 'lead', text: T.result.completedLead }),
-      el('p', { class: 'result-stars' }, [starsBadge(starsFor(run))]),
+      el('p', { class: 'result-stars' }, [
+        starsBadge(starsFor(run)),
+        el('span', { class: 'muted', text: ` · ${T.result.points(score.points, score.max)}` }),
+      ]),
     );
   }
 
@@ -501,7 +578,7 @@ export function resultScreen(level: Level, run: LevelRun, handlers: ResultHandle
     decisionList(level, run.history),
   );
 
-  const actions = collapsed
+  const actions = failed
     ? [
         button(T.result.restart, handlers.restart, { primary: true, testId: 'restart' }),
         button(T.result.toCity, handlers.toCity, { testId: 'to-city' }),

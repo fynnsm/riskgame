@@ -2,16 +2,17 @@ import type { Level } from '../content/schema.ts';
 import type { LevelRun } from './game.ts';
 import type { Gauges } from './gauges.ts';
 import { lowestValue } from './gauges.ts';
+import type { FloorRecord } from './lean.ts';
 import type { Stars } from './scoring.ts';
 import { goalResults, starsFor } from './scoring.ts';
 
-export const PROGRESS_VERSION = 1;
+export const PROGRESS_VERSION = 2;
 
 export interface LevelBest {
   stars: Stars;
   gauges: Gauges;
-  /** Gauges after each decision; enough to rebuild the finished building (F-408). */
-  gaugeHistory: Gauges[];
+  /** Gauges and rating per decision; enough to rebuild the finished building (F-408). */
+  floors: FloorRecord[];
   /** IDs of the learning goals reached in that run (F-604). */
   goalsReached: string[];
 }
@@ -30,6 +31,10 @@ export interface Progress {
   levels: Record<string, LevelProgress>;
   currentRun: LevelRun | null;
   playTimeMs: number;
+}
+
+export function floorRecords(run: Pick<LevelRun, 'history'>): FloorRecord[] {
+  return run.history.map((c) => ({ gauges: c.gaugesAfter, rating: c.rating }));
 }
 
 export function emptyProgress(): Progress {
@@ -92,7 +97,7 @@ export function finishRun(progress: Progress, run: LevelRun, level: Level): Prog
     const candidate: LevelBest = {
       stars: starsFor(run),
       gauges: run.gauges,
-      gaugeHistory: run.history.map((c) => c.gaugesAfter),
+      floors: floorRecords(run),
       goalsReached: goalResults(level, run.history)
         .filter((g) => g.status === 'erreicht')
         .map((g) => g.id),

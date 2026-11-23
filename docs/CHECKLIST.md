@@ -11,13 +11,14 @@ Automatische Tests sehen nicht, ob das Spiel gut aussieht und sich gut anfühlt.
 ## Darstellung
 
 - [ ] Stadtansicht: fünf Bauplätze sind erkennbar, nichts verdeckt sie
+- [ ] Die Szene füllt das ganze Fenster; die Tafel steht am Laptop rechts, am Handy unten
+- [ ] Der Turm steht in der Mitte des freien Teils, auch nach dem Drehen des Handys
 - [ ] Gebäude wächst pro Entscheid um ein Stockwerk, die Kamera fährt mit
 - [ ] Neigung und Wackeln sind sichtbar, wenn eine Anzeige tief ist
 - [ ] Einsturz ist als Einsturz erkennbar und dauert nicht zu lang
 - [ ] Fertiges Gebäude steht in der Stadt so, wie es abgeschlossen wurde, mit Dach
 - [ ] Anzeigen sind über der 3D-Fläche gut lesbar, auch bei hellem Hintergrund
 - [ ] Text ist ohne Zoomen lesbar, Knöpfe sind mit dem Daumen gut zu treffen
-- [ ] Hochformat am Handy füllt den Bildschirm, am Laptop steht die Spalte in der Mitte
 - [ ] Querformat am Handy ist benutzbar
 
 ## Ablauf

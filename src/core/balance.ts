@@ -3,19 +3,28 @@
  * Values are starting points from REQUIREMENTS.md chapter 4.2 and are meant to be tuned.
  */
 export const BALANCE = {
-  gauge: { min: 0, max: 100, start: 70 },
+  gauge: { min: 0, max: 100, start: 60 },
 
   /** F-203: content states step sizes, this table turns them into points. */
-  effectPoints: { klein: 6, mittel: 12, gross: 20 },
+  effectPoints: { klein: 6, mittel: 14, gross: 26 },
 
   /** F-603: points per rating, basis for stars and learning goals. */
   ratingPoints: { gut: 2, vertretbar: 1, riskant: 0 },
 
-  /** F-603: a level survived always earns one star; these bars earn the second and third. */
+  /**
+   * F-211: a building that still stands is only accepted if this share of the possible
+   * rating points was reached. This is what stops blind clicking from passing a level.
+   */
+  acceptance: { minScoreRatio: 0.65 },
+
+  /** F-603: an accepted level always earns one star; these bars earn the second and third. */
   stars: {
-    three: { minScoreRatio: 0.8, minGauge: 30 },
-    two: { minScoreRatio: 0.5, minGauge: 15 },
+    three: { minScoreRatio: 0.9, minGauge: 10 },
+    two: { minScoreRatio: 0.8, minGauge: 5 },
   },
+
+  /** F-909: how often a player who picks at random may pass a level, at most. */
+  checks: { maxRandomPassRate: 0.2, randomRuns: 2000, randomSeed: 20261123 },
 
   /** F-602: share of the possible rating points needed for a learning goal to count as reached. */
   goalReachedRatio: 0.75,
@@ -31,6 +40,8 @@ export const BALANCE = {
     maxTiltDegrees: 11,
     /** Sideways shift of a new floor at full tilt, in floor widths. */
     maxFloorShift: 0.16,
+    /** How battered a floor looks, by the rating of the decision that built it (0 = clean, 1 = badly). */
+    damage: { gut: 0, vertretbar: 0.4, riskant: 1 },
     /** Which way each gauge pulls the building when it is the weakest (x = right, z = towards the viewer). */
     directions: {
       budget: { x: -1, z: 0 },

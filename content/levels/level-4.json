@@ -51,7 +51,7 @@
       "text": "Eine AI kann Statusberichte zusammenfassen und Muster in Protokollen finden. Das spart Lesezeit. Sie sieht aber nur, was geschrieben steht, und kann sich irren: Sie übersieht, was niemand notiert hat, und meldet manchmal Dinge, die keine sind. Nimm ihre Auswertung als Hinweis und frag bei den Menschen nach."
     }
   ],
-  "situationenProDurchgang": 6,
+  "situationenProDurchgang": 8,
   "situationen": [
     {
       "id": "L4-S01",
@@ -411,6 +411,186 @@
           },
           "einstufung": "gut",
           "erklaerung": "Die AI spart dir das Schreiben, nicht das Prüfen. Was unter deinem Namen an den Lenkungsausschuss geht, musst du selbst kontrolliert haben."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L4-S09",
+      "lernziel": "L4-Z1",
+      "titel": "Die Ampel bleibt gelb",
+      "situation": "Das Risiko «Schnittstelle zum Kliniksystem» steht im Statusbericht seit zwei Monaten auf Gelb. Niemand fragt mehr nach. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du legst fest, was bis wann erfüllt sein muss, damit es grün wird, und was sonst passiert.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Gelb ohne Frist ist ein Dauerzustand. Mit einem klaren Kriterium und einem Termin wird aus der Farbe wieder ein Signal, auf das jemand reagiert."
+        },
+        {
+          "id": "B",
+          "text": "Du lässt es so. Gelb heisst ja, dass man es beobachtet.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Wenn eine Warnung nie Folgen hat, gewöhnen sich alle daran. Aus Beobachten wird Wegschauen, bis die Ampel plötzlich rot ist."
+        },
+        {
+          "id": "C",
+          "text": "Du stellst die Ampel auf Rot, damit wieder jemand hinschaut.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "0"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du bekommst Aufmerksamkeit. Aber die Ampel sagt nun nicht mehr, wie es wirklich steht, und beim nächsten Rot glaubt man dir weniger."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L4-S10",
+      "lernziel": "L4-Z2",
+      "titel": "Massnahme erledigt, Risiko weg?",
+      "situation": "Gegen das Risiko «Fehlbedienung durch das Pflegepersonal» war eine Schulung geplant. Sie hat stattgefunden. Die zuständige Person will das Risiko nun schliessen. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du lässt das Risiko bis zum Projektende unverändert offen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Es geht nichts vergessen. Das Register zeigt aber nicht, dass etwas getan wurde, und füllt sich mit Einträgen, die niemand mehr prüft."
+        },
+        {
+          "id": "B",
+          "text": "Du lässt prüfen, ob die Schulung gewirkt hat, und passt dann die Bewertung an.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Eine Massnahme ist erledigt, wenn sie wirkt, nicht wenn sie stattgefunden hat. Ein kurzer Test im Alltag zeigt, ob das Risiko wirklich kleiner ist."
+        },
+        {
+          "id": "C",
+          "text": "Du schliesst das Risiko. Die Massnahme ist umgesetzt.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Ob die Schulung etwas gebracht hat, weiss niemand. Wenn nach dem Start trotzdem Fehler passieren, ist das Risiko offiziell erledigt und niemand zuständig."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L4-S11",
+      "lernziel": "L4-Z3",
+      "titel": "Ein Trend aus drei Punkten",
+      "situation": "Die AI wertet die Fehlerzahlen der letzten drei Wochen aus und macht eine Prognose. Der Lenkungsausschuss würde den Starttermin gern vorziehen. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Wie entwickelt sich die Zahl der offenen Fehler? Daten: Woche 1: 60, Woche 2: 45, Woche 3: 30.",
+        "antwort": "Bei gleichbleibendem Trend sind in zwei Wochen alle Fehler behoben."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du meldest dem Lenkungsausschuss, dass der Start vorgezogen werden kann.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+mittel",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Drei Punkte sind kein Trend. Die AI weiss nicht, dass nächste Woche eine neue Testphase beginnt, die neue Fehler bringt. Du versprichst einen Termin, den das Projekt nicht halten kann."
+        },
+        {
+          "id": "B",
+          "text": "Du fragst die Testleiterin, was in den nächsten Wochen ansteht, und beurteilst die Prognose mit ihr.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Die Rechnung der AI stimmt, ihre Annahme nicht unbedingt. Wer den Testplan kennt, weiss, ob die Kurve weiter sinkt oder wieder steigt."
+        },
+        {
+          "id": "C",
+          "text": "Du beachtest die Prognose nicht und meldest nur die aktuellen Zahlen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du versprichst nichts Falsches. Dem Lenkungsausschuss fehlt aber eine Einschätzung, wie es weitergeht, und die wird er sich selbst zusammenreimen."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L4-S12",
+      "lernziel": "L4-Z1",
+      "titel": "Niemand meldet etwas",
+      "situation": "Seit sechs Wochen ist kein neues Risiko gemeldet worden. Du vermutest, dass die Teams lieber schweigen, weil das letzte gemeldete Risiko als Kritik an der Person aufgefasst wurde. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du fragst in den Sitzungen aktiv nach, dankst für Meldungen und trennst Meldung klar von Schuld.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Keine Meldungen sind selbst ein Warnzeichen. Risiken erfährt nur, wer zeigt, dass Melden erwünscht ist und niemandem schadet."
+        },
+        {
+          "id": "B",
+          "text": "Du wertest es als gutes Zeichen. Offenbar läuft das Projekt stabil.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Kein Projekt hat sechs Wochen lang keine neuen Risiken. Du erfährst sie nur nicht mehr, und zwar genau dann, wenn du noch handeln könntest."
+        },
+        {
+          "id": "C",
+          "text": "Du führst ein Formular ein, das jedes Team wöchentlich ausfüllen muss.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Es kommt wieder etwas, aber als Pflichtübung. Wer Angst vor Schuldzuweisung hat, schreibt auch ins Formular nur Unverfängliches."
         }
       ],
       "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
