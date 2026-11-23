@@ -46,7 +46,7 @@ describe('LocalStorageStore (F-701 to F-704)', () => {
   });
 
   it('starts fresh with a hint if the stored text is not JSON', () => {
-    const { store, events } = setup(memoryStorage({ [PROGRESS_KEY]: '{"version":1,' }));
+    const { store, events } = setup(memoryStorage({ [PROGRESS_KEY]: '{"version":2,' }));
     expect(store.load()).toEqual({ status: 'invalid', progress: emptyProgress() });
     expect(events()).toContain('storage.load.invalid');
   });
@@ -79,7 +79,13 @@ describe('LocalStorageStore (F-701 to F-704)', () => {
     const old = JSON.stringify({ version: 0, levels: {}, done: [1, 2] });
     const { store, logger } = setup(memoryStorage({ [PROGRESS_KEY]: old }));
     expect(store.load()).toEqual({ status: 'outdated', progress: emptyProgress() });
-    expect(logger.entries().at(-1)?.data).toEqual({ found: 0, expected: 1 });
+    expect(logger.entries().at(-1)?.data).toEqual({ found: 0, expected: 2 });
+  });
+
+  it('treats a progress saved before the balance change as outdated', () => {
+    const old = JSON.stringify({ version: 1, levels: {}, currentRun: null, playTimeMs: 0 });
+    const { store } = setup(memoryStorage({ [PROGRESS_KEY]: old }));
+    expect(store.load().status).toBe('outdated');
   });
 
   it('keeps the game running if the browser blocks storage (private mode)', () => {

@@ -1,10 +1,10 @@
 /**
- * F-907: whoever picks only good options survives every draw,
- * whoever picks only risky ones fails every draw.
+ * F-907: whoever picks only good options passes every draw, whoever picks only risky ones
+ * fails every draw. F-909: whoever clicks blindly passes only rarely.
  */
 import { validateLevelJson } from '../src/content/validate.ts';
 import { BALANCE } from '../src/core/balance.ts';
-import { simulateLevel } from '../src/core/simulate.ts';
+import { isBalanced, simulateLevel } from '../src/core/simulate.ts';
 import { readLevelFiles } from './read-levels.ts';
 
 const files = readLevelFiles();
@@ -20,10 +20,11 @@ for (const [name, json] of Object.entries(files)) {
     continue;
   }
   const report = simulateLevel(result.level);
-  const ok = report.goodCollapses === 0 && report.riskySurvivals === 0;
+  const ok = isBalanced(report);
   if (!ok) failed = true;
+  const percent = (share: number) => `${Math.round(share * 100)} %`;
   console.log(
-    `${ok ? 'OK    ' : 'FEHLER'}  ${name}: ${report.runs} Durchgänge je Strategie | nur gut: ${report.goodCollapses} Einstürze, tiefste Anzeige ${report.goodLowest}, mindestens ${report.goodMinStars} Sterne | nur riskant: ${report.riskySurvivals} überstanden`,
+    `${ok ? 'OK    ' : 'FEHLER'}  ${name}: ${report.runs} Ziehungen | nur gut: ${report.goodFailures} nicht bestanden, tiefste Anzeige ${report.goodLowest}, mindestens ${report.goodMinStars} Sterne | nur riskant: ${report.riskyPasses} bestanden | blind geklickt: ${percent(report.randomPassRate)} bestanden, ${percent(report.randomCollapseRate)} Einsturz (erlaubt höchstens ${percent(BALANCE.checks.maxRandomPassRate)} bestanden)`,
   );
 }
 

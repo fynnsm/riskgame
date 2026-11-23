@@ -1,11 +1,17 @@
 import type { Level, Option, OptionId, Rating, Situation } from '../content/schema.ts';
+import { BALANCE } from './balance.ts';
 import { drawSituations } from './draw.ts';
 import type { Gauges } from './gauges.ts';
 import { applyEffects, isCollapsed, startGauges } from './gauges.ts';
 import { createRng, shuffle } from './rng.ts';
+import { scoreRatio } from './scoring.ts';
 
 export type Phase = 'briefing' | 'theory' | 'situation' | 'feedback' | 'result';
-export type Outcome = 'running' | 'completed' | 'collapsed';
+/**
+ * 'collapsed': a gauge hit zero (F-204). 'rejected': the building stands, but too many
+ * decisions were poor for it to pass the final inspection (F-211).
+ */
+export type Outcome = 'running' | 'completed' | 'collapsed' | 'rejected';
 
 export interface ChoiceRecord {
   situationId: string;
@@ -138,24 +144,25 @@ export function step(run: LevelRun, level: Level, action: Action): LevelRun {
       const situation = currentSituation(run, level);
       const option = findOption(situation, action.optionId);
       const { gauges, delta } = applyEffects(run.gauges, option.wirkung);
+      const history: ChoiceRecord[] = [
+        ...run.history,
+        {
+          situationId: situation.id,
+          optionId: option.id,
+          rating: option.einstufung,
+          delta,
+          gaugesAfter: gauges,
+        },
+      ];
       const isLast = run.step + 1 >= run.situationIds.length;
-      const outcome: Outcome = isCollapsed(gauges) ? 'collapsed' : isLast ? 'completed' : 'running';
-      return {
-        ...run,
-        phase: 'feedback',
-        gauges,
-        outcome,
-        history: [
-          ...run.history,
-          {
-            situationId: situation.id,
-            optionId: option.id,
-            rating: option.einstufung,
-            delta,
-            gaugesAfter: gauges,
-          },
-        ],
-      };
+      let outcome: Outcome = 'running';
+      if (isCollapsed(gauges)) {
+        outcome = 'collapsed';
+      } else if (isLast) {
+        const accepted = scoreRatio(history) >= BALANCE.acceptance.minScoreRatio;
+        outcome = accepted ? 'completed' : 'rejected';
+      }
+      return { ...run, phase: 'feedback', gauges, outcome, history };
     }
   }
 }

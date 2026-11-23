@@ -3,7 +3,7 @@ import type { LevelRun } from './game.ts';
 import type { BuildingModel } from './lean.ts';
 import { buildingModel } from './lean.ts';
 import type { Progress } from './progress.ts';
-import { isUnlocked, levelProgress } from './progress.ts';
+import { floorRecords, isUnlocked, levelProgress } from './progress.ts';
 
 export type LotStatus = 'locked' | 'open' | 'active' | 'done';
 
@@ -13,6 +13,8 @@ export interface LotModel {
   status: LotStatus;
   building: BuildingModel | null;
   collapsed: boolean;
+  /** True while the level is still being played, i.e. while more floors will follow. */
+  construction: boolean;
 }
 
 /** What the 3D view should show. Declarative, so the renderer holds no game state. */
@@ -23,9 +25,19 @@ export interface SceneModel {
   lots: LotModel[];
 }
 
+/** Pixels of the canvas hidden behind HTML panels, per side. */
+export interface SceneInsets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 /** The contract between the HTML app and any renderer, including the one that draws nothing. */
 export interface SceneView {
   render(model: SceneModel): void;
+  /** Tells the view which part of the canvas is covered by HTML, so it can frame the scene beside it. */
+  setInsets(insets: SceneInsets): void;
   dispose(): void;
 }
 
@@ -49,11 +61,9 @@ export function sceneModel(
         levelId: level.id,
         kind,
         status: 'active',
-        building: buildingModel(
-          kind,
-          run.history.map((c) => c.gaugesAfter),
-        ),
+        building: buildingModel(kind, floorRecords(run)),
         collapsed: run.outcome === 'collapsed',
+        construction: run.outcome === 'running',
       };
     }
     const lp = levelProgress(progress, level.id);
@@ -62,8 +72,9 @@ export function sceneModel(
         levelId: level.id,
         kind,
         status: 'done',
-        building: buildingModel(kind, lp.best.gaugeHistory),
+        building: buildingModel(kind, lp.best.floors),
         collapsed: false,
+        construction: false,
       };
     }
     const open = available && isUnlocked(progress, order, level.id);
@@ -73,6 +84,7 @@ export function sceneModel(
       status: open ? 'open' : 'locked',
       building: null,
       collapsed: false,
+      construction: false,
     };
   });
   return { mode: focus === null ? 'city' : 'level', focus, lots };

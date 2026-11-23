@@ -49,7 +49,7 @@
       "text": "Eine AI lernt aus Daten der Vergangenheit. Was in diesen Daten fehlt oder einseitig ist, fehlt auch in ihren Antworten. Zudem endet ihr Wissen an einem Stichtag: Neue Vorschriften oder interne Weisungen kennt sie nicht, ausser du gibst sie ihr."
     }
   ],
-  "situationenProDurchgang": 6,
+  "situationenProDurchgang": 8,
   "situationen": [
     {
       "id": "L5-S01",
@@ -405,6 +405,186 @@
           },
           "einstufung": "gut",
           "erklaerung": "Nicht jedes AI-Tool ist ein Problem, aber jedes muss geprüft sein. Mit einem freigegebenen Tool bleibt der Zeitgewinn, ohne dass interne Daten abfliessen."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L5-S09",
+      "lernziel": "L5-Z1",
+      "titel": "Die Rechnung der AI",
+      "situation": "Für den Risikobericht lässt du die AI einen Erwartungswert berechnen. Die Antwort kommt sofort und sieht sauber aus. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Ein Risiko hat 15 % Eintrittswahrscheinlichkeit und einen Schaden von CHF 200’000. Wie hoch ist der Erwartungswert?",
+        "antwort": "Der Erwartungswert beträgt CHF 45’000."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du übernimmst die Zahl. Rechnen können Computer.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "15 % von CHF 200’000 sind CHF 30’000, nicht 45’000. Ein Sprachmodell erzeugt Text und rechnet nicht zuverlässig. Die falsche Zahl steht nun in deinem Bericht."
+        },
+        {
+          "id": "B",
+          "text": "Du rechnest nach, bevor die Zahl in den Bericht kommt.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Eine Minute mit dem Taschenrechner zeigt: Es sind CHF 30’000. Zahlen, auf denen Entscheide beruhen, rechnest du selbst oder mit einem Werkzeug nach, das dafür gemacht ist."
+        },
+        {
+          "id": "C",
+          "text": "Du lässt die Zahl im Bericht weg und beschreibst das Risiko nur in Worten.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du verbreitest keinen Fehler. Der Lenkungsausschuss kann das Risiko aber schlechter mit anderen vergleichen, obwohl die richtige Zahl leicht zu haben wäre."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L5-S10",
+      "lernziel": "L5-Z3",
+      "titel": "Der Assistent soll entscheiden",
+      "situation": "Die Leiterin Kundendienst schlägt vor, dass der AI-Assistent kleine Schadenfälle bis CHF 500 selbst genehmigt, ohne dass ein Mensch sie ansieht. Das würde viel Zeit sparen. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du schaltest die automatische Genehmigung auf den Starttermin frei.",
+          "wirkung": {
+            "budget": "+klein",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Niemand weiss, wie oft der Assistent falsch liegt und wer dann geradesteht. Fehler und Missbrauch fallen erst auf, wenn sie sich summiert haben."
+        },
+        {
+          "id": "B",
+          "text": "Der Assistent schlägt vor, ein Mensch genehmigt. Nach Stichproben entscheidet ihr neu.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "-klein",
+            "stabilitaet": "+gross"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Du gewinnst Tempo, ohne die Verantwortung abzugeben. Die Stichproben zeigen, wie gut der Assistent ist. Erst mit diesen Zahlen lässt sich über mehr Autonomie entscheiden."
+        },
+        {
+          "id": "C",
+          "text": "Du schliesst aus, dass der Assistent bei Schadenfällen überhaupt mitwirkt.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Das ist sicher, verschenkt aber den Nutzen. Beim Vorbereiten und Sortieren könnte der Assistent helfen, ohne selbst zu entscheiden."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L5-S11",
+      "lernziel": "L5-Z2",
+      "titel": "Das Protokoll mit heiklen Angaben",
+      "situation": "Du willst zwanzig Sitzungsprotokolle von einer AI zusammenfassen lassen. In einem steht, dass sich ein Arbeitspaket verzögert, weil ein namentlich genannter Mitarbeiter wegen einer Erkrankung ausfällt. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du entfernst Namen und Angaben zur Gesundheit, bevor du die Protokolle eingibst.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Angaben zur Gesundheit sind besonders schützenswert. Für die Zusammenfassung braucht die AI sie nicht. Ohne sie bekommst du dasselbe Ergebnis ohne Risiko."
+        },
+        {
+          "id": "B",
+          "text": "Du gibst die Protokolle ein, wie sie sind. Es sind ja nur interne Notizen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Intern heisst nicht harmlos. Du gibst Gesundheitsdaten eines Mitarbeiters an einen Dienst ausserhalb des Betriebs, ohne dass er davon weiss."
+        },
+        {
+          "id": "C",
+          "text": "Du fasst die Protokolle von Hand zusammen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Kein Datenschutzproblem, aber viel Aufwand. Mit bereinigten Protokollen hättest du die Hilfe der AI nutzen können."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L5-S12",
+      "lernziel": "L5-Z3",
+      "titel": "Alle nicken",
+      "situation": "Im Risiko-Workshop zeigst du die Bewertung der AI. Niemand widerspricht. Jemand sagt: «Die AI hat mehr Daten gesehen als wir alle zusammen.» Nach zehn Minuten wäre die Sitzung fertig. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du hältst das Ergebnis als Bewertung des Teams fest und schliesst die Sitzung.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Das Team hat nicht bewertet, sondern genickt. Die Verantwortung liegt trotzdem bei euch, und das Wissen der Fachleute ist nicht eingeflossen."
+        },
+        {
+          "id": "B",
+          "text": "Du bittest alle, einen Punkt zu nennen, bei dem sie der AI widersprechen würden.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Menschen vertrauen Maschinen oft zu schnell. Mit der Frage nach Widerspruch holst du das Wissen des Teams zurück und siehst, wo die AI danebenliegt."
+        },
+        {
+          "id": "C",
+          "text": "Du wiederholst den Workshop ohne die Ergebnisse der AI.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Das Team bewertet nun unbeeinflusst. Du verlierst aber Zeit und die brauchbaren Hinweise der AI. Kritisch prüfen wäre besser als weglassen."
         }
       ],
       "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",

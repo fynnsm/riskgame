@@ -50,7 +50,7 @@
       "text": "Eine AI schlägt dir zu jedem Risiko viele Massnahmen vor. Das erweitert den Blick. Sie weiss aber nicht, was auf deiner Baustelle machbar ist, was es kostet und wen es stört. Prüfe jeden Vorschlag mit den Leuten vor Ort auf Machbarkeit und Nebenwirkungen."
     }
   ],
-  "situationenProDurchgang": 6,
+  "situationenProDurchgang": 8,
   "situationen": [
     {
       "id": "L3-S01",
@@ -410,6 +410,186 @@
           },
           "einstufung": "vertretbar",
           "erklaerung": "Dein Plan beruht auf echten Absprachen, aber du machst die Strukturarbeit doppelt. Als Entwurf hätte dir die AI-Version Zeit gespart."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L3-S09",
+      "lernziel": "L3-Z1",
+      "titel": "Vermeiden statt vermindern",
+      "situation": "Für die Fassade ist ein Spezialelement aus dem Ausland geplant, mit langer und unsicherer Lieferzeit. Ein ähnliches Standardprodukt ist in der Schweiz ab Lager erhältlich und etwas teurer. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du bleibst beim Spezialelement und bestellst erst spät, um die Liquidität zu schonen.",
+          "wirkung": {
+            "budget": "+klein",
+            "zeit": "0",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Du sparst jetzt und setzt den Zeitplan aufs Spiel. Trifft das Element zu spät ein, steht das Gerüst wochenlang umsonst."
+        },
+        {
+          "id": "B",
+          "text": "Du wechselst auf das Standardprodukt.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "0",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Du vermeidest das Risiko, statt es zu bewirtschaften. Der kleine Aufpreis ist günstiger als jede Massnahme gegen einen Lieferverzug."
+        },
+        {
+          "id": "C",
+          "text": "Du bleibst beim Spezialelement, bestellst sehr früh und mietest ein Lager.",
+          "wirkung": {
+            "budget": "-mittel",
+            "zeit": "0",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Das Risiko wird kleiner, aber nicht null, und Lager und frühe Zahlung kosten Geld. Vermeiden wäre hier einfacher gewesen."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L3-S10",
+      "lernziel": "L3-Z2",
+      "titel": "Die Massnahme wirkt nicht",
+      "situation": "Gegen Reklamationen der Bewohner verschickt ihr seit zwei Monaten jede Woche einen Infobrief. Die Massnahme gilt als erledigt. Die Reklamationen nehmen trotzdem zu. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du verschickst den Brief künftig zweimal pro Woche.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "0",
+            "stabilitaet": "0"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du reagierst, aber mit mehr vom Gleichen. Wenn die Briefe nicht gelesen werden oder das Falsche beantworten, hilft die doppelte Menge nicht."
+        },
+        {
+          "id": "B",
+          "text": "Du lässt es dabei. Die Massnahme ist umgesetzt und abgehakt.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Umgesetzt heisst nicht wirksam. Eine Massnahme hat nur einen Zweck: das Risiko zu senken. Ob sie das tut, muss man nachprüfen."
+        },
+        {
+          "id": "C",
+          "text": "Du klärst, warum es nicht wirkt, passt die Massnahme an und setzt einen Termin zur Überprüfung.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Vielleicht braucht es eine Sprechstunde vor Ort statt eines Briefs. Wer die Wirkung prüft und nachsteuert, behandelt das Risiko und nicht nur die Aufgabenliste."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L3-S11",
+      "lernziel": "L3-Z3",
+      "titel": "Die Kostenschätzung der AI",
+      "situation": "Du brauchst für die Reserve eine Zahl: Was kostet eine Schadstoffsanierung pro Wohnung? Die AI antwortet ohne Zögern. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Was kostet eine Schadstoffsanierung pro Wohnung bei einem Mehrfamilienhaus?",
+        "antwort": "Rechnen Sie mit rund CHF 3’500 pro Wohnung."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du holst eine Offerte bei einer Fachfirma ein und nutzt die AI-Zahl nur zum Vergleich.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Kosten hängen von Baujahr, Material und Region ab. Das weiss die Fachfirma, nicht die AI. Als grobe Plausibilisierung ist die Zahl trotzdem nützlich."
+        },
+        {
+          "id": "B",
+          "text": "Du rechnest 48 mal CHF 3’500 und setzt das als Reserve ein.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Die Zahl hat keine Grundlage in eurem Gebäude. Liegt sie falsch, ist die Reserve zu klein, und das merkt ihr erst, wenn der Schaden da ist."
+        },
+        {
+          "id": "C",
+          "text": "Du verdreifachst die Zahl der AI, um sicher zu sein.",
+          "wirkung": {
+            "budget": "-mittel",
+            "zeit": "0",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Die Reserve reicht nun vermutlich. Du bindest aber viel Geld auf der Basis einer geratenen Zahl, das anderswo fehlt."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L3-S12",
+      "lernziel": "L3-Z1",
+      "titel": "Die Reserve soll weg",
+      "situation": "Der Vorstand der Genossenschaft will die Reserve von fünf Prozent streichen: «Für alle Risiken gibt es jetzt Massnahmen, also braucht es sie nicht mehr.» Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du stimmst zu. Mit dem Geld lässt sich die Küchenausstattung verbessern.",
+          "wirkung": {
+            "budget": "+mittel",
+            "zeit": "0",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Massnahmen senken Risiken, sie beseitigen sie nicht. Ohne Reserve wird das erste unerwartete Ereignis zur Krise."
+        },
+        {
+          "id": "B",
+          "text": "Du schlägst vor, die Reserve zu halbieren.",
+          "wirkung": {
+            "budget": "+klein",
+            "zeit": "0",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Ein Kompromiss, der den Vorstand zufriedenstellt. Ob die Hälfte reicht, hat aber niemand geprüft."
+        },
+        {
+          "id": "C",
+          "text": "Du erklärst, wofür die Reserve da ist, und legst fest, wer sie wann freigeben darf.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Die Reserve deckt Restrisiken und Unbekanntes. Mit klaren Regeln für die Freigabe sieht der Vorstand, dass das Geld nicht einfach verschwindet."
         }
       ],
       "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",

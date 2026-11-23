@@ -41,13 +41,13 @@ export const runSchema = z.strictObject({
   step: z.number().int().min(0).max(MAX_LIST),
   gauges: gaugesSchema,
   history: z.array(choiceSchema).max(MAX_LIST),
-  outcome: z.enum(['running', 'completed', 'collapsed']),
+  outcome: z.enum(['running', 'completed', 'collapsed', 'rejected']),
 });
 
 const bestSchema = z.strictObject({
   stars: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
   gauges: gaugesSchema,
-  gaugeHistory: z.array(gaugesSchema).max(MAX_LIST),
+  floors: z.array(z.strictObject({ gauges: gaugesSchema, rating: z.enum(RATINGS) })).max(MAX_LIST),
   goalsReached: z.array(id).max(MAX_LIST),
 });
 

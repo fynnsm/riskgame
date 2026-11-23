@@ -20,7 +20,24 @@ export function scoreRatio(history: readonly ChoiceRecord[]): number {
   return points / (history.length * BALANCE.ratingPoints.gut);
 }
 
-/** F-603: stars from ratings and final gauges. A collapsed building earns none. */
+export interface Acceptance {
+  points: number;
+  max: number;
+  /** Points needed to pass the final inspection (F-211). */
+  required: number;
+}
+
+/** Points reached and needed for a run over `steps` decisions. */
+export function acceptance(history: readonly ChoiceRecord[], steps: number): Acceptance {
+  const max = steps * BALANCE.ratingPoints.gut;
+  return {
+    points: history.reduce((sum, c) => sum + BALANCE.ratingPoints[c.rating], 0),
+    max,
+    required: Math.ceil(max * BALANCE.acceptance.minScoreRatio),
+  };
+}
+
+/** F-603: stars from ratings and final gauges. A collapsed or rejected building earns none. */
 export function starsFor(run: Pick<LevelRun, 'outcome' | 'history' | 'gauges'>): Stars {
   if (run.outcome !== 'completed') return 0;
   const ratio = scoreRatio(run.history);

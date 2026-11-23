@@ -12,15 +12,25 @@ import {
   withRun,
 } from '../../src/core/progress.ts';
 import { sceneModel } from '../../src/core/scene.ts';
+import { createRng } from '../../src/core/rng.ts';
 import {
+  acceptance,
   collapseCauses,
   collapsedGauges,
   goalResults,
   scoreRatio,
   starsFor,
 } from '../../src/core/scoring.ts';
-import { combinations, playStrategy, simulateLevel } from '../../src/core/simulate.ts';
-import { clone, makeLevel } from './fixtures.ts';
+import {
+  combinations,
+  isBalanced,
+  playRandom,
+  playStrategy,
+  simulateLevel,
+} from '../../src/core/simulate.ts';
+import { validateLevelJson } from '../../src/content/validate.ts';
+import { readLevelFiles } from '../../scripts/read-levels.ts';
+import { clone, makeLevel, POINTS } from './fixtures.ts';
 
 const level = makeLevel();
 const finished = (choices: OptionId[], seed = 1): LevelRun => replay(level, seed, [], choices);
@@ -38,28 +48,34 @@ describe('stars (F-603)', () => {
     expect(starsFor(finished(ALL_GOOD))).toBe(3);
   });
 
-  it('gives two stars for a mixed run', () => {
-    const history = ['gut', 'gut', 'gut', 'vertretbar', 'vertretbar', 'riskant'].map((r) =>
-      choice(r as ChoiceRecord['rating']),
-    );
-    expect(starsFor({ outcome: 'completed', history, gauges: even })).toBe(2);
+  const rated = (ratings: string): ChoiceRecord[] =>
+    [...ratings].map((r) => choice(r === 'g' ? 'gut' : r === 'v' ? 'vertretbar' : 'riskant'));
+
+  it('gives two stars for a mostly good run', () => {
+    expect(starsFor({ outcome: 'completed', history: rated('ggggvv'), gauges: even })).toBe(2);
   });
 
-  it('gives one star for a level that was only just survived', () => {
-    const history = Array.from({ length: 6 }, () => choice('riskant'));
-    expect(starsFor({ outcome: 'completed', history, gauges: even })).toBe(1);
+  it('gives one star for a level that was only just accepted', () => {
+    expect(starsFor({ outcome: 'completed', history: rated('gggvvv'), gauges: even })).toBe(1);
   });
 
   it('caps the stars if a gauge ends too low, however good the decisions were', () => {
-    const history = Array.from({ length: 6 }, () => choice('gut'));
-    expect(starsFor({ outcome: 'completed', history, gauges: { ...even, zeit: 29 } })).toBe(2);
-    expect(starsFor({ outcome: 'completed', history, gauges: { ...even, zeit: 14 } })).toBe(1);
+    const history = rated('gggggg');
+    expect(starsFor({ outcome: 'completed', history, gauges: { ...even, zeit: 10 } })).toBe(3);
+    expect(starsFor({ outcome: 'completed', history, gauges: { ...even, zeit: 9 } })).toBe(2);
+    expect(starsFor({ outcome: 'completed', history, gauges: { ...even, zeit: 4 } })).toBe(1);
   });
 
-  it('gives no star for a collapsed or unfinished level', () => {
-    expect(starsFor(finished(['B', 'B', 'B', 'B']))).toBe(0);
+  it('gives no star for a collapsed, rejected or unfinished level', () => {
+    expect(starsFor(finished(['B', 'B', 'B']))).toBe(0);
+    expect(starsFor({ outcome: 'rejected', history: rated('gggggg'), gauges: even })).toBe(0);
     expect(starsFor({ outcome: 'running', history: [], gauges: even })).toBe(0);
     expect(scoreRatio([])).toBe(0);
+  });
+
+  it('states the points reached and the points needed for the inspection (F-211)', () => {
+    expect(acceptance(rated('ggvr'), 8)).toEqual({ points: 5, max: 16, required: 11 });
+    expect(acceptance([], 6)).toEqual({ points: 0, max: 12, required: 8 });
   });
 });
 
@@ -87,7 +103,7 @@ describe('learning goals (F-602)', () => {
 
 describe('collapse analysis (F-209)', () => {
   it('names the failed gauge and the decisions that lowered it, heaviest first', () => {
-    const run = finished(['C', 'B', 'B', 'B', 'B', 'A']);
+    const run = finished(['C', 'B', 'B', 'B', 'A', 'A']);
     expect(run.outcome).toBe('collapsed');
     const failed = collapsedGauges(run.gauges);
     expect(failed).toEqual(['stabilitaet']);
@@ -96,7 +112,7 @@ describe('collapse analysis (F-209)', () => {
       true,
     );
     expect(causes.map((c) => c.loss)).toEqual([...causes.map((c) => c.loss)].sort((a, b) => b - a));
-    expect(causes).toHaveLength(4);
+    expect(causes.map((c) => c.loss)).toEqual([26, 26, 14]);
   });
 
   it('picks the harder hit gauge if two failed at once and finds nothing for a standing building', () => {
@@ -126,14 +142,21 @@ describe('progress (F-103, F-106, F-107, F-108, F-702)', () => {
     expect(isUnlocked(progress, order, 'level-9')).toBe(false);
   });
 
-  it('does not unlock the next level after a collapse', () => {
-    const progress = finishRun(emptyProgress(), finished(['B', 'B', 'B', 'B']), level);
-    expect(isUnlocked(progress, order, 'level-2')).toBe(false);
-    expect(levelProgress(progress, 'level-1')).toMatchObject({
-      completed: false,
-      attempts: 1,
-      best: null,
-    });
+  it('does not unlock the next level after a collapse or a failed inspection', () => {
+    for (const choices of [
+      ['B', 'B', 'B'],
+      ['B', 'C', 'B', 'C', 'A', 'A'],
+    ] as OptionId[][]) {
+      const run = finished(choices);
+      expect(run.outcome).not.toBe('completed');
+      const progress = finishRun(emptyProgress(), run, level);
+      expect(isUnlocked(progress, order, 'level-2')).toBe(false);
+      expect(levelProgress(progress, 'level-1')).toMatchObject({
+        completed: false,
+        attempts: 1,
+        best: null,
+      });
+    }
   });
 
   it('stores the run after every step and remembers that the theory was seen', () => {
@@ -151,11 +174,13 @@ describe('progress (F-103, F-106, F-107, F-108, F-702)', () => {
     let progress = finishRun(emptyProgress(), finished(ALL_GOOD), level);
     const best = levelProgress(progress, 'level-1').best;
     expect(best).toMatchObject({ stars: 3, goalsReached: ['L1-Z1', 'L1-Z2'] });
-    expect(best?.gaugeHistory).toHaveLength(6);
+    expect(best?.floors).toHaveLength(6);
+    expect(best?.floors[0]).toMatchObject({ rating: 'gut' });
 
-    progress = finishRun(progress, finished(['C', 'C', 'C', 'A', 'A', 'A'], 2), level);
+    // Same stars, but a lower weakest gauge: not better, so the first result stays.
+    progress = finishRun(progress, finished(['C', 'A', 'A', 'A', 'A', 'A'], 2), level);
     expect(levelProgress(progress, 'level-1').best).toEqual(best);
-    progress = finishRun(progress, finished(['B', 'B', 'B', 'B'], 3), level);
+    progress = finishRun(progress, finished(['B', 'B', 'B'], 3), level);
     expect(levelProgress(progress, 'level-1')).toMatchObject({
       completed: true,
       attempts: 3,
@@ -164,16 +189,16 @@ describe('progress (F-103, F-106, F-107, F-108, F-702)', () => {
   });
 
   it('replaces the best result by a better one, also at equal stars with healthier gauges', () => {
-    let progress = finishRun(emptyProgress(), finished(['C', 'C', 'C', 'A', 'A', 'A']), level);
+    let progress = finishRun(emptyProgress(), finished(['C', 'C', 'A', 'A', 'A', 'A']), level);
     expect(levelProgress(progress, 'level-1').best?.stars).toBe(2);
     progress = finishRun(progress, finished(ALL_GOOD), level);
     expect(levelProgress(progress, 'level-1').best?.stars).toBe(3);
 
     const weaker = clone(finished(ALL_GOOD));
-    weaker.gauges = { budget: 31, zeit: 31, stabilitaet: 100 };
+    weaker.gauges = { budget: 12, zeit: 12, stabilitaet: 100 };
     let other = finishRun(emptyProgress(), weaker, level);
     other = finishRun(other, finished(ALL_GOOD), level);
-    expect(levelProgress(other, 'level-1').best?.gauges.budget).toBe(34);
+    expect(levelProgress(other, 'level-1').best?.gauges.budget).toBe(24);
   });
 
   it('remembers played situations oldest first, so the next draw prefers fresh ones (F-106)', () => {
@@ -215,13 +240,20 @@ describe('sceneModel (F-408, F-409)', () => {
     const run = replay(level, 1, [], ['A', 'A']);
     const model = sceneModel(levels, withRun(emptyProgress(), run), run);
     expect(model).toMatchObject({ mode: 'level', focus: 0 });
-    expect(model.lots[0]).toMatchObject({ status: 'active', collapsed: false });
+    expect(model.lots[0]).toMatchObject({
+      status: 'active',
+      collapsed: false,
+      construction: true,
+    });
     expect(model.lots[0]?.building?.floors).toHaveLength(2);
   });
 
   it('flags the collapse of the active building', () => {
-    const run = finished(['B', 'B', 'B', 'B']);
-    expect(sceneModel(levels, emptyProgress(), run).lots[0]?.collapsed).toBe(true);
+    const run = finished(['B', 'B', 'B']);
+    expect(sceneModel(levels, emptyProgress(), run).lots[0]).toMatchObject({
+      collapsed: true,
+      construction: false,
+    });
   });
 
   it('keeps a completed building as it was finished and locks levels without content', () => {
@@ -243,25 +275,43 @@ describe('balance simulation (F-907)', () => {
     expect(combinations([1, 2], 3)).toEqual([]);
   });
 
-  it('confirms that only good choices always survive and only risky ones never do', () => {
+  it('confirms that only good choices always pass and only risky ones never do', () => {
     const report = simulateLevel(level);
     expect(report).toMatchObject({
       levelId: 'level-1',
       runs: 56,
-      goodCollapses: 0,
-      riskySurvivals: 0,
-      goodLowest: 34,
+      goodFailures: 0,
+      riskyPasses: 0,
+      goodLowest: 24,
       goodMinStars: 3,
     });
+    expect(report.randomPassRate).toBeGreaterThan(0);
+    expect(report.randomPassRate + report.randomCollapseRate).toBeLessThanOrEqual(1);
   });
 
-  it('detects a level whose risky options are too harmless', () => {
+  it('gives the same estimate for the random player on every run (Q-06)', () => {
+    expect(simulateLevel(level)).toEqual(simulateLevel(level));
+    expect(playRandom(level, createRng(3))).toEqual(playRandom(level, createRng(3)));
+  });
+
+  it('keeps blind clicking from passing in every level that ships (F-909)', () => {
+    for (const [name, json] of Object.entries(readLevelFiles())) {
+      const result = validateLevelJson(json, name, POINTS);
+      if (!result.ok) throw new Error(result.errors.join('\n'));
+      const report = simulateLevel(result.level);
+      expect(isBalanced(report), name).toBe(true);
+      expect(report.randomPassRate, name).toBeLessThanOrEqual(0.2);
+    }
+  });
+
+  it('still fails a player whose risky options are harmless: the inspection catches it', () => {
     const soft = clone(level);
     for (const s of soft.situationen) {
       const risky = s.optionen.find((o) => o.einstufung === 'riskant');
       if (risky) risky.wirkung = { budget: '0', zeit: '0', stabilitaet: '-klein' };
     }
-    expect(simulateLevel(soft).riskySurvivals).toBe(56);
+    expect(playStrategy(soft.situationen.slice(0, 6), 'riskant').outcome).toBe('rejected');
+    expect(simulateLevel(soft).riskyPasses).toBe(0);
   });
 
   it('detects a level whose good options are too costly', () => {
@@ -271,8 +321,16 @@ describe('balance simulation (F-907)', () => {
       if (good) good.wirkung = { budget: '-gross', zeit: '0', stabilitaet: '+gross' };
     }
     const report = simulateLevel(harsh);
-    expect(report.goodCollapses).toBe(56);
+    expect(report.goodFailures).toBe(56);
     expect(report.goodMinStars).toBe(0);
+    expect(isBalanced(report)).toBe(false);
+  });
+
+  it('calls a level unbalanced if blind clicking passes too often', () => {
+    const report = simulateLevel(level);
+    expect(isBalanced({ ...report, randomPassRate: 0.21 })).toBe(false);
+    expect(isBalanced({ ...report, randomPassRate: 0.2 })).toBe(true);
+    expect(isBalanced({ ...report, runs: 0 })).toBe(false);
   });
 
   it('refuses a situation that lacks the requested rating', () => {

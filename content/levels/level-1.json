@@ -51,7 +51,7 @@
       "grafik": "register"
     }
   ],
-  "situationenProDurchgang": 6,
+  "situationenProDurchgang": 8,
   "situationen": [
     {
       "id": "L1-S01",
@@ -415,6 +415,186 @@
           },
           "einstufung": "gut",
           "erklaerung": "Der Rollenwechsel bringt neue Blickwinkel. Als Gesprächsleitfaden hilft er dir, gezielt nachzufragen. Die Antwort geben dann die Menschen, die es betrifft."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L1-S09",
+      "lernziel": "L1-Z3",
+      "titel": "Risiko oder Problem?",
+      "situation": "In der AI-Liste steht als Risiko: «Der IT-Projektleiter fällt aus.» Tatsächlich ist er seit zwei Wochen krank, und niemand vertritt ihn. Was tust du mit dem Eintrag?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du lässt ihn im Register stehen und bewertest ihn später mit den anderen Risiken.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Was schon eingetreten ist, ist kein Risiko mehr, sondern ein Problem. Es braucht jetzt eine Lösung und keine Bewertung. Im Register wartet es, während der Schaden wächst."
+        },
+        {
+          "id": "B",
+          "text": "Du führst ihn als Problem und hältst als Risiko fest, dass Stellvertretungen fehlen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Du trennst sauber: Das Problem wird sofort gelöst, das Risiko dahinter kommt ins Register. Fehlende Stellvertretungen können auch andere Schlüsselpersonen treffen."
+        },
+        {
+          "id": "C",
+          "text": "Du löschst den Eintrag. Er ist ja kein Risiko mehr.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Formal stimmt das. Aber du verlierst den Hinweis auf das Risiko dahinter: Fällt die nächste Schlüsselperson aus, steht ihr wieder ohne Vertretung da."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L1-S10",
+      "lernziel": "L1-Z1",
+      "titel": "Das Register vom letzten Projekt",
+      "situation": "Eine Kollegin bietet dir das Risikoregister ihres CRM-Projekts vom letzten Jahr an. «Lass es von der AI auf ERP umschreiben, dann bist du fertig.» Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du nutzt altes Register und AI-Liste als Checklisten und klärst im Team, was bei euch anders ist.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "0",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Erfahrungen aus früheren Projekten sind wertvoll, aber jedes Projekt hat eigene Risiken. Zwei Checklisten und das Wissen des Teams ergeben zusammen ein Register, das passt."
+        },
+        {
+          "id": "B",
+          "text": "Du lässt die AI «CRM» durch «ERP» ersetzen und übernimmst das Ergebnis.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Das Register sieht fertig aus, beschreibt aber ein anderes Projekt mit anderen Leuten, Daten und Terminen. Was nur für euer ERP gilt, fehlt."
+        },
+        {
+          "id": "C",
+          "text": "Du lehnst dankend ab und beginnst bei null.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Dein Register wird zum Projekt passen. Du verzichtest aber auf Erfahrung, die bereits bezahlt ist, und brauchst länger."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L1-S11",
+      "lernziel": "L1-Z2",
+      "titel": "Immer dieselbe Art Risiko",
+      "situation": "Du hast die AI dreimal nach weiteren Risiken gefragt. Jedes Mal kommen technische Themen. Zu Menschen, Organisation oder Lieferanten steht nichts da. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Nenne weitere Risiken für unser ERP-Projekt.",
+        "antwort": "Serverausfall, fehlerhafte Schnittstellen, lange Antwortzeiten, Datenverlust, Softwarefehler nach Updates."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du hörst auf, die AI zu fragen, und überlegst dir die anderen Bereiche allein.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du schliesst die Lücke, aber langsam und nur aus deiner Sicht. Die AI hätte mit einer gezielteren Frage auch zu diesen Bereichen Ideen geliefert."
+        },
+        {
+          "id": "B",
+          "text": "Du schliesst daraus, dass die Risiken des Projekts vor allem technisch sind.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Die AI antwortet auf das, was du fragst, und bleibt im einmal eingeschlagenen Muster. Dass etwas nicht genannt wird, heisst nicht, dass es das Risiko nicht gibt."
+        },
+        {
+          "id": "C",
+          "text": "Du fragst gezielt nach Bereichen: Organisation, Mitarbeitende, Lieferanten, Recht.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Mit Kategorien im Prompt zwingst du die AI aus dem Muster. ERP-Projekte scheitern oft an Menschen und Abläufen, nicht an der Technik."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L1-S12",
+      "lernziel": "L1-Z3",
+      "titel": "Das Register auf deinem Laptop",
+      "situation": "Das Risikoregister ist fertig und liegt als Tabelle auf deinem Laptop. Im Team weiss niemand genau, was drinsteht oder wie man ein neues Risiko meldet. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du lässt es so. Du führst das Register, also brauchst nur du es.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Ein Register, das nur eine Person kennt, steuert nichts. Neue Risiken erreichen dich nicht, und bist du abwesend, weiss niemand Bescheid."
+        },
+        {
+          "id": "B",
+          "text": "Du verschickst die Tabelle jede Woche per Mail an alle.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "0"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Alle können das Register nun lesen. Es entstehen aber viele Kopien, und niemand weiss, welche gilt. Melden kann man weiterhin nichts."
+        },
+        {
+          "id": "C",
+          "text": "Du legst es an einem gemeinsamen Ort ab und erklärst, wie alle ein Risiko melden können.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "0",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Ein Register lebt davon, dass alle es sehen und ergänzen können. Ein gemeinsamer Ort und ein einfacher Meldeweg kosten wenig und bringen viel."
         }
       ],
       "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
