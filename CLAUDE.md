@@ -6,6 +6,7 @@ Browser-Game und E-Learning zum Thema «Risikomanagement mit AI» (HWZ, Modul Pr
 
 - `docs/REQUIREMENTS.md`: Was gebaut wird. Jede Anforderung hat eine ID (z. B. F-204).
 - `docs/IMPORT.md`: Format der Inhaltsdateien.
+- `docs/CHECKLIST.md`: Manuelle Prüfung für das, was Tests nicht sehen.
 - `docs/later/BRAINSTORMING.md`: Offene Fragen. Was dort steht, ist **nicht** entschieden. Nicht umsetzen, sondern nachfragen.
 
 Widerspricht eine Anweisung im Chat den Requirements, frag nach und passe nach der Antwort zuerst `docs/REQUIREMENTS.md` an, dann den Code.
@@ -33,6 +34,10 @@ Neue Abhängigkeiten nur nach Rückfrage, mit Begründung und Grösse.
 | `npm run check:all` | `check` plus `test:e2e` |
 
 Fehlt einer dieser Befehle, richte ihn ein, bevor du Features baust.
+
+Die Skripte in `scripts/` laufen direkt mit Node (ab 22.18, ohne Zusatzwerkzeug). Darum tragen alle relativen Importe die Endung `.ts`, und es gibt keine `enum` oder andere Syntax, die Node nicht einfach entfernen kann.
+
+`VITE_SHOW_DRAFTS=1` beim Build zeigt auch Fälle im Status `entwurf` (F-906). Die End-to-End-Tests bauen damit.
 
 ## Architektur
 
