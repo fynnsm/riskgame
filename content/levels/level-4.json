@@ -1,0 +1,421 @@
+{
+  "schemaVersion": 1,
+  "id": "level-4",
+  "nummer": 4,
+  "titel": "Risiken überwachen",
+  "prozessschritt": "ueberwachen",
+  "projekt": {
+    "titel": "Neues Patientenportal für ein Regionalspital",
+    "beschreibung": "Ein Regionalspital baut ein Portal, über das Patientinnen und Patienten Termine buchen und Unterlagen einsehen. Das Projekt läuft seit drei Monaten. Risiken und Massnahmen sind definiert. Jetzt geht es darum, dranzubleiben.",
+    "gebaeude": "spital"
+  },
+  "lernziele": [
+    {
+      "id": "L4-Z1",
+      "text": "Du kannst für wichtige Risiken Frühwarnzeichen und Schwellenwerte festlegen und weisst, was beim Überschreiten zu tun ist."
+    },
+    {
+      "id": "L4-Z2",
+      "text": "Du kannst das Risikoregister aktuell halten: neue Risiken aufnehmen, veränderte neu bewerten, erledigte schliessen."
+    },
+    {
+      "id": "L4-Z3",
+      "text": "Du kannst Auswertungen einer AI im Monitoring als Hinweis nutzen und sie bei den Beteiligten überprüfen."
+    }
+  ],
+  "theorie": [
+    {
+      "typ": "karte",
+      "id": "L4-T1",
+      "titel": "Dranbleiben",
+      "text": "Risiken verändern sich: Neue kommen dazu, alte fallen weg, Wahrscheinlichkeiten verschieben sich. Überwachen heisst, das Register regelmässig anzuschauen, Massnahmen nachzuverfolgen und früh zu merken, wenn etwas kippt. Am einfachsten geht das mit einem festen Platz in jeder Projektsitzung.",
+      "grafik": "prozess"
+    },
+    {
+      "typ": "karte",
+      "id": "L4-T2",
+      "titel": "Frühwarnzeichen",
+      "text": "Ein Frühwarnzeichen ist eine Messgrösse, an der du erkennst, dass ein Risiko näher rückt, zum Beispiel die Zahl offener Fehler. Dazu gehört ein Schwellenwert und eine Abmachung: Was tun wir, wenn er überschritten ist? Ohne Schwelle schaut man zu, bis es zu spät ist."
+    },
+    {
+      "typ": "karte",
+      "id": "L4-T3",
+      "titel": "Ein Register, das lebt",
+      "text": "Ein Register, das seit dem Kick-off niemand geöffnet hat, ist wertlos. Führe es nach: Neue Risiken kommen hinein, veränderte werden neu bewertet, erledigte werden mit einer Notiz geschlossen. So bleibt es kurz, aktuell und glaubwürdig.",
+      "grafik": "register"
+    },
+    {
+      "typ": "karte",
+      "id": "L4-T4",
+      "titel": "AI im Monitoring",
+      "text": "Eine AI kann Statusberichte zusammenfassen und Muster in Protokollen finden. Das spart Lesezeit. Sie sieht aber nur, was geschrieben steht, und kann sich irren: Sie übersieht, was niemand notiert hat, und meldet manchmal Dinge, die keine sind. Nimm ihre Auswertung als Hinweis und frag bei den Menschen nach."
+    }
+  ],
+  "situationenProDurchgang": 6,
+  "situationen": [
+    {
+      "id": "L4-S01",
+      "lernziel": "L4-Z3",
+      "titel": "Alles im grünen Bereich",
+      "situation": "Du lässt die AI die Statusberichte der Teams zusammenfassen. Das Ergebnis ist beruhigend. Gestern hat dir aber die Testleiterin beim Kaffee gesagt, die Tests hinkten hinterher. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Fasse diese sechs Statusberichte zusammen. Gibt es kritische Risiken?",
+        "antwort": "Alle Teams melden einen planmässigen Verlauf. Es wurden keine kritischen Risiken festgestellt. Der Gesamtstatus des Projekts ist grün."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du meldest dem Lenkungsausschuss den Status Grün.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Die AI fasst zusammen, was in den Berichten steht. Was die Teams nicht aufschreiben, sieht sie nicht. Du gibst eine Entwarnung weiter, an der du selbst zweifelst."
+        },
+        {
+          "id": "B",
+          "text": "Du fragst bei der Testleiterin nach und vergleichst mit den Testzahlen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Die Zusammenfassung ist ein Hinweis, das Gespräch die Überprüfung. Berichte sind oft geschönt. Die Zahlen und ein direktes Gespräch zeigen dir die wahre Lage."
+        },
+        {
+          "id": "C",
+          "text": "Du verzichtest künftig auf AI-Zusammenfassungen und liest alle Berichte selbst.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du siehst die Berichte nun im Original. Aber auch darin stand nichts vom Rückstand. Das Problem war nicht die AI, sondern dass du dich nur auf Berichte verlassen hast."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L4-S02",
+      "lernziel": "L4-Z1",
+      "titel": "Die Zahl ohne Schwelle",
+      "situation": "Du erfasst jede Woche die Zahl der offenen Fehler im Portal. Sie steigt seit einem Monat langsam an. Ab wann das ein Problem ist, wurde nie festgelegt. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du schaust weiter zu. Solange niemand reklamiert, ist es kein Problem.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Ohne Schwelle gewöhnt man sich an jeden Wert. Wenn die Reklamationen kommen, ist es für günstige Korrekturen zu spät."
+        },
+        {
+          "id": "B",
+          "text": "Du legst einen Schwellenwert fest und was passiert, wenn er überschritten wird.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Die Schwelle macht aus einer Zahl ein Frühwarnzeichen. Alle wissen im Voraus, ab wann gehandelt wird und wie."
+        },
+        {
+          "id": "C",
+          "text": "Du führst zwanzig weitere Kennzahlen ein, um ein vollständiges Bild zu bekommen.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Mehr Zahlen geben mehr Einblick, aber auch mehr Aufwand. Ohne Schwellenwerte sind es zwanzig weitere Zahlen, bei denen niemand weiss, wann sie kritisch sind."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L4-S03",
+      "lernziel": "L4-Z2",
+      "titel": "Das Register von damals",
+      "situation": "Dir fällt auf: Das Risikoregister wurde seit dem Kick-off vor drei Monaten nicht mehr geöffnet. Im Projekt hat sich in dieser Zeit viel verändert. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du gehst das Register jetzt einmal gründlich durch und dann wieder am Projektende.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Jetzt ist es aktuell. In drei Monaten ist es das aber wieder nicht. Eine einmalige Aktion ersetzt keine Regelmässigkeit."
+        },
+        {
+          "id": "B",
+          "text": "Du schaust es am Projektende für die Lessons Learned wieder an.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Am Projektende ist das Register nur noch Geschichte. Risiken überwacht man, während man noch etwas dagegen tun kann."
+        },
+        {
+          "id": "C",
+          "text": "Du setzt die wichtigsten Risiken fest auf die Traktandenliste jeder Projektsitzung.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Zehn Minuten pro Sitzung halten das Register aktuell und die Risiken im Bewusstsein des Teams. Regelmässig und kurz schlägt selten und gründlich."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L4-S04",
+      "lernziel": "L4-Z3",
+      "titel": "Alarm aus den Protokollen",
+      "situation": "Ein AI-Tool wertet eure Sitzungsprotokolle aus und meldet ein neues Risiko. Du selbst hattest bisher keinen solchen Eindruck. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Gibt es in den Protokollen der letzten vier Wochen Hinweise auf neue Risiken?",
+        "antwort": "In den Protokollen häufen sich Hinweise auf eine Überlastung im Testteam. Das Risiko von Verzögerungen und Qualitätsproblemen ist erhöht."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du meldest das Risiko sofort als kritisch an den Lenkungsausschuss.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du reagierst schnell, aber auf einen ungeprüften Hinweis. Stellt er sich als falsch heraus, hast du Unruhe ausgelöst und Vertrauen verspielt."
+        },
+        {
+          "id": "B",
+          "text": "Du sprichst mit der Testleiterin und fragst, wie sie die Lage sieht.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Die AI erkennt Muster im Text, die Testleiterin kennt die Wirklichkeit. Ein kurzes Gespräch zeigt, ob der Hinweis stimmt und was zu tun ist."
+        },
+        {
+          "id": "C",
+          "text": "Du ignorierst die Meldung. Die AI interpretiert zu viel in die Protokolle hinein.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Die AI kann sich irren, aber sie kann auch etwas sehen, das dir entgangen ist. Einen Hinweis ohne Prüfung zu verwerfen, ist so unkritisch, wie ihm blind zu glauben."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L4-S05",
+      "lernziel": "L4-Z2",
+      "titel": "Ein neues Risiko taucht auf",
+      "situation": "Mitten im Projekt erfährst du, dass für Patientendaten bald strengere Vorgaben gelten. Davon stand beim Kick-off nichts im Register. Das Register wurde damals vom Lenkungsausschuss abgenommen. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du stoppst das Projekt, bis alle Fragen zu den neuen Vorgaben geklärt sind.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "-gross",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du gehst auf Nummer sicher, zahlst aber mit einem grossen Verzug. Meist lässt sich ein neues Risiko klären, während die übrige Arbeit weiterläuft."
+        },
+        {
+          "id": "B",
+          "text": "Du nimmst das Risiko ins Register auf, bewertest es und bestimmst eine zuständige Person.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Das Register ist nie fertig. Neue Risiken durchlaufen denselben Weg wie die ersten: festhalten, bewerten, Massnahme und zuständige Person bestimmen."
+        },
+        {
+          "id": "C",
+          "text": "Du kümmerst dich später darum. Das Register ist abgenommen und bleibt, wie es ist.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Ein abgenommenes Register ist kein abgeschlossenes. Wer neue Risiken nicht aufnimmt, steuert das Projekt nach der Lage von gestern."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L4-S06",
+      "lernziel": "L4-Z1",
+      "titel": "Die Schwelle ist überschritten",
+      "situation": "Der Lieferant der Schnittstelle ist zwei Wochen im Verzug. Damit ist die Schwelle erreicht, die ihr für diesen Fall festgelegt habt. Ein Notfallplan liegt bereit, kostet aber Geld. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du löst den Notfallplan aus, wie vereinbart, und informierst die Beteiligten.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "0",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Dafür habt ihr die Schwelle festgelegt. Wer im Ernstfall dem Plan folgt, verliert keine Zeit mit Diskussionen und begrenzt den Schaden."
+        },
+        {
+          "id": "B",
+          "text": "Du wartest noch eine Woche. Vielleicht holt der Lieferant auf.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Hoffnung ist keine Massnahme. Die Schwelle wurde in Ruhe festgelegt, damit im Ernstfall nicht gezögert wird. Jede Woche Warten macht den Notfallplan teurer."
+        },
+        {
+          "id": "C",
+          "text": "Du suchst spontan nach einer neuen Lösung, statt den Plan auszulösen.",
+          "wirkung": {
+            "budget": "-mittel",
+            "zeit": "-klein",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Vielleicht findest du etwas Besseres. Du verlierst aber Zeit und Geld und lässt einen Plan liegen, der genau für diesen Fall vorbereitet wurde."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L4-S07",
+      "lernziel": "L4-Z2",
+      "titel": "Erledigte Risiken",
+      "situation": "Das Register hat inzwischen 40 Einträge. Viele sind überholt: Die Datenübernahme ist längst abgeschlossen, steht aber noch als offenes Risiko drin. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du löschst die überholten Einträge aus dem Register.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Das Register ist wieder übersichtlich. Du verlierst aber die Spur: Später weiss niemand mehr, dass das Risiko bestand und wie ihr damit umgegangen seid."
+        },
+        {
+          "id": "B",
+          "text": "Du schliesst die überholten Einträge mit einer kurzen Notiz und blendest sie aus.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Geschlossen ist nicht gelöscht. Das Register bleibt übersichtlich, und das Wissen bleibt für den Projektabschluss und spätere Projekte erhalten."
+        },
+        {
+          "id": "C",
+          "text": "Du lässt alles stehen. Ein vollständiges Register schadet nicht.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Es schadet doch: Zwischen überholten Einträgen gehen die aktuellen unter, und das Team nimmt das Register nicht mehr ernst."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L4-S08",
+      "lernziel": "L4-Z3",
+      "titel": "Der automatische Bericht",
+      "situation": "Die AI erstellt aus dem Register den monatlichen Risikobericht für den Lenkungsausschuss. Beim Überfliegen stutzt du: Bei einem Risiko hat die Massnahme erst begonnen. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Schreibe aus diesem Risikoregister einen Monatsbericht für den Lenkungsausschuss.",
+        "antwort": "Im Berichtsmonat wurden drei Risiken behoben, darunter das Risiko R7 (Ausfall der Schnittstelle zum Kliniksystem). Die Risikolage hat sich insgesamt entspannt."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du schreibst den Bericht wie früher von Hand.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Dein Bericht stimmt, kostet dich aber jeden Monat Stunden. Mit einem Entwurf der AI und einer sauberen Kontrolle wärst du schneller und gleich sicher."
+        },
+        {
+          "id": "B",
+          "text": "Du verschickst den Bericht. Kleine Ungenauigkeiten merkt niemand.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "«Behoben» statt «in Arbeit» ist keine Kleinigkeit. Der Lenkungsausschuss wähnt sich in Sicherheit, und die Verantwortung für den Bericht trägst du, nicht die AI."
+        },
+        {
+          "id": "C",
+          "text": "Du gleichst den Bericht Punkt für Punkt mit dem Register ab und korrigierst ihn.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Die AI spart dir das Schreiben, nicht das Prüfen. Was unter deinem Namen an den Lenkungsausschuss geht, musst du selbst kontrolliert haben."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    }
+  ]
+}

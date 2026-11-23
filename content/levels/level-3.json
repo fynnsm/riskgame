@@ -1,0 +1,420 @@
+{
+  "schemaVersion": 1,
+  "id": "level-3",
+  "nummer": 3,
+  "titel": "Massnahmen planen",
+  "prozessschritt": "massnahmen",
+  "projekt": {
+    "titel": "Sanierung einer Wohnsiedlung",
+    "beschreibung": "Eine Genossenschaft saniert drei Mehrfamilienhäuser mit 48 Wohnungen. Die Mieterinnen und Mieter bleiben während der Arbeiten in ihren Wohnungen. Die wichtigsten Risiken sind bewertet. Jetzt planst du, was ihr dagegen tut.",
+    "gebaeude": "wohnhaus"
+  },
+  "lernziele": [
+    {
+      "id": "L3-Z1",
+      "text": "Du kannst für ein Risiko die passende Strategie wählen: vermeiden, vermindern, übertragen oder akzeptieren."
+    },
+    {
+      "id": "L3-Z2",
+      "text": "Du kannst eine Massnahme konkret machen: mit zuständiger Person, Termin und einem Aufwand, der zum Risiko passt."
+    },
+    {
+      "id": "L3-Z3",
+      "text": "Du kannst Massnahmen, die eine AI vorschlägt, auf Machbarkeit und Nebenwirkungen prüfen."
+    }
+  ],
+  "theorie": [
+    {
+      "typ": "karte",
+      "id": "L3-T1",
+      "titel": "Vier Strategien",
+      "text": "Für jedes wichtige Risiko wählst du eine Strategie. Vermeiden: Du änderst den Plan, sodass das Risiko wegfällt. Vermindern: Du senkst Wahrscheinlichkeit oder Auswirkung. Übertragen: Jemand anderes trägt den Schaden, etwa eine Versicherung. Akzeptieren: Du nimmst das Risiko bewusst in Kauf und hältst das fest.",
+      "grafik": "strategien"
+    },
+    {
+      "typ": "karte",
+      "id": "L3-T2",
+      "titel": "Wer macht was bis wann?",
+      "text": "Eine Massnahme ohne zuständige Person bleibt liegen. Zu jedem wichtigen Risiko gehört darum jemand, der es im Auge behält, und zu jeder Massnahme ein Termin. «Das Team kümmert sich» heisst in der Praxis: niemand."
+    },
+    {
+      "typ": "karte",
+      "id": "L3-T3",
+      "titel": "Aufwand und Nutzen",
+      "text": "Eine Massnahme darf nicht mehr kosten als der Schaden, den sie verhindert. Für kleine Risiken reicht oft ein Puffer. Für die grossen brauchst du neben der Vorbeugung auch einen Notfallplan: Was tun wir, wenn es trotzdem passiert? Ein Rest an Risiko bleibt immer."
+    },
+    {
+      "typ": "karte",
+      "id": "L3-T4",
+      "titel": "AI als Sparringspartner",
+      "text": "Eine AI schlägt dir zu jedem Risiko viele Massnahmen vor. Das erweitert den Blick. Sie weiss aber nicht, was auf deiner Baustelle machbar ist, was es kostet und wen es stört. Prüfe jeden Vorschlag mit den Leuten vor Ort auf Machbarkeit und Nebenwirkungen."
+    }
+  ],
+  "situationenProDurchgang": 6,
+  "situationen": [
+    {
+      "id": "L3-S01",
+      "lernziel": "L3-Z3",
+      "titel": "Zwanzig Massnahmen",
+      "situation": "Bei der Sanierung könnte Asbest zum Vorschein kommen. Du fragst die AI nach Massnahmen und bekommst zwanzig Vorschläge, sauber nummeriert. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Welche Massnahmen gibt es gegen das Risiko, bei einer Sanierung auf Asbest zu stossen?",
+        "antwort": "1. Schadstoffuntersuchung vor Baubeginn 2. Reserve im Zeitplan 3. Fachfirma auf Abruf 4. Information der Bewohner 5. Schutzkonzept ... (20 Punkte)"
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du setzt die ersten drei um. Die AI wird sie nach Wichtigkeit sortiert haben.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Die Reihenfolge einer AI-Liste sagt nichts über die Wichtigkeit für dein Projekt. Du wählst ungeprüft und weisst nicht, ob die drei bei euch überhaupt wirken."
+        },
+        {
+          "id": "B",
+          "text": "Du setzt alle zwanzig um. Bei Asbest darf man nichts riskieren.",
+          "wirkung": {
+            "budget": "-gross",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Das Risiko ist gut abgedeckt, aber viele Massnahmen überschneiden sich. Du gibst viel Geld und Zeit aus, die bei anderen Risiken fehlen."
+        },
+        {
+          "id": "C",
+          "text": "Du wählst mit der Bauleitung die zwei oder drei aus, die machbar sind und am meisten wirken.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Die AI liefert die Auswahl, die Bauleitung das Urteil. Wenige, gut gewählte Massnahmen wirken besser als eine lange Liste, die niemand umsetzt."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L3-S02",
+      "lernziel": "L3-Z2",
+      "titel": "Die teure Absicherung",
+      "situation": "Ein Risiko: Das Gerüst könnte einige Tage länger stehen als geplant. Erwarteter Schaden: rund CHF 10’000. Vorgeschlagen wird ein zweites Montageteam auf Abruf für CHF 80’000. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du bestellst das zweite Team. Sicher ist sicher.",
+          "wirkung": {
+            "budget": "-gross",
+            "zeit": "0",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Das Risiko ist damit fast weg, aber du zahlst achtmal mehr, als der Schaden kosten würde. Das Geld fehlt für Risiken, die es nötiger hätten."
+        },
+        {
+          "id": "B",
+          "text": "Du planst einen Puffer von einigen Tagen und eine kleine Reserve ein.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "0",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Der Aufwand passt zum Risiko. Ein Puffer und eine Reserve fangen den Schaden ab, falls er eintritt, und kosten einen Bruchteil."
+        },
+        {
+          "id": "C",
+          "text": "Du tust nichts und streichst das Risiko aus dem Register.",
+          "wirkung": {
+            "budget": "+klein",
+            "zeit": "0",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Auf eine teure Massnahme zu verzichten, ist richtig. Das Risiko aber einfach zu streichen, heisst, dass niemand mehr hinschaut und keine Reserve da ist."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L3-S03",
+      "lernziel": "L3-Z2",
+      "titel": "Wem gehört das Risiko?",
+      "situation": "Ihr habt zu den zehn wichtigsten Risiken Massnahmen definiert. In der Spalte «Zuständig» steht überall «Projektteam». Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du lässt es so. Im Team fühlen sich alle verantwortlich.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Wenn alle zuständig sind, ist es niemand. Die Massnahmen bleiben liegen, bis das Risiko eintritt und alle überrascht sind."
+        },
+        {
+          "id": "B",
+          "text": "Du trägst dich bei allen zehn selbst ein.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Nun ist die Verantwortung klar. Du wirst aber zum Engpass, und für Risiken auf der Baustelle bist du nicht am nächsten dran."
+        },
+        {
+          "id": "C",
+          "text": "Du bestimmst pro Risiko eine zuständige Person und pro Massnahme einen Termin.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Eine Person, ein Termin: So wird aus einer Absicht eine Aufgabe. Zuständig ist am besten, wer am nächsten am Risiko ist."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L3-S04",
+      "lernziel": "L3-Z1",
+      "titel": "Versichern oder selber tragen?",
+      "situation": "Während der Dacharbeiten ist das Dach zeitweise offen. Ein Gewitter könnte in mehreren Wohnungen grossen Wasserschaden anrichten. Vorbeugen kannst du nur begrenzt. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du schliesst eine Versicherung ab und lässt das Dach jeden Abend provisorisch abdecken.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "0",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Du überträgst den finanziellen Schaden und verminderst zugleich die Wahrscheinlichkeit. Gerade bei seltenen, teuren Ereignissen ist Übertragen sinnvoll."
+        },
+        {
+          "id": "B",
+          "text": "Du verschiebst die Dacharbeiten auf nächstes Jahr.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-gross",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Du vermeidest das Risiko für den Moment, zahlst aber mit einer grossen Verzögerung. Und auch nächstes Jahr kann es gewittern."
+        },
+        {
+          "id": "C",
+          "text": "Du nimmst das Risiko in Kauf. Im Sommer regnet es selten lange.",
+          "wirkung": {
+            "budget": "+klein",
+            "zeit": "0",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Akzeptieren passt zu kleinen Risiken. Hier ist der mögliche Schaden gross, und du hast weder eine Reserve noch einen Plan, wenn es doch passiert."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L3-S05",
+      "lernziel": "L3-Z1",
+      "titel": "Akzeptieren ist auch ein Entscheid",
+      "situation": "Ein kleines Risiko: Die Farbe für die Treppenhäuser könnte ein paar Tage zu spät kommen. Der Schaden wäre gering, die Malerarbeiten liegen nicht auf dem kritischen Pfad. Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du schliesst vorsorglich einen Vertrag mit einem zweiten Lieferanten ab.",
+          "wirkung": {
+            "budget": "-mittel",
+            "zeit": "-klein",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Das Risiko ist kleiner, aber der Aufwand steht in keinem Verhältnis zum möglichen Schaden. Nicht jedes Risiko braucht eine Massnahme."
+        },
+        {
+          "id": "B",
+          "text": "Du kümmerst dich nicht weiter darum und trägst es auch nicht ein.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "0",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Der Entscheid, nichts zu tun, kann richtig sein. Aber nur, wenn er bewusst getroffen und festgehalten ist. Sonst weiss später niemand, ob das Risiko geprüft oder vergessen wurde."
+        },
+        {
+          "id": "C",
+          "text": "Du akzeptierst das Risiko bewusst, hältst das im Register fest und planst etwas Puffer ein.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Akzeptieren ist eine vollwertige Strategie. Wichtig ist, dass der Entscheid bewusst fällt und dokumentiert ist. So bleibt das Risiko sichtbar, falls sich die Lage ändert."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L3-S06",
+      "lernziel": "L3-Z3",
+      "titel": "Die Nebenwirkung",
+      "situation": "Der Zeitplan ist eng. Die AI schlägt eine Massnahme vor, die auf den ersten Blick einleuchtet. In den Häusern wohnen aber Familien und ältere Menschen. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Wie kann ich das Terminrisiko bei einer Gebäudesanierung senken?",
+        "antwort": "Verlegen Sie lärmintensive Arbeiten in die Abend- und Nachtstunden und arbeiten Sie im Zweischichtbetrieb. So gewinnen Sie bis zu 40 % Zeit."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du prüfst mit Bauleitung und Verwaltung, was erlaubt und für die Bewohner zumutbar ist.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Eine Massnahme kann neue Risiken schaffen: Lärmklagen, fehlende Bewilligungen, verärgerte Bewohner. Erst die Prüfung zeigt, ob sie mehr löst als auslöst."
+        },
+        {
+          "id": "B",
+          "text": "Du führst die Nachtarbeit ein. 40 % Zeitgewinn lösen dein Terminproblem.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+mittel",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Die AI weiss nicht, dass die Häuser bewohnt sind und welche Vorschriften gelten. Du tauschst ein Terminrisiko gegen Klagen, Baustopp und Vertrauensverlust."
+        },
+        {
+          "id": "C",
+          "text": "Du nutzt ab jetzt keine AI-Vorschläge mehr für Massnahmen.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "-klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Diesen Fehler vermeidest du, aber auch die guten Ideen. Das Problem war nicht der Vorschlag, sondern dass er ungeprüft umgesetzt worden wäre."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L3-S07",
+      "lernziel": "L3-Z2",
+      "titel": "Plan B fehlt",
+      "situation": "Dein grösstes Risiko: Der Fensterlieferant gerät in Schwierigkeiten und kann nicht liefern. Ihr habt vorbeugende Massnahmen definiert, etwa regelmässige Gespräche. Was, wenn es trotzdem passiert? Was tust du?",
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du bestellst alle Fenster vorsorglich zusätzlich bei einem zweiten Lieferanten.",
+          "wirkung": {
+            "budget": "-gross",
+            "zeit": "0",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Die Lieferung ist gesichert, aber du bezahlst die Fenster faktisch doppelt. Ein Notfallplan hätte denselben Schutz für viel weniger Geld gebracht."
+        },
+        {
+          "id": "B",
+          "text": "Du verlässt dich auf die Vorbeugung. Mehr kann man nicht tun.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-mittel"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Vorbeugung senkt die Wahrscheinlichkeit, nicht die Auswirkung. Tritt der Fall ein, beginnt ihr unter Zeitdruck bei null."
+        },
+        {
+          "id": "C",
+          "text": "Du legst einen Notfallplan mit Auslöser, Ersatzlieferant und Reserve fest.",
+          "wirkung": {
+            "budget": "-klein",
+            "zeit": "-klein",
+            "stabilitaet": "+gross"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Für die grössten Risiken brauchst du beides: vorbeugen und vorbereitet sein. Ein klarer Auslöser sagt, wann der Plan startet, und die Reserve macht ihn bezahlbar."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    },
+    {
+      "id": "L3-S08",
+      "lernziel": "L3-Z3",
+      "titel": "Der Plan der AI",
+      "situation": "Du lässt die AI aus dem Register einen Massnahmenplan erstellen. Er sieht fertig aus: mit Namen, Terminen und Aufwand. Mit den genannten Personen hat niemand gesprochen. Was tust du?",
+      "aiAusgabe": {
+        "prompt": "Erstelle aus diesen Risiken einen Massnahmenplan mit Zuständigen und Terminen.",
+        "antwort": "Schadstoffprüfung: Bauleiter, bis 15. März, 2 Tage. Information der Bewohner: Verwaltung, bis 1. März, 1 Tag. Ersatzlieferant: Einkauf, bis 20. März, 3 Tage."
+      },
+      "optionen": [
+        {
+          "id": "A",
+          "text": "Du verschickst den Plan als verbindlich. Er ist vollständig und klar.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "+klein",
+            "stabilitaet": "-gross"
+          },
+          "einstufung": "riskant",
+          "erklaerung": "Die AI hat Termine und Aufwand erfunden und Leute eingeteilt, ohne deren Auslastung zu kennen. Ein Plan, dem die Zuständigen nie zugestimmt haben, wird nicht eingehalten."
+        },
+        {
+          "id": "B",
+          "text": "Du nimmst den Plan als Entwurf und stimmst Termine und Aufwand mit den Personen ab.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-klein",
+            "stabilitaet": "+mittel"
+          },
+          "einstufung": "gut",
+          "erklaerung": "Als Entwurf spart der Plan Schreibarbeit. Verbindlich wird er erst, wenn die Zuständigen zugesagt haben. So nutzt du das Tempo der AI, ohne ihre Annahmen zu übernehmen."
+        },
+        {
+          "id": "C",
+          "text": "Du verwirfst den Entwurf und schreibst den Plan selbst von Grund auf.",
+          "wirkung": {
+            "budget": "0",
+            "zeit": "-mittel",
+            "stabilitaet": "+klein"
+          },
+          "einstufung": "vertretbar",
+          "erklaerung": "Dein Plan beruht auf echten Absprachen, aber du machst die Strukturarbeit doppelt. Als Entwurf hätte dir die AI-Version Zeit gespart."
+        }
+      ],
+      "quelle": "Platzhalter von Claude, fachlich noch nicht von der Gruppe geprüft",
+      "autor": "CL",
+      "status": "entwurf"
+    }
+  ]
+}
