@@ -82,11 +82,30 @@ export function createApp(options: AppOptions): App {
   let lastActionAt = env.now();
   let view: SceneView | null = null;
 
-  const stage = el('div', { class: 'stage' });
   const canvasHost = el('div', { class: 'canvas-host', attrs: { 'aria-hidden': 'true' } });
   const hudHost = el('div', { class: 'hud-host' });
   const panel = el('main', { class: 'panel' });
   const menuButton = button(T.menu, () => toggleMenu(), { class: 'btn-menu', testId: 'menu' });
+  const topBar = el('div', { class: 'top-bar' }, [menuButton, hudHost]);
+
+  /**
+   * The canvas fills the window and the HTML floats above it. The view is told which
+   * part is covered, so it frames the building in what remains visible.
+   */
+  function updateInsets(): void {
+    if (!view) return;
+    const host = canvasHost.getBoundingClientRect();
+    const card = panel.getBoundingClientRect();
+    const bar = topBar.getBoundingClientRect();
+    const top = Math.max(0, bar.bottom - host.top);
+    // A panel that leaves most of the width free sits at the side; otherwise it is the bottom sheet.
+    const atSide = card.left - host.left > host.width * 0.35;
+    view.setInsets(
+      atSide
+        ? { top, right: Math.max(0, host.right - card.left), bottom: 0, left: 0 }
+        : { top, right: 0, bottom: Math.max(0, host.bottom - card.top), left: 0 },
+    );
+  }
 
   function findLevel(id: string): Level | null {
     return levels.find((l) => l.level.id === id)?.level ?? null;
@@ -211,7 +230,7 @@ export function createApp(options: AppOptions): App {
     }
     if (after.phase === 'result' && before.phase !== 'result') {
       progress = finishRun(progress, after, active.level);
-      logger.info(after.outcome === 'collapsed' ? 'level.collapsed' : 'level.completed', {
+      logger.info(`level.${after.outcome}`, {
         levelId: after.levelId,
         stars: starsFor(after),
         budget: after.gauges.budget,
@@ -329,15 +348,12 @@ export function createApp(options: AppOptions): App {
 
       clear(hudHost);
       const active = activeRun();
-      if (active && overlay !== 'error') {
-        const last = active.run.history[active.run.history.length - 1];
-        const delta = active.run.phase === 'feedback' && last ? last.delta : null;
-        hudHost.append(hud(active.run.gauges, delta));
-      }
+      if (active && overlay !== 'error') hudHost.append(hud(active.run));
       root.dataset.mode = active ? 'level' : 'city';
       menuButton.hidden = overlay === 'error';
 
       view?.render(sceneModel(levels, progress, active?.run ?? null));
+      updateInsets();
       screen.querySelector<HTMLElement>('[data-focus]')?.focus({ preventScroll: true });
     } catch (cause) {
       showFatal(cause);
@@ -407,17 +423,7 @@ export function createApp(options: AppOptions): App {
   return {
     start(): void {
       clear(root);
-      stage.append(canvasHost, hudHost);
-      root.append(
-        el('div', { class: 'column' }, [
-          el('header', { class: 'topbar' }, [
-            el('span', { class: 'brand', text: T.appTitle }),
-            menuButton,
-          ]),
-          stage,
-          panel,
-        ]),
-      );
+      root.append(canvasHost, topBar, panel);
       restore();
       try {
         view = options.createView(canvasHost);
@@ -429,6 +435,7 @@ export function createApp(options: AppOptions): App {
       }
       root.dataset.renderer = view ? options.rendererName : 'none';
       document.addEventListener('keydown', onKeyDown);
+      window.addEventListener('resize', updateInsets);
       logger.info('app.ready', { levels: levels.length, renderer: options.rendererName });
       render();
     },

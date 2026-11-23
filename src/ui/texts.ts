@@ -14,7 +14,7 @@ export const T = {
     stabilitaet: 'Stabilität',
   } satisfies Record<GaugeKey, string>,
   gaugeCritical: 'kritisch',
-  gaugeOf: (value: number) => `${value} von 100`,
+  stepper: (current: number, total: number) => `Entscheid ${current} von ${total}`,
 
   ratings: {
     gut: 'Gut',
@@ -60,6 +60,9 @@ export const T = {
     project: 'Dein Projekt',
     goals: 'Das lernst du',
     start: 'Los gehts',
+    rulesHeading: 'So bestehst du',
+    rules: (steps: number, required: number, max: number) =>
+      `Du triffst ${steps} Entscheide. Fällt eine Anzeige auf null, stürzt das Gebäude ein. Bleibt es stehen, folgt die Bauabnahme: Du brauchst mindestens ${required} von ${max} Punkten. Ein guter Entscheid gibt 2 Punkte, ein vertretbarer 1, ein riskanter 0.`,
   },
 
   theory: {
@@ -88,6 +91,7 @@ export const T = {
     changes: 'Veränderung der Anzeigen',
     noChange: 'unverändert',
     collapse: 'Eine Anzeige ist auf null gefallen. Das Gebäude stürzt ein.',
+    rejected: 'Das Gebäude steht, aber die Bauabnahme ist nicht bestanden.',
     toResult: 'Zur Auswertung',
   },
 
@@ -97,6 +101,11 @@ export const T = {
     completedLead: 'Das Projekt ist abgeschlossen. Dein Gebäude bleibt so in der Stadt stehen.',
     collapsedLead: (gauges: string) =>
       `Das Projekt ist gescheitert: ${gauges} ist auf null gefallen.`,
+    rejected: 'Bauabnahme nicht bestanden',
+    rejectedLead: (points: number, required: number, max: number) =>
+      `Das Gebäude steht, aber zu viele Entscheide waren riskant oder nur vertretbar. Du hast ${points} von ${max} Punkten erreicht, nötig sind ${required}.`,
+    rejectedCauses: 'Diese Entscheide haben Punkte gekostet',
+    points: (points: number, max: number) => `${points} von ${max} Punkten`,
     causes: 'Diese Entscheide haben das Gebäude gekippt',
     causeLoss: (gauge: string, loss: number) => `${gauge} −${loss}`,
     finalGauges: 'Endstand',

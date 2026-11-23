@@ -2,16 +2,15 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
+import type { Level, OptionId } from '../../src/content/schema.ts';
+import { replay } from '../../src/core/game.ts';
 
 type Rating = 'gut' | 'vertretbar' | 'riskant';
-interface LevelFile {
-  theorie: unknown[];
-  situationen: { id: string; optionen: { text: string; einstufung: Rating }[] }[];
-}
 
 const level1 = JSON.parse(
   readFileSync(join(import.meta.dirname, '..', '..', 'content', 'levels', 'level-1.json'), 'utf8'),
-) as LevelFile;
+) as Level;
+const STEPS = level1.situationenProDurchgang;
 
 /** The simple mode is the basis of these tests (CLAUDE.md, rule 8). */
 const SIMPLE = '/?renderer=none';
@@ -58,10 +57,11 @@ test('plays a whole level and keeps the finished building', async ({ page }) => 
   await startLevel1(page);
   await expect(page.getByTestId('skip-theory')).toHaveCount(0);
   await throughBriefingAndTheory(page);
-  await expect(gauge(page, 'budget')).toHaveAttribute('data-value', '70');
+  await expect(gauge(page, 'budget')).toHaveAttribute('data-value', '60');
+  await expect(page.getByTestId('stepper').locator('li')).toHaveCount(STEPS);
 
-  for (let i = 0; i < 6; i++) {
-    await expect(screen(page, 'situation')).toContainText(`Situation ${i + 1} von 6`);
+  for (let i = 0; i < STEPS; i++) {
+    await expect(screen(page, 'situation')).toContainText(`Situation ${i + 1} von ${STEPS}`);
     await choose(page, 'gut');
     await expect(page.getByTestId('explanation')).not.toBeEmpty();
     await page.getByTestId('next').click();
@@ -69,7 +69,7 @@ test('plays a whole level and keeps the finished building', async ({ page }) => 
 
   await expect(screen(page, 'result')).toHaveAttribute('data-outcome', 'completed');
   await expect(page.getByTestId('stars')).toHaveAttribute('data-stars', '3');
-  await expect(page.getByTestId('decisions').locator('li')).toHaveCount(6);
+  await expect(page.getByTestId('decisions').locator('li')).toHaveCount(STEPS);
   await expect(page.getByTestId('goals')).toContainText('Erreicht');
 
   await page.getByTestId('to-city').click();
@@ -87,7 +87,7 @@ test('collapses, explains why and restarts the level, not the game', async ({ pa
   await startLevel1(page);
   await throughBriefingAndTheory(page);
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < STEPS; i++) {
     await choose(page, 'riskant');
     const collapsed =
       (await page.getByTestId('gauge-stabilitaet').getAttribute('data-value')) === '0';
@@ -101,10 +101,50 @@ test('collapses, explains why and restarts the level, not the game', async ({ pa
 
   await page.getByTestId('restart').click();
   await expect(screen(page, 'briefing')).toBeVisible();
-  await expect(gauge(page, 'stabilitaet')).toHaveAttribute('data-value', '70');
+  await expect(gauge(page, 'stabilitaet')).toHaveAttribute('data-value', '60');
 
   await page.getByTestId('menu').click();
   await page.getByTestId('abort').click();
+  await expect(page.getByTestId('level-1')).toContainText('Offen');
+  await expect(page.getByTestId('start-level-2')).toHaveCount(0);
+});
+
+test('fails the final inspection if the building stands on too many poor decisions', async ({
+  page,
+}) => {
+  // The seed fixes the draw, so the same logic the game runs can search for a suitable path.
+  const seed = 4242;
+  const ids: OptionId[] = ['A', 'B', 'C'];
+  let plan: OptionId[] | null = null;
+  const search = (prefix: OptionId[]): void => {
+    if (plan) return;
+    if (prefix.length === STEPS) {
+      if (replay(level1, seed, [], prefix).outcome === 'rejected') plan = prefix;
+      return;
+    }
+    for (const id of ids) search([...prefix, id]);
+  };
+  search([]);
+  if (!plan) throw new Error('No rejected path found for this seed');
+  const expected = replay(level1, seed, [], plan);
+
+  await page.goto(`${SIMPLE}&seed=${seed}`);
+  await startLevel1(page);
+  await expect(page.getByTestId('rules')).toContainText('11 von 16 Punkten');
+  await throughBriefingAndTheory(page);
+  for (let i = 0; i < STEPS; i++) {
+    const id = await screen(page, 'situation').getAttribute('data-situation');
+    expect(id).toBe(expected.situationIds[i]);
+    const situation = level1.situationen.find((s) => s.id === id);
+    const option = situation?.optionen.find((o) => o.id === (plan as OptionId[])[i]);
+    await page.locator('.option', { hasText: option?.text ?? '' }).click();
+    await page.getByTestId('next').click();
+  }
+
+  await expect(screen(page, 'result')).toHaveAttribute('data-outcome', 'rejected');
+  await expect(page.getByTestId('rejected-reason')).toContainText('nötig sind 11');
+  await expect(gauge(page, 'budget')).toHaveAttribute('data-value', String(expected.gauges.budget));
+  await page.getByTestId('to-city').click();
   await expect(page.getByTestId('level-1')).toContainText('Offen');
   await expect(page.getByTestId('start-level-2')).toHaveCount(0);
 });
@@ -128,7 +168,7 @@ test('continues at the same place after a reload in the middle of a level', asyn
   await page.reload();
 
   await expect(screen(page, 'situation')).toHaveAttribute('data-situation', situation ?? '');
-  await expect(screen(page, 'situation')).toContainText('Situation 3 von 6');
+  await expect(screen(page, 'situation')).toContainText(`Situation 3 von ${STEPS}`);
   expect(await page.locator('.option-text').allTextContents()).toEqual(options);
   expect(
     await page
@@ -143,7 +183,7 @@ test('starts cleanly with a hint if the stored progress is damaged', async ({ pa
   await page.evaluate(() => {
     window.localStorage.setItem(
       'risk-tower.progress',
-      '{"version":1,"levels":"<img onerror=alert(1)>"',
+      '{"version":2,"levels":"<img onerror=alert(1)>"',
     );
   });
   await page.reload();
@@ -155,7 +195,7 @@ test('starts cleanly with a hint if the stored progress is damaged', async ({ pa
   await page.evaluate(() => {
     window.localStorage.setItem(
       'risk-tower.progress',
-      JSON.stringify({ version: 1, levels: {}, currentRun: { levelId: 'level-1' }, playTimeMs: 0 }),
+      JSON.stringify({ version: 2, levels: {}, currentRun: { levelId: 'level-1' }, playTimeMs: 0 }),
     );
   });
   await page.reload();
@@ -198,13 +238,13 @@ test('is playable with the keyboard alone', async ({ page }) => {
   await expect(screen(page, 'feedback')).toBeVisible();
   await expect(page.locator('.chosen')).toHaveText(second ?? '');
   await page.keyboard.press('Enter');
-  await expect(screen(page, 'situation')).toContainText('Situation 2 von 6');
+  await expect(screen(page, 'situation')).toContainText(`Situation 2 von ${STEPS}`);
 
   // Tab reaches the options, and Enter on a focused button must not fire twice.
   await page.getByTestId('option-1').focus();
   await page.keyboard.press('Enter');
   await expect(screen(page, 'feedback')).toBeVisible();
-  await expect(screen(page, 'feedback')).toContainText('Situation 2 von 6');
+  await expect(screen(page, 'feedback')).toContainText(`Situation 2 von ${STEPS}`);
 });
 
 test('deletes the progress only after a confirmation', async ({ page }) => {
@@ -245,8 +285,28 @@ test('renders the 3D view without errors and stays playable', async ({ page }) =
   await throughBriefingAndTheory(page);
   await choose(page, 'riskant');
   await page.getByTestId('next').click();
-  await expect(screen(page, 'situation')).toContainText('Situation 2 von 6');
+  await expect(screen(page, 'situation')).toContainText(`Situation 2 von ${STEPS}`);
   await expect(screen(page, 'error')).toHaveCount(0);
+});
+
+test('uses the whole window: panel at the side when wide, at the bottom when tall', async ({
+  page,
+}, testInfo) => {
+  await page.goto('/');
+  const size = page.viewportSize();
+  if (!size) throw new Error('No viewport');
+  const canvas = await page.locator('.canvas-host canvas').boundingBox();
+  const panel = await page.locator('.panel').boundingBox();
+  if (!canvas || !panel) throw new Error('Layout not found');
+  expect(canvas.width).toBe(size.width);
+  expect(canvas.height).toBe(size.height);
+  if (testInfo.project.name === 'laptop') {
+    expect(panel.x).toBeGreaterThan(size.width / 2);
+    expect(panel.height).toBeGreaterThan(size.height * 0.9);
+  } else {
+    expect(panel.y).toBeGreaterThan(size.height * 0.35);
+    expect(panel.width).toBeGreaterThan(size.width * 0.9);
+  }
 });
 
 test('ignores invalid URL parameters', async ({ page }) => {
