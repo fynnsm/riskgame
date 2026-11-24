@@ -1,7 +1,14 @@
 import type { PlayableLevel } from '../content/load.ts';
 import type { Level, Option } from '../content/schema.ts';
 import type { Action, LevelRun } from '../core/game.ts';
-import { currentOptions, currentSituation, isRunConsistent, startRun, step } from '../core/game.ts';
+import {
+  currentOptions,
+  currentSituation,
+  eventInputsOf,
+  isRunConsistent,
+  startRun,
+  step,
+} from '../core/game.ts';
 import type { Progress } from '../core/progress.ts';
 import {
   addPlayTime,
@@ -403,6 +410,7 @@ export function createApp(options: AppOptions): App {
             recentIds: run.recentIds,
             choices: run.history.map((c) => c.optionId),
             tour: registeredRisks(run.tour),
+            events: eventInputsOf(run),
             phase: run.phase,
             outcome: run.outcome,
             gauges: { ...run.gauges },
@@ -701,6 +709,10 @@ export function createApp(options: AppOptions): App {
         );
       case 'tourResult':
         return tourResultScreen(level, run, handlers);
+      case 'event':
+      case 'eventResult':
+        // Unreachable until levels carry events and these phases have their screens.
+        throw new Error(`No screen for phase ${run.phase}`);
       case 'situation':
         return situationScreen(
           level,

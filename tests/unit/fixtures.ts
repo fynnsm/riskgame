@@ -151,6 +151,24 @@ export function makeEvent(nummer: number, index: number): RiskEvent {
   return event;
 }
 
+/** A level with the site tour and no events. */
+export function makeTourLevel(nummer = 1): Level {
+  return { ...makeLevel(nummer), rundgang: makeTour(nummer) };
+}
+
+/** A level with events and no tour: eight decisions, so all three rounds are played. */
+export function makeEventLevel(nummer = 3): Level {
+  const base = makeLevel(nummer);
+  return {
+    ...base,
+    situationenProDurchgang: 8,
+    ereignisse: {
+      ereignisseProDurchgang: 3,
+      pool: [1, 2, 3, 4, 5].map((i) => makeEvent(nummer, i)),
+    },
+  };
+}
+
 /** A level with both mechanics of update 3. */
 export function makeMechanicsLevel(nummer = 1): Level {
   return {

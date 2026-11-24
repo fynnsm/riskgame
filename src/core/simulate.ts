@@ -98,14 +98,24 @@ export function playRun(
       return { outcome: 'collapsed', steps: history.length, gauges, lowest: 0, tilt: 1, stars: 0 };
     }
   }
-  const outcome = isAccepted({ history, situationIds, tour }) ? 'completed' : 'rejected';
+  const outcome = isAccepted({ history, situationIds, tour, events: null, eventPoints: 0 })
+    ? 'completed'
+    : 'rejected';
   return {
     outcome,
     steps: history.length,
     gauges,
     lowest: lowestValue(gauges),
     tilt: computeLean(gauges).tilt,
-    stars: starsFor({ outcome, history, gauges, situationIds, tour }),
+    stars: starsFor({
+      outcome,
+      history,
+      gauges,
+      situationIds,
+      tour,
+      events: null,
+      eventPoints: 0,
+    }),
   };
 }
 

@@ -28,6 +28,18 @@ export function applyEffects(gauges: Gauges, effects: Effects): { gauges: Gauges
   return { gauges: next, delta };
 }
 
+/** Changes one gauge by a number of points, with the same clamping as `applyEffects`. */
+export function applyPoints(
+  gauges: Gauges,
+  key: GaugeKey,
+  points: number,
+): { gauges: Gauges; delta: Gauges } {
+  const value = clamp(gauges[key] + points);
+  const delta = { budget: 0, zeit: 0, stabilitaet: 0 };
+  delta[key] = value - gauges[key];
+  return { gauges: { ...gauges, [key]: value }, delta };
+}
+
 /** F-204: the project fails the moment any gauge reaches zero. */
 export function isCollapsed(gauges: Gauges): boolean {
   return GAUGE_KEYS.some((key) => gauges[key] <= BALANCE.gauge.min);

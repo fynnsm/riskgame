@@ -23,9 +23,10 @@ import { buildErrorReport, extractReplay } from '../../src/logging/report.ts';
 import { createLogger } from '../../src/logging/logger.ts';
 import { createLocalStorageStore } from '../../src/storage/local-storage-store.ts';
 import { emptyProgress, withRun } from '../../src/core/progress.ts';
-import { clone, makeLevel, makeMechanicsLevel, memoryStorage, RULES } from './fixtures.ts';
+import { clone, makeLevel, makeTourLevel, memoryStorage, RULES } from './fixtures.ts';
 
-const level = makeMechanicsLevel();
+// The tour alone: the events have their own tests.
+const level = makeTourLevel();
 const pool = level.rundgang?.stellen ?? [];
 const START = BALANCE.gauge.start;
 const KLEIN = BALANCE.effectPoints.klein;
@@ -298,6 +299,7 @@ describe('replay with a tour (L-07, M-03)', () => {
         recentIds: run.recentIds,
         choices: [],
         tour: risks,
+        events: [],
         phase: run.phase,
         outcome: run.outcome,
         gauges: { ...run.gauges },
@@ -320,6 +322,7 @@ describe('replay with a tour (L-07, M-03)', () => {
       recentIds: [],
       choices: ['A'],
       tour: null,
+      events: [],
     });
   });
 });

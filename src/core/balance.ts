@@ -18,10 +18,12 @@ export const BALANCE = {
   ratingPoints: { gut: 2, vertretbar: 1, riskant: 0 },
 
   /**
-   * F-211: a building that still stands is only accepted if this share of the possible
-   * rating points was reached. This is what stops blind clicking from passing a level.
+   * F-211, M-26: a building that still stands is only accepted if this share of the possible
+   * points was reached, rounded to the nearest whole point. This is what stops blind clicking
+   * from passing a level. The share gives 11 of 16 points for a level of decisions alone and
+   * grows with the points of the site tour and of the events.
    */
-  acceptance: { minScoreRatio: 0.65 },
+  acceptance: { minScoreRatio: 0.69 },
 
   /** F-603: an accepted level always earns one star; these bars earn the second and third. */
   stars: {

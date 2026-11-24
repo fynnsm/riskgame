@@ -33,8 +33,16 @@ export interface Progress {
   playTimeMs: number;
 }
 
-export function floorRecords(run: Pick<LevelRun, 'history'>): FloorRecord[] {
-  return run.history.map((c) => ({ gauges: c.gaugesAfter, rating: c.rating }));
+/**
+ * One record per floor. The top floor carries the gauges as they are now, not as they were
+ * when it was set: what an event took since then must show in how the building stands.
+ */
+export function floorRecords(run: Pick<LevelRun, 'history' | 'gauges'>): FloorRecord[] {
+  const top = run.history.length - 1;
+  return run.history.map((c, i) => ({
+    gauges: i === top ? run.gauges : c.gaugesAfter,
+    rating: c.rating,
+  }));
 }
 
 export function emptyProgress(): Progress {

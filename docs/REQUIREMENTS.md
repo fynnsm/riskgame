@@ -67,7 +67,7 @@ Bewertungsraster und Abgabetermine liegen noch nicht vor (siehe `later/BRAINSTOR
 | F-208 | Nach der Wahl zeigt das Spiel die Erklärung zur gewählten Option und die Veränderung der Anzeigen | M | E |
 | F-209 | Nach einem Einsturz zeigt die Auswertung, welche Entscheide das Gebäude gekippt haben und warum; danach startet das Level neu, nicht das Spiel | M | E |
 | F-210 | Jede Option trägt eine Einstufung (gut, vertretbar, riskant) für Auswertung und Lernerfolg; vor der Wahl ist sie nicht sichtbar | S | V |
-| F-211 | Bauabnahme: Ein Gebäude, das stehen bleibt, gilt nur als bestanden, wenn mindestens 65 % der möglichen Punkte erreicht sind (gut = 2, vertretbar = 1, riskant = 0). Sonst ist das Level nicht bestanden und wird wiederholt. Die Regel steht im Briefing | M | E |
+| F-211 | Bauabnahme: Ein Gebäude, das stehen bleibt, gilt nur als bestanden, wenn mindestens 69 % der möglichen Punkte erreicht sind, gerundet auf den nächsten ganzen Punkt (M-26; ohne Rundgang und Ereignisse 11 von 16). Punkte geben die Entscheide (gut = 2, vertretbar = 1, riskant = 0), der Rundgang (M-13) und die Ereignisse (M-25). Sonst ist das Level nicht bestanden und wird wiederholt. Die Regel steht im Briefing | M | E |
 
 Werte der Balance: Anzeigen beginnen bei 76; klein = 6, mittel = 14, gross = 26 Punkte. Verlauf: Am 23.11.2026 verschärft (Start 60, 6/14/26, 8 Situationen, Bauabnahme), weil das Spiel ohne Lesen zu bestehen war. Am 24.11.2026 Startwert auf 76 gehoben (Entscheid Fynn), weil sonst perfektes Spiel rechnerisch nie über 36 enden kann: Jede gute Option kostet mindestens 6 Punkte, acht Entscheide also mindestens 48 auf Budget und Zeit zusammen.
 
@@ -353,7 +353,7 @@ Was bis zur Abgabe noch zu tun ist, in der Reihenfolge, in der es sinnvoll ist. 
 
 ### Entwicklung: nach der ersten Testrunde
 
-- [ ] Schwierigkeit mit der Gruppe testen: Ist die Bauabnahme bei 65 % richtig, zu streng oder zu mild? (F-211)
+- [ ] Schwierigkeit mit der Gruppe testen: Ist die Bauabnahme bei 69 % richtig, zu streng oder zu mild? (F-211)
 - [ ] Balance mit den echten Fällen justieren: Startwerte, Stufen, Sterne in `src/core/balance.ts` (O-4)
 - [ ] Regeln für Sterne, Lernziele und Neigung in der Gruppe bestätigen oder ändern (F-205, F-602, F-603)
 - [ ] Erlaubte Video-Hosts bestätigen, falls Videos dazukommen (F-504)
@@ -457,8 +457,8 @@ Stand: **U** = umgesetzt, **O** = offen.
 | ID | Anforderung | Prio | Stand |
 |---|---|---|---|
 | M-01 | Datengetrieben: Ein Level hat Rundgang oder Ereignisse genau dann, wenn seine Datei den Block `rundgang` oder `ereignisse` enthält. Kein Level-spezifischer Code | M | U (Schema) |
-| M-02 | Alle Regeln liegen in `src/core`, alle Zahlen in `src/core/balance.ts`. Jede Regel hat Unit-Tests, bevor Oberfläche oder 3D entstehen | M | O (Rundgang U; Ereignisse O) |
-| M-03 | Sämtlicher Zufall (Ziehung, Eintreten von Ereignissen) wird beim Start des Durchgangs aus dem Seed bestimmt und im Spielstand gespeichert. Ein Durchgang ist aus Seed und Eingaben vollständig wiederholbar | M | O (Rundgang U; Ereignisse O) |
+| M-02 | Alle Regeln liegen in `src/core`, alle Zahlen in `src/core/balance.ts`. Jede Regel hat Unit-Tests, bevor Oberfläche oder 3D entstehen | M | U |
+| M-03 | Sämtlicher Zufall (Ziehung, Eintreten von Ereignissen) wird beim Start des Durchgangs aus dem Seed bestimmt und im Spielstand gespeichert. Ein Durchgang ist aus Seed und Eingaben vollständig wiederholbar | M | O (Regeln U; Protokoll der Ereignisse O) |
 | M-04 | Kein Zeitdruck, keine Geschicklichkeit. Alles ist mit Tastatur bedienbar und läuft mit `?renderer=none` als Text | M | O (Rundgang U; Ereignisse O) |
 | M-05 | Schema der Inhalte Version 2; Level-Dateien ohne die neuen Blöcke bleiben gültig | M | U |
 | M-06 | Spielstand Version 3: abgeschlossene Level und Sterne bleiben erhalten, ein laufender Durchgang wird mit einmaligem Hinweis verworfen. Ist nur der laufende Durchgang unlesbar, gilt dasselbe | M | U |
@@ -482,14 +482,23 @@ Balance mit Rundgang: In der Simulation beurteilt die sorgfältige Spielweise de
 
 | ID | Anforderung | Prio | Stand |
 |---|---|---|---|
-| M-20 | Pro Durchgang 3 Ereignis-Runden, nach dem 2., 4. und 6. Entscheid: Meldung mit Wahrscheinlichkeit und Auswirkung, Wahl einer Strategie, Kosten sofort, Auflösung nach dem nächsten Stockwerk | M | O |
-| M-21 | Vier Strategien in fester Reihenfolge: Vermeiden (keine Auswirkung), Vermindern (jede Auswirkung eine Stufe kleiner), Übertragen (Auswirkung auf das Budget entfällt), Akzeptieren (volle Auswirkung, kostenlos). Kosten und Wirkung sind vor der Wahl sichtbar; nicht verfügbare Strategien sind gesperrt und nennen den Grund | M | O |
-| M-22 | Wahrscheinlichkeit: tief 20 %, mittel 40 %, hoch 60 % | M | O (Zahlen U) |
-| M-23 | AI-Prognose: Ein Ereignis kann seine Wahrscheinlichkeit als Prognose einer AI zeigen, mit Begründung. «Im Team prüfen» kostet 3 Punkte Zeit und zeigt die tatsächliche Wahrscheinlichkeit. Die Auswertung hält fest, ob einer unzuverlässigen Prognose ungeprüft vertraut wurde | M | O |
-| M-24 | Reihenfolge: Kosten der Strategie sofort; Auswirkung des Ereignisses bei der Auflösung, nach der Wirkung des Entscheids derselben Runde. Fällt eine Anzeige auf 0, stürzt das Gebäude ein | M | O |
-| M-25 | Punkte: Eine empfohlene Strategie gibt 1 Punkt, unabhängig vom Ausgang. Die Empfehlung bezieht sich auf die tatsächliche Wahrscheinlichkeit | M | O |
-| M-26 | Bauabnahme: Die Schwelle ist ein Anteil von 0.69 der möglichen Punkte, gerundet auf die nächste ganze Zahl (ohne neue Mechaniken 11 von 16). Briefing und Sterne folgen derselben Logik. Ersetzt die Rundung von F-211 | M | O |
-| M-27 | Auswertung pro Ereignis: «Gut entschieden», «Gut entschieden, trotzdem Pech», «Glück gehabt» oder «Hier hat die Vorsorge gefehlt». Nach einem Einsturz erscheinen Ereignisse, die dazu beigetragen haben, in der Liste der Ursachen | M | O |
+| M-20 | Pro Durchgang 3 Ereignis-Runden, nach dem 2., 4. und 6. Entscheid: Meldung mit Wahrscheinlichkeit und Auswirkung, Wahl einer Strategie, Kosten sofort, Auflösung nach dem nächsten Stockwerk | M | O (Regeln U; Oberfläche O) |
+| M-21 | Vier Strategien in fester Reihenfolge: Vermeiden (keine Auswirkung), Vermindern (jede Auswirkung eine Stufe kleiner), Übertragen (Auswirkung auf das Budget entfällt), Akzeptieren (volle Auswirkung, kostenlos). Kosten und Wirkung sind vor der Wahl sichtbar; nicht verfügbare Strategien sind gesperrt und nennen den Grund | M | O (Regeln U; Oberfläche O) |
+| M-22 | Wahrscheinlichkeit: tief 20 %, mittel 40 %, hoch 60 % | M | U |
+| M-23 | AI-Prognose: Ein Ereignis kann seine Wahrscheinlichkeit als Prognose einer AI zeigen, mit Begründung. «Im Team prüfen» kostet 3 Punkte Zeit und zeigt die tatsächliche Wahrscheinlichkeit. Die Auswertung hält fest, ob einer unzuverlässigen Prognose ungeprüft vertraut wurde | M | O (Regeln U; Oberfläche O) |
+| M-24 | Reihenfolge: Kosten der Strategie sofort; Auswirkung des Ereignisses bei der Auflösung, nach der Wirkung des Entscheids derselben Runde. Fällt eine Anzeige auf 0, stürzt das Gebäude ein | M | O (Regeln U; Oberfläche O) |
+| M-25 | Punkte: Eine empfohlene Strategie gibt 1 Punkt, unabhängig vom Ausgang. Die Empfehlung bezieht sich auf die tatsächliche Wahrscheinlichkeit | M | O (Regeln U; Oberfläche O) |
+| M-26 | Bauabnahme: Die Schwelle ist ein Anteil von 0.69 der möglichen Punkte, gerundet auf die nächste ganze Zahl (ohne neue Mechaniken 11 von 16). Briefing und Sterne folgen derselben Logik. Ersetzt die Rundung von F-211 | M | U |
+| M-27 | Auswertung pro Ereignis: «Gut entschieden», «Gut entschieden, trotzdem Pech», «Glück gehabt» oder «Hier hat die Vorsorge gefehlt». Nach einem Einsturz erscheinen Ereignisse, die dazu beigetragen haben, in der Liste der Ursachen | M | O (Regeln U; Oberfläche O) |
 | M-28 | Darstellung: Das Ereignis kündigt sich in der Szene an (Wolken, stehender Lastwagen, leere Arbeitsplätze, Funken am Kran, Figur mit Aktenkoffer). Die gewählte Massnahme wird als Bauteil sichtbar und bleibt am fertigen Gebäude. Tritt das Ereignis ein, spielt eine Szene von höchstens 2 Sekunden, überspringbar | S | O |
 | M-29 | Balance: Die Simulation prüft pro Level mit Ereignissen die sechs Kombinationen aus dem Auftrag, Abschnitt 5; keine einzelne Strategie ist immer richtig | M | O |
 
+
+Offen zu M-27, bitte bestätigen: Der Auftrag nennt vier Aussagen. Für einen Fall passt keine davon: Jemand wählt mehr Schutz, als das Risiko wert war (zum Beispiel «Vermeiden», wo «Akzeptieren» empfohlen ist). Das ist weder Glück noch fehlende Vorsorge. Die Regeln kennen dafür eine fünfte Aussage, Arbeitstitel «Sicher, aber teuer». Sie gibt wie jede nicht empfohlene Strategie keinen Punkt.
+
+Ebenfalls festgelegt, weil der Auftrag es offen lässt:
+
+- Ein Ereignis wird nur angekündigt, wenn danach noch ein Stockwerk folgt, auf dem es aufgelöst werden kann. Ein Level mit sechs Entscheiden hat darum zwei Runden, eines mit acht alle drei.
+- Fällt eine Anzeige schon durch die Kosten der Strategie oder durch die Prüfung im Team auf null, stürzt das Gebäude sofort ein.
+- Das oberste Stockwerk zeigt die Anzeigen von jetzt, nicht die vom Moment, als es gesetzt wurde: Was ein Ereignis seither gekostet hat, sieht man an der Neigung.
+- Wurde eine empfohlene Strategie gewählt und das Ereignis richtete keinen Schaden an (weil es ausblieb oder vermieden wurde), heisst es «Gut entschieden»; «trotzdem Pech» nur, wenn trotz empfohlener Strategie Schaden blieb.
