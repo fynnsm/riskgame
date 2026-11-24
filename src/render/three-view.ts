@@ -193,6 +193,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far = 220;
   sun.shadow.bias = -0.0008;
+  // The box set above only takes effect once the shadow camera recomputes its projection.
+  sun.shadow.camera.updateProjectionMatrix();
   scene.add(hemisphere, sun, sun.target);
 
   const goalColor = new Color();
