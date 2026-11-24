@@ -12,18 +12,18 @@ import { TUNING } from '../../src/render/tuning.ts';
 
 const grid: TrafficGrid = { pitch: 16, reach: 7, shift: 0 };
 
-function overlapping(a: Vehicle, b: Vehicle, g: TrafficGrid): boolean {
-  const p = vehicleRect(a, g);
-  const q = vehicleRect(b, g);
-  return p.x0 < q.x1 && q.x0 < p.x1 && p.z0 < q.z1 && q.z0 < p.z1;
-}
-
 function firstOverlap(vehicles: Vehicle[], g: TrafficGrid): string | null {
+  // One footprint per vehicle and step; computing it per pair made this check ten times slower.
+  const rects = vehicles.map((v) => vehicleRect(v, g));
   for (let i = 0; i < vehicles.length; i++) {
+    const p = rects[i] as (typeof rects)[number];
     for (let j = i + 1; j < vehicles.length; j++) {
-      const a = vehicles[i] as Vehicle;
-      const b = vehicles[j] as Vehicle;
-      if (overlapping(a, b, g)) return `${a.kind}(${a.axis}) and ${b.kind}(${b.axis})`;
+      const q = rects[j] as (typeof rects)[number];
+      if (p.x0 < q.x1 && q.x0 < p.x1 && p.z0 < q.z1 && q.z0 < p.z1) {
+        const a = vehicles[i] as Vehicle;
+        const b = vehicles[j] as Vehicle;
+        return `${a.kind}(${a.axis}) and ${b.kind}(${b.axis})`;
+      }
     }
   }
   return null;
@@ -94,16 +94,22 @@ describe('traffic rules (B3): vehicles do not drive into each other', () => {
     ['rich traffic, odd number of lots', 20261124, 0, true],
     ['rich traffic, shifted grid', 7, 8, true],
     ['cars only', 3, 0, false],
-  ])('never overlaps over ten minutes: %s', (_name, seed, shift, rich) => {
-    const g = { ...grid, shift };
-    const vehicles = createTraffic(createDecorRandom(seed), g, rich);
-    const dt = 1 / 30;
-    for (let step = 0; step < 600 * 30; step++) {
-      stepTraffic(vehicles, step * dt, dt, g);
-      const hit = firstOverlap(vehicles, g);
-      if (hit) throw new Error(`Overlap after ${(step * dt).toFixed(1)} s: ${hit}`);
-    }
-  });
+  ])(
+    'never overlaps over ten minutes: %s',
+    (_name, seed, shift, rich) => {
+      const g = { ...grid, shift };
+      const vehicles = createTraffic(createDecorRandom(seed), g, rich);
+      const dt = 1 / 30;
+      for (let step = 0; step < 600 * 30; step++) {
+        stepTraffic(vehicles, step * dt, dt, g);
+        const hit = firstOverlap(vehicles, g);
+        if (hit) throw new Error(`Overlap after ${(step * dt).toFixed(1)} s: ${hit}`);
+      }
+      // 18,000 steps with every pair checked: seconds on a slow CI machine under coverage, so the
+      // default limit of five seconds is too tight for this one.
+    },
+    60_000,
+  );
 
   it('stays safe when frames are long and uneven, as on a slow phone', () => {
     const vehicles = createTraffic(createDecorRandom(11), grid, true);
