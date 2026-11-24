@@ -21,6 +21,8 @@ const paramsSchema = z.object({
   renderer: z.enum(['none', '3d']).optional(),
   seed: z.coerce.number().int().min(0).max(0xffffffff).optional(),
   debug: z.literal('1').optional(),
+  /** Pins the quality step of the 3D view; meant for measurements (docs/PERFORMANCE.md). */
+  quality: z.enum(['0', '1', '2']).optional(),
 });
 
 function sink(entry: LogEntry): void {
@@ -80,7 +82,9 @@ async function boot(): Promise<void> {
         // Loaded on demand so the simple mode never downloads Three.js.
         const { createThreeView } = await import('./render/three-view.ts');
         const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        createView = (host) => createThreeView(host, { logger, reducedMotion });
+        const fixedQuality =
+          params.quality === undefined ? undefined : (Number(params.quality) as 0 | 1 | 2);
+        createView = (host) => createThreeView(host, { logger, reducedMotion, fixedQuality });
         rendererName = '3d';
       } catch (cause) {
         logger.error('render.load.failed', errorData(cause));
