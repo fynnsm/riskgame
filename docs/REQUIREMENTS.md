@@ -397,13 +397,13 @@ Stand: **U** = umgesetzt, **O** = offen.
 | G-10 | Regie-Schicht `src/render/director.ts`: reine Funktionen ohne Three.js, die aus dem Spielzustand Anweisungen für die Szene berechnen; vollständig unit-getestet | M | U |
 | G-20 | Himmel als Farbverlauf passend zur Tageszeit; ein gerichtetes Licht und ein Umgebungslicht; weiche Schatten nur auf Stufe 2; leichter Dunst zum Stadtrand | M | U |
 | G-21 | Tageszeiten: Level 1 Morgen, 2 Mittag, 3 Nachmittag, 4 Abendlicht, 5 Nacht mit leuchtenden Fenstern und Strassenlampen; Startseite Mittag; Schlussansicht Abend mit Übergang zur Nacht | M | U (die Schlussansicht ruht vorerst im Abendlicht; der Übergang zur Nacht folgt mit G-53) |
-| G-30 | Wolken: 6 bis 10 Klotz-Wolken in zwei Höhen, ziehen langsam, mit Schatten auf der Stadt (alle Stufen) | S | O |
-| G-31 | Flugzeug quert alle 20 bis 40 Sekunden, mit Schatten; nie über der Bildmitte während einer Entscheidung (Stufe 1, 2) | S | O |
-| G-32 | Heissluftballon und Vogelschwarm (Stufe 2) | K | O |
-| G-33 | Verkehr mit Bus, Lieferwagen und Tram; Fahrzeuge fahren an Kreuzungen nicht ineinander (Stufe 1, 2) | S | O |
-| G-34 | Fussgänger auf Trottoirs mit einfacher Lauf-Animation (Stufe 2) | K | O |
-| G-35 | Bäume wiegen leicht, Wasserflächen schimmern, Rauch aus einzelnen Kaminen (Stufe 1, 2) | K | O |
-| G-36 | Nachts leuchten Fenster zufällig, Fahrzeuge haben Lichter (Stufe 1, 2) | S | O |
+| G-30 | Wolken: 6 bis 10 Klotz-Wolken in zwei Höhen, ziehen langsam, mit Schatten auf der Stadt (alle Stufen) | S | U (auf Stufe 2 echte Schatten, sonst weiche Flecken; Wolken weichen dem Gebäude aus) |
+| G-31 | Flugzeug quert alle 20 bis 40 Sekunden, mit Schatten; nie über der Bildmitte während einer Entscheidung (Stufe 1, 2) | S | U (während eines Levels fliegt es immer seitlich am Gebäude vorbei) |
+| G-32 | Heissluftballon und Vogelschwarm (Stufe 2) | K | U |
+| G-33 | Verkehr mit Bus, Lieferwagen und Tram; Fahrzeuge fahren an Kreuzungen nicht ineinander (Stufe 1, 2) | S | U (eine gemeinsame Ampelphase für alle Kreuzungen; getestet über zehn simulierte Minuten) |
+| G-34 | Fussgänger auf Trottoirs mit einfacher Lauf-Animation (Stufe 2) | K | U |
+| G-35 | Bäume wiegen leicht, Wasserflächen schimmern, Rauch aus einzelnen Kaminen (Stufe 1, 2) | K | U |
+| G-36 | Nachts leuchten Fenster zufällig, Fahrzeuge haben Lichter (Stufe 1, 2) | S | U |
 | G-40 | Gebäudetypen: `projekt.gebaeude` bestimmt Fassade, Fensterraster, Farben und Dachaufbau; die fünf Gebäude sind in der Stadtansicht auf einen Blick unterscheidbar | M | O |
 | G-41 | Stockwerk setzen: Kran schwenkt ein, Stockwerk senkt sich ab und federt, Staub, Arbeiter reagieren; höchstens 1.2 Sekunden | S | O |
 | G-42 | Reaktion auf die Wahl am neuen Stockwerk (gut: grüner Schein; riskant: versetzt, Risse, ein Brocken fällt); die Einstufung steht immer auch als Text da | S | O (versetzte Module und Loch sind vorhanden) |

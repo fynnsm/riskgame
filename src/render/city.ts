@@ -14,7 +14,6 @@ export const PITCH = 16;
 const BLOCK = 12;
 const REACH = TUNING.city.reach;
 const GROUND_TOP = 0.4;
-export const CAR_COUNT = TUNING.city.cars;
 
 const WALLS = [
   C.wallRed,
@@ -36,12 +35,28 @@ export interface CityParts {
   lights: Part[];
   /** Flat dark patches under houses and trees, shown instead of real shadows on low quality (B2). */
   blobs: Part[];
+  /** Trees near the centre; their crowns are drawn by the life layer so they can sway (B3). */
+  swayTrees: TreeSpot[];
+  ponds: { x: number; z: number }[];
+  chimneys: { x: number; y: number; z: number }[];
+}
+
+export interface TreeSpot {
+  x: number;
+  z: number;
+  size: number;
+  color: number;
 }
 
 // Collected while the blocks are laid out; reset by buildCity.
 let lights: Part[] = [];
 let blobs: Part[] = [];
 let decor = createDecorRandom(1);
+let swayTrees: TreeSpot[] = [];
+let ponds: { x: number; z: number }[] = [];
+let chimneys: { x: number; y: number; z: number }[] = [];
+/** True while a block near the centre is laid out. */
+let near = false;
 
 /** A window, and for some of them the copy that glows at night. */
 function addWindow(
@@ -65,7 +80,7 @@ function addLamp(parts: Part[], x: number, z: number): void {
 }
 
 /** With an even number of lots the grid shifts by half a block so lots still sit on blocks. */
-function gridShift(lotCount: number): number {
+export function gridShift(lotCount: number): number {
   return lotCount % 2 === 0 ? PITCH / 2 : 0;
 }
 
@@ -80,8 +95,12 @@ function addTree(parts: Part[], x: number, z: number, seed: number): void {
   blobs.push(
     box(C.blobOnGrass, size * 1.2, 0.02, size * 1.2, x - 0.3, GROUND_TOP + 0.012, z - 0.25),
   );
+  parts.push(box(C.trunk, 0.36, 0.8, 0.36, x, GROUND_TOP + 0.4, z));
+  if (near) {
+    swayTrees.push({ x, z, size, color: dark });
+    return;
+  }
   parts.push(
-    box(C.trunk, 0.36, 0.8, 0.36, x, GROUND_TOP + 0.4, z),
     box(dark, size, 0.8, size, x, GROUND_TOP + 1.1, z),
     box(C.treeLight, size * 0.72, 0.7, size * 0.72, x, GROUND_TOP + 1.8, z),
   );
@@ -108,6 +127,10 @@ function addHouse(
     parts.push(box(roof, w * 0.55, 0.5, d * 0.55, x, y0 + h + 0.55, z));
   } else if (hash(seed + 6) > 0.3) {
     parts.push(box(C.roofUnit, 0.7, 0.4, 0.7, x + w * 0.2, y0 + h + 0.5, z - d * 0.2));
+  }
+  if (near && chimneys.length < TUNING.decoration.chimneys && hash(seed + 12) > 0.6) {
+    parts.push(box(C.chimney, 0.5, 0.9, 0.5, x - w * 0.25, y0 + h + 0.6, z + d * 0.2));
+    chimneys.push({ x: x - w * 0.25, y: y0 + h + 1.1, z: z + d * 0.2 });
   }
   if (detail === 'none') return;
 
@@ -151,6 +174,7 @@ function addBlock(
   addLamp(parts, cx + 5.7, cz + 5.7);
   addLamp(parts, cx - 5.7, cz + 5.7);
 
+  near = Math.max(Math.abs(column), Math.abs(row)) <= 3;
   if (isLot) {
     // Only a few trees at the back corners, so nothing hides the tower.
     addTree(parts, cx - 5, cz - 5, seed);
@@ -160,12 +184,14 @@ function addBlock(
   }
 
   const distance = Math.max(Math.abs(column), Math.abs(row));
+  near = distance <= 3;
   const detail = distance <= 2 ? 'full' : distance <= 5 ? 'glass' : 'none';
   // Blocks in front of the lots stay low; the camera looks across them at the towers.
   const maxHeight = row >= 1 ? 3.6 : row === 0 ? 5 : 5 + hash(seed + 9) * 5;
 
   if (hash(seed) < 0.14) {
     parts.push(box(C.water, 4.6, 0.08, 3.4, cx + 0.6, GROUND_TOP + 0.04, cz + 0.4));
+    if (near) ponds.push({ x: cx + 0.6, z: cz + 0.4 });
     for (let t = 0; t < 9; t++) {
       addTree(
         parts,
@@ -200,6 +226,9 @@ export function buildCity(lotCount: number): CityParts {
   const parts: Part[] = [];
   lights = [];
   blobs = [];
+  swayTrees = [];
+  ponds = [];
+  chimneys = [];
   // A fixed seed: the same windows glow on every visit.
   decor = createDecorRandom(20261124);
   const shift = gridShift(lotCount);
@@ -228,24 +257,11 @@ export function buildCity(lotCount: number): CityParts {
       parts.push(box(C.roadMark, 0.16, 0.02, 1.3, across + shift, 0.02, along));
     }
   }
-  return { parts, lights, blobs };
-}
-
-/** Position of car `index` at `time`. Cars keep to the right of the dashed line. */
-export function carPlacement(
-  index: number,
-  time: number,
-  lotCount: number,
-): { x: number; z: number; rotation: number } {
-  const shift = gridShift(lotCount);
-  const range = (REACH * 2 + 1) * PITCH;
-  const forward = index % 4 < 2;
-  const speed = 3.5 + hash(index + 500) * 3;
-  const travelled = (hash(index + 510) * range + time * speed) % range;
-  const along = (forward ? travelled : range - travelled) - range / 2;
-  const line = (Math.floor(hash(index + 520) * 7) - 3.5) * PITCH;
-  const lane = forward ? 0.95 : -0.95;
-  return index % 2 === 0
-    ? { x: along + shift, z: line + lane, rotation: forward ? 0 : Math.PI }
-    : { x: line + shift - lane, z: along, rotation: forward ? -Math.PI / 2 : Math.PI / 2 };
+  // Rails on the tram's road, just behind the building lots.
+  for (const side of [-1, 1]) {
+    for (const rail of [-0.35, 0.35]) {
+      parts.push(box(C.rail, span, 0.03, 0.1, shift, 0.025, -PITCH / 2 + side * 0.95 + rail));
+    }
+  }
+  return { parts, lights, blobs, swayTrees, ponds, chimneys };
 }

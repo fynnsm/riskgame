@@ -439,6 +439,23 @@ test('gives each level its time of day, the start page noon and the finished cit
   await expect(host).toHaveAttribute('data-time-of-day', 'abend');
 });
 
+test('runs the 3D view with reduced motion: no error, and the decoration stands still (B0.6)', async ({
+  page,
+}) => {
+  test.slow();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/?quality=1');
+  await expect(page.locator('.canvas-host canvas')).toBeVisible();
+  await startLevel1(page);
+  await throughBriefingAndTheory(page);
+  await choose(page, 'gut');
+  await page.getByTestId('next').click();
+  await expect(screen(page, 'situation')).toContainText(`Situation 2 von ${STEPS}`);
+  await expect(screen(page, 'error')).toHaveCount(0);
+  await page.getByTestId('menu').click();
+  expect(await page.getByTestId('report').inputValue()).toContain('"reducedMotion":true');
+});
+
 test('ignores invalid URL parameters', async ({ page }) => {
   await page.goto('/?renderer=<script>&seed=abc');
   await expect(screen(page, 'city')).toBeVisible();

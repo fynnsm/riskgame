@@ -31,6 +31,8 @@ Reicht die Leistung nicht, wird in dieser Reihenfolge gestrichen: Schatten, Meng
 
 Die Nacht (Level 5) braucht einen Zeichenaufruf mehr als der Tag, weil Lampen und leuchtende Fenster unbeleuchtet gezeichnet werden. Die Dreiecke sind mit den Strassenlampen und Schattenflächen auf rund 175’000 bis 186’000 gestiegen.
 
+Alles Bewegte der Dekoration (Fahrzeuge, Wolken, Flugzeug, Ballon, Vögel, Fussgänger, Rauch, wiegende Baumkronen) liegt in einem einzigen Zeichenaufruf, der den früheren Aufruf für die Autos ersetzt. Dazu kommt auf Stufe 0 und 1 ein Aufruf für die weichen Schattenflecken unter Wolken und Flugzeug, nachts einer für die Scheinwerfer. Ein Level bei Nacht braucht damit 12 Zeichenaufrufe und liegt genau auf der Grenze: Die folgenden Schritte dürfen dort keinen weiteren hinzufügen.
+
 ## Messen
 
 ```bash
@@ -45,3 +47,4 @@ gibt pro Szene eine Zeile `MEASURE …` mit Zeichenaufrufen und Dreiecken aus. V
 |---|---|---|---|---|---|
 | 24.11.2026 | vor dem Grafik-Update (Pull Request 12) | 7 | 8 | 12 | 213.9 kB |
 | 24.11.2026 | Himmel, Licht, Tageszeiten (B2): Strassenlampen, Nachtlichter, Schattenflächen | 8 | 9 | 13 | 215.0 kB |
+| 24.11.2026 | Leben in Himmel und Stadt (B3): Wolken, Flugzeug, Ballon, Vögel, Verkehr, Fussgänger, Rauch | 9 | 10 | 14 | 218.6 kB |

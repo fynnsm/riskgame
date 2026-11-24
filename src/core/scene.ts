@@ -27,6 +27,8 @@ export interface SceneModel {
   lots: LotModel[];
   /** True once every level has been completed; the city then shows its closing mood. */
   allCompleted: boolean;
+  /** True while the player is reading a situation and choosing; nothing may distract then. */
+  deciding: boolean;
 }
 
 /** Pixels of the canvas hidden behind HTML panels, per side. */
@@ -111,5 +113,6 @@ export function sceneModel(
     focus,
     lots,
     allCompleted: lots.length > 0 && lots.every((lot) => lot.status === 'done'),
+    deciding: run?.phase === 'situation',
   };
 }

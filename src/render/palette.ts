@@ -5,6 +5,16 @@
 
 /** Colours of objects. They stay the same at every time of day; the light changes around them. */
 export const C = {
+  cloud: 0xffffff,
+  cloudShade: 0xe3edf5,
+  smoke: 0xd9dee3,
+  rail: 0x8f99a6,
+  headlight: 0xfff3c4,
+  bus: 0xf2b134,
+  tram: 0x2a9d8f,
+  van: 0xf4f7fa,
+  balloon: 0xe5534b,
+  bird: 0x39424e,
   lampLight: 0xffd98a,
   lampHead: 0xdfe5ea,
   blobOnGrass: 0x6fa653,
