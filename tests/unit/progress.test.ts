@@ -21,7 +21,9 @@ import {
   scoreRatio,
   starsFor,
 } from '../../src/core/scoring.ts';
+import type { BalanceProblem, BalanceReport } from '../../src/core/simulate.ts';
 import {
+  balanceProblems,
   combinations,
   isBalanced,
   playRandom,
@@ -268,25 +270,37 @@ describe('sceneModel (F-408, F-409)', () => {
   });
 });
 
-describe('balance simulation (F-907)', () => {
+describe('balance simulation (F-907, F-909, F-910)', () => {
+  /** A report in which every rule holds; each test breaks exactly one thing. */
+  const clean: BalanceReport = {
+    levelId: 'level-1',
+    runs: 10,
+    good: { failures: 0, lowest: 40, maxTilt: 0.1, minStars: 3 },
+    okay: { collapses: 0, passes: 0 },
+    risky: { passes: 0, latestCollapse: 5 },
+    random: { passRate: 0.2, collapseRate: 0.3, failRate: 0.8 },
+  };
+
   it('lists every combination once', () => {
     expect(combinations([1, 2, 3, 4], 2)).toHaveLength(6);
     expect(combinations([1, 2], 0)).toEqual([[]]);
     expect(combinations([1, 2], 3)).toEqual([]);
   });
 
-  it('confirms that only good choices always pass and only risky ones never do', () => {
+  it('reports how each fixed strategy fares over all draws', () => {
     const report = simulateLevel(level);
     expect(report).toMatchObject({
       levelId: 'level-1',
       runs: 56,
-      goodFailures: 0,
-      riskyPasses: 0,
-      goodLowest: 24,
-      goodMinStars: 3,
+      good: { failures: 0, lowest: 24, minStars: 3 },
+      // Six times "-mittel" on time is more than the gauge holds: collapse in every draw.
+      okay: { collapses: 56, passes: 0 },
+      // Three times "-gross" on stability empties the gauge.
+      risky: { passes: 0, latestCollapse: 3 },
     });
-    expect(report.randomPassRate).toBeGreaterThan(0);
-    expect(report.randomPassRate + report.randomCollapseRate).toBeLessThanOrEqual(1);
+    expect(report.good.maxTilt).toBeCloseTo(0.648, 3);
+    expect(report.random.passRate + report.random.failRate).toBeCloseTo(1, 10);
+    expect(report.random.collapseRate).toBeLessThanOrEqual(report.random.failRate);
   });
 
   it('gives the same estimate for the random player on every run (Q-06)', () => {
@@ -294,24 +308,68 @@ describe('balance simulation (F-907)', () => {
     expect(playRandom(level, createRng(3))).toEqual(playRandom(level, createRng(3)));
   });
 
-  it('keeps blind clicking from passing in every level that ships (F-909)', () => {
+  it('finds nothing wrong with a report in which every rule holds exactly', () => {
+    expect(balanceProblems(clean)).toEqual([]);
+    expect(isBalanced(clean, true)).toBe(true);
+  });
+
+  it.each<[string, Partial<BalanceReport>, BalanceProblem]>([
+    ['a good-only run fails', { good: { ...clean.good, failures: 1 } }, 'good-fails'],
+    ['no draw was simulated', { runs: 0 }, 'good-fails'],
+    ['a good-only run ends below 40', { good: { ...clean.good, lowest: 39 } }, 'good-low'],
+    ['a good-only run leans too much', { good: { ...clean.good, maxTilt: 0.11 } }, 'good-tilt'],
+    ['acceptable-only collapses', { okay: { collapses: 1, passes: 0 } }, 'okay-collapses'],
+    ['acceptable-only passes', { okay: { collapses: 0, passes: 1 } }, 'okay-passes'],
+    ['risky-only passes', { risky: { passes: 1, latestCollapse: 5 } }, 'risky-passes'],
+    ['risky-only collapses too late', { risky: { passes: 0, latestCollapse: 6 } }, 'risky-late'],
+    ['risky-only never collapses', { risky: { passes: 0, latestCollapse: null } }, 'risky-late'],
+    [
+      'random play passes too often',
+      { random: { passRate: 0.21, collapseRate: 0.3, failRate: 0.79 } },
+      'random-passes',
+    ],
+    [
+      'random play fails too rarely',
+      { random: { passRate: 0.1, collapseRate: 0.3, failRate: 0.59 } },
+      'random-range',
+    ],
+    [
+      'random play fails too often',
+      { random: { passRate: 0.09, collapseRate: 0.3, failRate: 0.91 } },
+      'random-range',
+    ],
+  ])('names the broken rule when %s', (_name, change, problem) => {
+    expect(balanceProblems({ ...clean, ...change })).toContain(problem);
+    expect(isBalanced({ ...clean, ...change }, true)).toBe(false);
+  });
+
+  it('stops the build only for binding rules unless strict is asked for', () => {
+    const tilted = { ...clean, good: { ...clean.good, lowest: 12, maxTilt: 0.8 } };
+    expect(isBalanced(tilted)).toBe(true);
+    expect(isBalanced(tilted, true)).toBe(false);
+    expect(isBalanced({ ...clean, risky: { passes: 1, latestCollapse: 5 } })).toBe(false);
+  });
+
+  it('holds the binding rules in every level that ships', () => {
     for (const [name, json] of Object.entries(readLevelFiles())) {
       const result = validateLevelJson(json, name, POINTS);
       if (!result.ok) throw new Error(result.errors.join('\n'));
       const report = simulateLevel(result.level);
       expect(isBalanced(report), name).toBe(true);
-      expect(report.randomPassRate, name).toBeLessThanOrEqual(0.2);
+      expect(report.random.passRate, name).toBeLessThanOrEqual(0.2);
     }
   });
 
-  it('still fails a player whose risky options are harmless: the inspection catches it', () => {
+  it('notices risky options that are too harmless to bring the building down', () => {
     const soft = clone(level);
     for (const s of soft.situationen) {
       const risky = s.optionen.find((o) => o.einstufung === 'riskant');
       if (risky) risky.wirkung = { budget: '0', zeit: '0', stabilitaet: '-klein' };
     }
     expect(playStrategy(soft.situationen.slice(0, 6), 'riskant').outcome).toBe('rejected');
-    expect(simulateLevel(soft).riskyPasses).toBe(0);
+    const report = simulateLevel(soft);
+    expect(report.risky).toEqual({ passes: 0, latestCollapse: null });
+    expect(balanceProblems(report)).toContain('risky-late');
   });
 
   it('detects a level whose good options are too costly', () => {
@@ -321,16 +379,15 @@ describe('balance simulation (F-907)', () => {
       if (good) good.wirkung = { budget: '-gross', zeit: '0', stabilitaet: '+gross' };
     }
     const report = simulateLevel(harsh);
-    expect(report.goodFailures).toBe(56);
-    expect(report.goodMinStars).toBe(0);
+    expect(report.good).toMatchObject({ failures: 56, minStars: 0, lowest: 0, maxTilt: 1 });
     expect(isBalanced(report)).toBe(false);
   });
 
-  it('calls a level unbalanced if blind clicking passes too often', () => {
-    const report = simulateLevel(level);
-    expect(isBalanced({ ...report, randomPassRate: 0.21 })).toBe(false);
-    expect(isBalanced({ ...report, randomPassRate: 0.2 })).toBe(true);
-    expect(isBalanced({ ...report, runs: 0 })).toBe(false);
+  it('lets the cautious player take the good option where no acceptable one exists', () => {
+    const situation = clone(level.situationen[0]!);
+    situation.optionen = situation.optionen.filter((o) => o.einstufung !== 'vertretbar');
+    const result = playStrategy([situation], 'vertretbar');
+    expect(result).toMatchObject({ steps: 1, gauges: { budget: 54, zeit: 54, stabilitaet: 74 } });
   });
 
   it('refuses a situation that lacks the requested rating', () => {

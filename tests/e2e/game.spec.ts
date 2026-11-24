@@ -397,6 +397,17 @@ test('names the frame rate in the error report (A8)', async ({ page }) => {
   );
 });
 
+test('hides the label «Entwurf» from players and shows it in debug mode (A3)', async ({ page }) => {
+  await page.goto(SIMPLE);
+  await startLevel1(page);
+  await throughBriefingAndTheory(page);
+  await expect(page.getByTestId('draft')).toHaveCount(0);
+
+  await page.goto(`${SIMPLE}&debug=1`);
+  await expect(screen(page, 'situation')).toBeVisible();
+  await expect(page.getByTestId('draft')).toHaveText('Entwurf');
+});
+
 test('ignores invalid URL parameters', async ({ page }) => {
   await page.goto('/?renderer=<script>&seed=abc');
   await expect(screen(page, 'city')).toBeVisible();
