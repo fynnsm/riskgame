@@ -15,7 +15,7 @@ import {
 import type { MarkerSpot, RenderStats, SceneView } from '../core/scene.ts';
 import { sceneModel } from '../core/scene.ts';
 import { starsFor } from '../core/scoring.ts';
-import { judgedCount, registeredRisks } from '../core/tour.ts';
+import { registeredRisks } from '../core/tour.ts';
 import type { Logger } from '../logging/logger.ts';
 import { errorData } from '../logging/logger.ts';
 import { buildErrorReport } from '../logging/report.ts';
@@ -687,20 +687,9 @@ export function createApp(options: AppOptions): App {
       case 'theory':
         return theoryScreen(level, run, handlers);
       case 'tour':
-        return tourScreen(
-          level,
-          run,
-          openSite,
-          {
-            open: openPlace,
-            classify: (siteId, risk) => dispatch({ type: 'classify', siteId, risk }),
-            finish: () => dispatch({ type: 'finishTour' }),
-            next: handlers.next,
-          },
-          options.showDraftLabels ?? false,
-        );
       case 'tourResult':
-        return tourResultScreen(level, run, handlers);
+        // Unreachable while the tour is held back at loading; a stored run in this phase is reported.
+        throw new Error(`No screen for phase ${run.phase}`);
       case 'situation':
         return situationScreen(
           level,
