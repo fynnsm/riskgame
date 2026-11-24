@@ -395,8 +395,8 @@ Stand: **U** = umgesetzt, **O** = offen.
 | G-08 | Leistungsgrenzen gemäss `docs/PERFORMANCE.md`: Zeichenaufrufe höchstens das 1.5-Fache des Ist-Zustands, höchstens 80 kB zusätzliche Übertragung, mindestens 30 Bilder pro Sekunde auf einem Mittelklasse-Handy | M | U (Messung und Test), Bildrate nur auf echten Geräten prüfbar |
 | G-09 | Jede neue Darstellung nennt, was sie auf Qualitätsstufe 0, 1 und 2 zeigt; Stufe 0 zeigt keine Dekoration ausser Wolken | M | U (Regel in `director.ts`) |
 | G-10 | Regie-Schicht `src/render/director.ts`: reine Funktionen ohne Three.js, die aus dem Spielzustand Anweisungen für die Szene berechnen; vollständig unit-getestet | M | U |
-| G-20 | Himmel als Farbverlauf passend zur Tageszeit; ein gerichtetes Licht und ein Umgebungslicht; weiche Schatten nur auf Stufe 2; leichter Dunst zum Stadtrand | M | O |
-| G-21 | Tageszeiten: Level 1 Morgen, 2 Mittag, 3 Nachmittag, 4 Abendlicht, 5 Nacht mit leuchtenden Fenstern und Strassenlampen; Startseite Mittag; Schlussansicht Abend mit Übergang zur Nacht | M | O (Zuordnung und Paletten sind definiert) |
+| G-20 | Himmel als Farbverlauf passend zur Tageszeit; ein gerichtetes Licht und ein Umgebungslicht; weiche Schatten nur auf Stufe 2; leichter Dunst zum Stadtrand | M | U |
+| G-21 | Tageszeiten: Level 1 Morgen, 2 Mittag, 3 Nachmittag, 4 Abendlicht, 5 Nacht mit leuchtenden Fenstern und Strassenlampen; Startseite Mittag; Schlussansicht Abend mit Übergang zur Nacht | M | U (die Schlussansicht ruht vorerst im Abendlicht; der Übergang zur Nacht folgt mit G-53) |
 | G-30 | Wolken: 6 bis 10 Klotz-Wolken in zwei Höhen, ziehen langsam, mit Schatten auf der Stadt (alle Stufen) | S | O |
 | G-31 | Flugzeug quert alle 20 bis 40 Sekunden, mit Schatten; nie über der Bildmitte während einer Entscheidung (Stufe 1, 2) | S | O |
 | G-32 | Heissluftballon und Vogelschwarm (Stufe 2) | K | O |
@@ -425,6 +425,6 @@ Stand: **U** = umgesetzt, **O** = offen.
 | G-64 | Laptop: Ein Knopf blendet die Spalte aus | S | O |
 | G-65 | Theorie-Grafiken im selben Stil wie das Spiel | K | O |
 | G-70 | Ton: Geräusche für Fertigstellung, Sterne, Feuerwerk, Stempel und Flugzeug, leise Stadt-Atmosphäre; alles über den Stumm-Schalter; keine Information nur über Ton | S | O (auch der Ton aus F-801 fehlt noch) |
-| G-80 | E2E-Tests für die neuen Bildschirme, für reduzierte Bewegung, für `?renderer=none` und für die Zeichenaufrufe; ein Lauf speichert Bildschirmfotos als Artefakt der CI | M | O (Zeichenaufrufe sind getestet) |
+| G-80 | E2E-Tests für die neuen Bildschirme, für reduzierte Bewegung, für `?renderer=none` und für die Zeichenaufrufe; ein Lauf speichert Bildschirmfotos als Artefakt der CI | M | O (Zeichenaufrufe sind getestet, Bildschirmfotos werden gespeichert) |
 | G-81 | `docs/CHECKLIST-VISUAL.md`: was auf echten Geräten zu prüfen ist, inklusive Ton und Bildrate | S | O |
 

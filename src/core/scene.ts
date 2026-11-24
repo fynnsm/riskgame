@@ -9,6 +9,8 @@ export type LotStatus = 'locked' | 'open' | 'active' | 'done';
 
 export interface LotModel {
   levelId: string;
+  /** Number of the level, 1 to 5; the view derives the time of day from it. */
+  nummer: number;
   kind: BuildingKind;
   status: LotStatus;
   building: BuildingModel | null;
@@ -23,6 +25,8 @@ export interface SceneModel {
   /** Index of the lot the camera follows in level mode. */
   focus: number | null;
   lots: LotModel[];
+  /** True once every level has been completed; the city then shows its closing mood. */
+  allCompleted: boolean;
 }
 
 /** Pixels of the canvas hidden behind HTML panels, per side. */
@@ -71,6 +75,7 @@ export function sceneModel(
       focus = index;
       return {
         levelId: level.id,
+        nummer: level.nummer,
         kind,
         status: 'active',
         building: buildingModel(kind, floorRecords(run)),
@@ -82,6 +87,7 @@ export function sceneModel(
     if (lp.completed && lp.best) {
       return {
         levelId: level.id,
+        nummer: level.nummer,
         kind,
         status: 'done',
         building: buildingModel(kind, lp.best.floors),
@@ -92,6 +98,7 @@ export function sceneModel(
     const open = available && isUnlocked(progress, order, level.id);
     return {
       levelId: level.id,
+      nummer: level.nummer,
       kind,
       status: open ? 'open' : 'locked',
       building: null,
@@ -99,5 +106,10 @@ export function sceneModel(
       construction: false,
     };
   });
-  return { mode: focus === null ? 'city' : 'level', focus, lots };
+  return {
+    mode: focus === null ? 'city' : 'level',
+    focus,
+    lots,
+    allCompleted: lots.length > 0 && lots.every((lot) => lot.status === 'done'),
+  };
 }

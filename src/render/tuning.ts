@@ -20,9 +20,17 @@ export const TUNING = {
     collapseMaxSeconds: 12,
   },
 
+  /** B2: haze towards the edge of the city, as distance from the camera along its line of sight. */
+  haze: { cameraDistance: 200, near: 236, far: 372 },
+
+  /** B2: share of windows that glow at night. */
+  litWindowShare: 0.4,
+
   camera: {
     /** Higher is snappier; share of the remaining way covered per second, as a rate. */
     easeRate: 4,
+    /** How fast light and sky change when the time of day does. */
+    lightEaseRate: 1.6,
   },
 
   quality: {

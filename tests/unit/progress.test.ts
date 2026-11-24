@@ -234,7 +234,8 @@ describe('sceneModel (F-408, F-409)', () => {
 
   it('shows the city with one open and the other lots locked at the start', () => {
     const model = sceneModel(levels, emptyProgress(), null);
-    expect(model).toMatchObject({ mode: 'city', focus: null });
+    expect(model).toMatchObject({ mode: 'city', focus: null, allCompleted: false });
+    expect(model.lots.map((l) => l.nummer)).toEqual([1, 2, 3]);
     expect(model.lots.map((l) => l.status)).toEqual(['open', 'locked', 'locked']);
   });
 

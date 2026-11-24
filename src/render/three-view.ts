@@ -7,6 +7,8 @@ import {
   HemisphereLight,
   InstancedMesh,
   Matrix4,
+  Fog,
+  MeshBasicMaterial,
   MeshLambertMaterial,
   OrthographicCamera,
   Quaternion,
@@ -19,6 +21,9 @@ import type { LotModel, RenderStats, SceneInsets, SceneModel, SceneView } from '
 import type { Logger } from '../logging/logger.ts';
 import type { Part } from './boxes.ts';
 import { box, hash, shade } from './boxes.ts';
+import type { Quality } from './director.ts';
+import { decorationFor, momentFor, timeOfDay } from './director.ts';
+import type { Lighting, TimeOfDay } from './palette.ts';
 import { C, LIGHTING } from './palette.ts';
 import { TUNING } from './tuning.ts';
 import { buildCity, CAR_COUNT, carPlacement, lotPosition } from './city.ts';
@@ -118,15 +123,22 @@ interface LotVisual {
 export function createThreeView(host: HTMLElement, options: ThreeViewOptions): SceneView {
   const { logger, reducedMotion } = options;
 
-  const renderer = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  // Transparent canvas: beyond the meadow the sky of the page shows through (B2).
+  const renderer = new WebGLRenderer({
+    antialias: true,
+    alpha: true,
+    powerPreference: 'high-performance',
+  });
+  renderer.setClearColor(0x000000, 0);
   // N-205: more than 2 costs fill rate on phones without a visible gain.
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, TUNING.quality.maxPixelRatio));
   const canvas = renderer.domElement;
   host.append(canvas);
 
   const scene = new Scene();
-  // Seen from above, the background is ground, not sky; it continues the grass beyond the city.
-  scene.background = new Color(C.grass);
+  // Haze: what lies far from the camera fades into the colour of the horizon.
+  const fog = new Fog(LIGHTING.mittag.haze, TUNING.haze.near, TUNING.haze.far);
+  scene.fog = fog;
 
   // Orthographic and from a fixed diagonal: this is what gives the blocky, isometric look.
   const camera = new OrthographicCamera(-10, 10, 10, -10, 1, 600);
@@ -139,8 +151,11 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   const meshes = new Set<InstancedMesh>();
   const tint = new Color();
 
-  function buildMesh(parts: readonly Part[]): InstancedMesh {
-    const mesh = new InstancedMesh(unitBox, material, Math.max(1, parts.length));
+  function buildMesh(
+    parts: readonly Part[],
+    surface: MeshLambertMaterial | MeshBasicMaterial = material,
+  ): InstancedMesh {
+    const mesh = new InstancedMesh(unitBox, surface, Math.max(1, parts.length));
     mesh.count = parts.length;
     parts.forEach((part, i) => {
       mesh.setMatrixAt(i, part.matrix);
@@ -160,7 +175,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     mesh.dispose();
   }
 
-  const light = LIGHTING.mittag;
+  let time: TimeOfDay = 'mittag';
+  let light: Lighting = LIGHTING[time];
   const hemisphere = new HemisphereLight(
     light.ambientSky,
     light.ambientGround,
@@ -177,10 +193,34 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   sun.shadow.bias = -0.0008;
   scene.add(hemisphere, sun, sun.target);
 
+  const goalColor = new Color();
+
+  /** Sky behind the canvas: a gradient from the zenith to the colour the city fades into. */
+  function paintSky(): void {
+    const top = `#${new Color(light.skyTop).getHexString()}`;
+    const bottom = `#${new Color(light.haze).getHexString()}`;
+    host.style.background = `linear-gradient(${top} 0%, ${bottom} 55%)`;
+    host.dataset.timeOfDay = time;
+  }
+
+  /** Moves light and haze towards the current time of day; `ease` 1 jumps there at once. */
+  function easeLight(ease: number): void {
+    hemisphere.color.lerp(goalColor.setHex(light.ambientSky), ease);
+    hemisphere.groundColor.lerp(goalColor.setHex(light.ambientGround), ease);
+    hemisphere.intensity += (light.ambientIntensity - hemisphere.intensity) * ease;
+    sun.color.lerp(goalColor.setHex(light.sun), ease);
+    sun.intensity += (light.sunIntensity - sun.intensity) * ease;
+    fog.color.lerp(goalColor.setHex(light.haze), ease);
+  }
+
   // --- City (F-410): built once, never touched again ---
   let lotCount = 5;
   let cityMesh: InstancedMesh | null = null;
   let carsMesh: InstancedMesh | null = null;
+  let lightsMesh: InstancedMesh | null = null;
+  let blobsMesh: InstancedMesh | null = null;
+  // Unlit, so lamps and windows glow however dark the night is.
+  const glow = new MeshBasicMaterial({ color: C.white });
   const carMatrix = new Matrix4();
   const carBody = new Matrix4();
   const carCabin = new Matrix4();
@@ -192,8 +232,17 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   function rebuildCity(): void {
     if (cityMesh) dropMesh(cityMesh);
     if (carsMesh) dropMesh(carsMesh);
-    cityMesh = buildMesh(buildCity(lotCount));
-    scene.add(cityMesh);
+    if (lightsMesh) dropMesh(lightsMesh);
+    if (blobsMesh) dropMesh(blobsMesh);
+    const city = buildCity(lotCount);
+    cityMesh = buildMesh(city.parts);
+    lightsMesh = buildMesh(city.lights, glow);
+    lightsMesh.castShadow = false;
+    lightsMesh.receiveShadow = false;
+    blobsMesh = buildMesh(city.blobs);
+    blobsMesh.castShadow = false;
+    scene.add(cityMesh, lightsMesh, blobsMesh);
+    applyDecoration();
     const carParts: Part[] = [];
     for (let i = 0; i < CAR_COUNT; i++) {
       const color = [C.red, C.yellow, C.carBlue, C.green, C.white, C.carOrange][i % 6] ?? C.white;
@@ -219,6 +268,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   }
 
   // --- Lots and towers ---
+  /** True while lights are on; towers are rebuilt when this flips, because their windows change. */
+  let night = false;
   const lotsGroup = new Group();
   scene.add(lotsGroup);
   let visuals: LotVisual[] = [];
@@ -249,7 +300,9 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       const door = ground && s === 0;
       const height = door ? 0.98 : 0.74;
       const y = door ? -0.38 : -0.08;
-      const glass = door ? C.door : GLASS;
+      // At night some windows of the tower are lit, like those of the houses around it.
+      const lit = night && hash(seed + 11 + s) < TUNING.litWindowShare + 0.2;
+      const glass = door ? C.door : lit ? C.nightGlass : GLASS;
       if (mx === 1) {
         if (s === broken) {
           push(box(C.hole, 0.1, 0.56, 0.7, face, y, slot));
@@ -350,6 +403,10 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     );
   }
 
+  function lotKey(lot: LotModel): string {
+    return `${night ? 'n' : 'd'}${JSON.stringify(lot)}`;
+  }
+
   function buildLot(
     lot: LotModel,
     index: number,
@@ -407,7 +464,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     group.add(baseMesh);
 
     const visual: LotVisual = {
-      key: JSON.stringify(lot),
+      key: lotKey(lot),
       group,
       pivot,
       tower: null,
@@ -697,7 +754,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     camera.top = view.cy * view.unit;
     camera.bottom = -(height - view.cy) * view.unit;
     camera.updateProjectionMatrix();
-    camera.position.copy(target).addScaledVector(viewDirection, 200);
+    camera.position.copy(target).addScaledVector(viewDirection, TUNING.haze.cameraDistance);
     camera.lookAt(target);
     // The shadow box travels with the camera so shadows stay sharp wherever it looks.
     sun.target.position.copy(target);
@@ -715,6 +772,14 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   let quality: number =
     options.fixedQuality ?? (window.matchMedia('(pointer: coarse)').matches ? 1 : 2);
 
+  /** B3, G-09: what the current quality step and time of day show. */
+  function applyDecoration(): void {
+    const decoration = decorationFor(quality as Quality);
+    if (lightsMesh) lightsMesh.visible = light.lightsOn && decoration.nightLights;
+    // Simple dark patches stand in for shadows wherever the real ones are switched off.
+    if (blobsMesh) blobsMesh.visible = !decoration.softShadows;
+  }
+
   function applyQuality(): void {
     const shadows = quality >= 2;
     renderer.shadowMap.enabled = shadows;
@@ -722,6 +787,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     material.needsUpdate = true;
     if (quality === 0) renderer.setPixelRatio(1);
     renderer.setSize(width, height, false);
+    applyDecoration();
   }
 
   // --- Loop ---
@@ -751,6 +817,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     }
 
     const ease = reducedMotion || !cameraSnapped ? 1 : 1 - Math.exp(-dt * TUNING.camera.easeRate);
+    // Reduced motion: light changes at once instead of gliding (B0.6).
+    easeLight(reducedMotion ? 1 : 1 - Math.exp(-dt * TUNING.camera.lightEaseRate));
     target.lerp(targetGoal, ease);
     view.unit += (viewGoal.unit - view.unit) * ease;
     view.cx += (viewGoal.cx - view.cx) * ease;
@@ -812,6 +880,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   canvas.addEventListener('webglcontextrestored', onContextRestored);
 
   rebuildCity();
+  paintSky();
+  easeLight(1);
   resize();
   applyQuality();
   if (!document.hidden) start();
@@ -819,6 +889,15 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
 
   return {
     render(next: SceneModel): void {
+      const nextTime = timeOfDay(momentFor(next));
+      if (nextTime !== time) {
+        time = nextTime;
+        light = LIGHTING[time];
+        night = light.lightsOn;
+        paintSky();
+        applyDecoration();
+        logger.info('render.time', { time });
+      }
       const count = next.lots.length;
       if (count !== lotCount) {
         lotCount = count;
@@ -829,7 +908,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       const updated: LotVisual[] = [];
       next.lots.forEach((lot, index) => {
         const previous = visuals[index];
-        if (previous && previous.key === JSON.stringify(lot)) {
+        if (previous && previous.key === lotKey(lot)) {
           updated.push(previous);
           return;
         }
@@ -870,6 +949,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       for (const mesh of meshes) mesh.dispose();
       unitBox.dispose();
       material.dispose();
+      glow.dispose();
       renderer.dispose();
       canvas.remove();
       logger.info('render.disposed');

@@ -88,3 +88,37 @@ export async function openWith(page: Page, url: string, progress: Progress): Pro
   );
   await page.goto(url);
 }
+
+const RATINGS: readonly Rating[] = ['gut', 'vertretbar', 'riskant'];
+
+/**
+ * The shortest sequence of decisions in the given level after which `wanted` holds.
+ * Finished runs are taken on to the result screen. Searching instead of hard-coding
+ * keeps these tests valid when the content or the balance changes.
+ */
+export function progressWhere(
+  nummer: number,
+  wanted: (run: LevelRun) => boolean,
+  seed = 77,
+): Progress {
+  const level = LEVELS[nummer - 1] as Level;
+  const base = step(startRun(level, seed, { canSkipTheory: true }), level, { type: 'skipTheory' });
+  let frontier: { run: LevelRun; ratings: Rating[] }[] = [{ run: base, ratings: [] }];
+  while (frontier.length > 0) {
+    const next: typeof frontier = [];
+    for (const { run, ratings } of frontier) {
+      if (wanted(run)) return withRun(progressWithCompleted(nummer - 1), run);
+      if (run.phase !== 'situation') continue;
+      for (const rating of RATINGS) {
+        const situation = level.situationen.find((s) => s.id === run.situationIds[run.step]);
+        const option = situation?.optionen.find((o) => o.einstufung === rating);
+        if (!option) continue;
+        let after = step(run, level, { type: 'choose', optionId: option.id });
+        after = step(after, level, { type: 'continue' });
+        next.push({ run: after, ratings: [...ratings, rating] });
+      }
+    }
+    frontier = next;
+  }
+  throw new Error(`No sequence of decisions in level ${nummer} leads to the wanted state`);
+}
