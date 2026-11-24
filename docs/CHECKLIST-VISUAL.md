@@ -23,6 +23,17 @@ Mit `?debug=1` ablesen, je auf der Stufe, die das Gerät von selbst wählt.
 
 Liegt ein Wert darunter: Wert, Gerät und Qualitätsstufe notieren. Der Fehlerbericht im Menü enthält Durchschnitt und Minimum der letzten 30 Sekunden.
 
+### So misst du auf einem Handy
+
+Die Bildrate lässt sich nur auf dem echten Gerät messen; kein automatischer Test und kein Laptop sagt etwas darüber aus.
+
+1. Auf dem Handy die Seite mit `?debug=1` am Ende der Adresse öffnen. Unten links erscheint das Debug-Feld.
+2. Im Debug-Feld auf «Level 5» tippen. Das ist die aufwendigste Szene (Nacht mit Lichtern).
+3. Das Level mindestens eine Minute lang normal spielen, bis einige Stockwerke stehen.
+4. Im Debug-Feld Bildrate (aktuell, Durchschnitt, Minimum), Dreiecke und Qualitätsstufe ablesen. Am Handy sollte die Stufe 1 sein und die Zahl der Dreiecke unter 150’000 liegen.
+5. Menü öffnen, «Fehlerbericht kopieren» und den Text in eine Nachricht an die Gruppe einfügen. Er enthält die Zeile «Bildrate (letzte 30 s): Durchschnitt …, Minimum …, Qualitätsstufe …» und das Gerät.
+6. Dasselbe mit `?debug=1&quality=0` wiederholen, falls der Durchschnitt unter 30 liegt. Stufe 0 zeigt eine kleinere Stadt mit höchstens 80’000 Dreiecken.
+
 ## Licht und Tageszeiten
 
 - [ ] Level 1 wirkt wie Morgen, 2 wie Mittag, 3 wie Nachmittag, 4 wie Abend, 5 wie Nacht

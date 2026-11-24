@@ -52,3 +52,34 @@ gibt pro Szene eine Zeile `MEASURE …` mit Zeichenaufrufen und Dreiecken aus. V
 | 24.11.2026 | Bildschirme nach einem Level (B5): Feuerwerk, Konfetti, Prüfer, Absperrband | 9 | 10 | 14 | 222.6 kB |
 | 24.11.2026 | Schlussbildschirm, Startseite, Kameraflug (B5) | 9 | 10 | 14 | 224.8 kB |
 | 24.11.2026 | Oberfläche und Ton (B6, B7) | 9 | 10 | 14 | 227.7 kB |
+
+## Dreiecke (Nachtest N1)
+
+Im Nachtest zeigte die Startseite auf Qualitätsstufe 2 353’376 Dreiecke (genauer: das war die Schlussansicht; die Startseite lag bei 309’240). Für ein Mittelklasse-Handy ist das ein Risiko. Seit dem 24.11.2026 gelten Grenzen pro Stufe, und die Stadt richtet Grösse und Detailgrad nach der Stufe.
+
+Gemessen mit `?debug=1&quality=N` in einem Headless-Chromium, 1366×768:
+
+| Szene | Stufe 0 vorher | Stufe 0 jetzt | Stufe 1 vorher | Stufe 1 jetzt | Stufe 2 (unverändert) |
+|---|---|---|---|---|---|
+| Startseite | 178’092 | 53’892 | 178’092 | 84’012 | 309’240 |
+| Level mit acht Stockwerken | 180’948 | 56’748 | 180’948 | 86’868 | 314’952 |
+| Schlussansicht | 200’160 | 75’960 | 200’160 | 106’080 | 353’376 |
+| **Grenze** | | **80’000** | | **150’000** | keine |
+
+Zeichenaufrufe: 9 / 10 / 14 auf Stufe 0 und 1, 14 / 16 / 24 auf Stufe 2 (dort wird für die Schatten alles ein zweites Mal gezeichnet, darum auch die doppelte Zahl an Dreiecken).
+
+Was sich pro Stufe ändert (`src/render/tuning.ts`, `city`):
+
+| | Stufe 0 | Stufe 1 | Stufe 2 |
+|---|---|---|---|
+| Stadtradius in Blöcken | 4 | 5 | 7 |
+| Strassenlampen, Schattenflecken, wiegende Bäume | bis 2 Blöcke vom Zentrum | bis 3 | überall |
+| Bäume in der Ferne | ein Klotz | ein Klotz | Stamm und zwei Kronen |
+| Fenster an fernen Häusern | keine | bis 4 Blöcke | bis 5 |
+
+Am Handy (grober Zeiger) startet das Spiel auf Stufe 1, am Laptop auf Stufe 2. Von dort stuft es nur herunter, wenn die Bildrate unter 28 fällt.
+
+**Nicht umgesetzt:** das Weglassen verdeckter Flächen. Alle Klötze teilen sich einen Würfel mit sechs Seiten; Böden und Rückseiten einzeln wegzulassen bräuchte eine zweite Geometrie und damit weitere Zeichenaufrufe. Die Grenzen sind auch ohne das deutlich unterschritten.
+
+**Die Bildrate ist weiterhin auf keinem echten Gerät gemessen.** Die Zahlen oben sagen, wie viel gezeichnet wird, nicht wie schnell. Wie man auf einem Handy misst, steht in `docs/CHECKLIST-VISUAL.md` unter «Bildrate».
+

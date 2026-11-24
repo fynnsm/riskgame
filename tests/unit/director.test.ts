@@ -14,8 +14,10 @@ import {
   planeLateralOffset,
   planeMayCrossCentre,
   resultSequence,
+  startQuality,
   timeOfDay,
 } from '../../src/render/director.ts';
+import { buildCity, cityReach } from '../../src/render/city.ts';
 import { LIGHTING } from '../../src/render/palette.ts';
 import { TUNING } from '../../src/render/tuning.ts';
 import { makeLevel } from './fixtures.ts';
@@ -131,6 +133,47 @@ describe('title of the closing screen (B5)', () => {
     expect(cityTitle(9, 9)).toBe('gold');
     expect(cityTitle(6, 9)).toBe('baustellen');
     expect(cityTitle(7, 9)).toBe('solide');
+  });
+});
+
+describe('triangle budget (N1)', () => {
+  it('starts a phone without real shadows and a desktop with them', () => {
+    expect(startQuality(true)).toBe(1);
+    expect(startQuality(false)).toBe(2);
+  });
+
+  it('builds a smaller and simpler city on a lower quality step', () => {
+    const boxes = ([0, 1, 2] as const).map((quality) => {
+      const city = buildCity(5, quality);
+      return city.parts.length + city.blobs.length;
+    });
+    expect(boxes[0]).toBeLessThan(boxes[1] as number);
+    expect(boxes[1]).toBeLessThan(boxes[2] as number);
+    expect([0, 1, 2].map((q) => cityReach(q as 0 | 1 | 2))).toEqual(TUNING.city.reach);
+  });
+
+  it('leaves the city alone room under the limit for towers and traffic', () => {
+    // Twelve triangles per box. The city is by far the largest part of a scene; the end-to-end
+    // test measures the whole of it against the same limits.
+    for (const quality of [0, 1] as const) {
+      const city = buildCity(5, quality);
+      const triangles = (city.parts.length + city.blobs.length) * 12;
+      const limit = TUNING.budget.triangles[quality];
+      expect(triangles).toBeLessThan(limit * 0.75);
+    }
+  });
+
+  it('keeps lamps, shadow patches and swaying trees near the centre on low steps', () => {
+    const low = buildCity(5, 0);
+    const high = buildCity(5, 2);
+    expect(low.lights.length).toBeLessThan(high.lights.length / 3);
+    expect(low.blobs.length).toBeLessThan(high.blobs.length / 3);
+    expect(low.swayTrees.length).toBeGreaterThan(0);
+  });
+
+  it('builds the same city every time for the same step', () => {
+    expect(buildCity(5, 1).parts.length).toBe(buildCity(5, 1).parts.length);
+    expect(buildCity(4, 1).parts.length).toBeGreaterThan(0);
   });
 });
 
