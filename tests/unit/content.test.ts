@@ -309,6 +309,15 @@ describe('content statistics and pattern warnings (A1, A2)', () => {
       unevenLength: [],
       budgetShare: 2 / 3,
       goodCostShare: { budget: 0.5, zeit: 0.5, stabilitaet: 0 },
+      lengths: level.situationen.map((situation) => ({
+        id: situation.id,
+        titel: situation.titel,
+        gut: 8,
+        vertretbar: 8,
+        riskant: 8,
+        goodIsLongest: false,
+        uneven: false,
+      })),
     });
   });
 
@@ -371,6 +380,17 @@ describe('content statistics and pattern warnings (A1, A2)', () => {
     expect(errors.join('\n')).toContain('100 % der Kosten der guten Optionen entfallen auf «zeit»');
   });
 
+  it('lists the length of each rating, a dash where a situation has none, the longest of several', () => {
+    const level = makeLevel();
+    const first = level.situationen[0];
+    if (!first) throw new Error('fixture');
+    first.optionen = first.optionen.filter((o) => o.einstufung !== 'vertretbar');
+    first.optionen.push({ ...first.optionen[0]!, id: 'C', text: 'Eine zweite gute Wahl, länger.' });
+    const row = levelStats(level, POINTS).lengths[0];
+    expect(row).toMatchObject({ gut: 30, vertretbar: null, riskant: 8, uneven: true });
+    expect(contentReport([levelStats(level, POINTS)])).toContain('| 30 | – | 8 |');
+  });
+
   it('writes a report with one row per level and the affected situations', () => {
     const level = makeLevel();
     lengthen(level, 1, 'gut');
@@ -381,8 +401,15 @@ describe('content statistics and pattern warnings (A1, A2)', () => {
     expect(report).toContain(
       '| Level 1 | 8 | 0 | 8 | 2 (25 %) | 1 (13 %) | 0 | 67 % | 50 % / 50 % / 0 % |',
     );
-    expect(report).toContain('- Gute Option ist die längste: L1-S01');
-    expect(report).toContain('- Längenunterschied über 30 %: keine');
+    // The three lengths side by side, for the situations that give the answer away.
+    expect(report).toContain(
+      '1 von 8 Situationen betroffen; in 1 ist die gute Option die längste.',
+    );
+    expect(report).toContain('| L1-S01 | Situation 1 | 10 | 8 | 8 | ja | nein |');
+    expect(report).not.toContain('| L1-S02 |');
+    // A level with nothing to fix says so instead of showing an empty table.
+    expect(report).toContain('### Level 2\n\n0 von 8 Situationen betroffen');
+    expect(report).toContain('Keine.');
     expect(contentReport([])).toContain('Stand: 0 Situationen in 0 Leveln');
   });
 });

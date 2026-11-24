@@ -442,5 +442,5 @@ Aus dem Auftrag «Nachtest zu Update 2» vom 24.11.2026. Stand: **U** = umgesetz
 | T-06 | Ton-Knopf: Lautsprecher als eingebettetes SVG, durchgestrichen im stummen Zustand; Beschriftung «Ton: an» und «Ton: aus»; `aria-pressed` und `aria-label` gesetzt | S | U |
 | T-07 | Handy: Liegen die Optionen unter dem sichtbaren Bereich, führt ein Hinweis «Was tust du? ↓» am Fuss des Textfelds mit einem Tipp dorthin. Während einer Situation darf das Textfeld 65 % der Höhe einnehmen | M | U |
 | T-08 | `index.html` zeigt einen statischen Ladezustand (Schriftzug und «Wird geladen …») ohne Skript und ohne Inline-Stil; er verschwindet, sobald die Oberfläche steht | S | U |
-| T-09 | `docs/CONTENT-REPORT.md` listet pro Level die betroffenen Situationen mit den Zeichenzahlen der drei Optionen nebeneinander | S | O |
+| T-09 | `docs/CONTENT-REPORT.md` listet pro Level die betroffenen Situationen mit den Zeichenzahlen der drei Optionen nebeneinander | S | U |
 

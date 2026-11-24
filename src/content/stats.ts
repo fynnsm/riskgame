@@ -23,6 +23,19 @@ export interface LevelStats {
   budgetShare: number;
   /** How the costs of the good options spread over the gauges; the shares add up to 1. */
   goodCostShare: Record<GaugeKey, number>;
+  /** Per situation: the length of each option's text, so authors see what to even out. */
+  lengths: SituationLengths[];
+}
+
+export interface SituationLengths {
+  id: string;
+  titel: string;
+  /** Characters of the option texts by rating; null if the situation has no such option. */
+  gut: number | null;
+  vertretbar: number | null;
+  riskant: number | null;
+  goodIsLongest: boolean;
+  uneven: boolean;
 }
 
 /** The longest option text may be this much longer than the shortest before it stands out. */
@@ -34,6 +47,7 @@ export function levelStats(level: Level, points: EffectPoints): LevelStats {
   let options = 0;
   let withBudget = 0;
   const cost: Record<GaugeKey, number> = { budget: 0, zeit: 0, stabilitaet: 0 };
+  const rows: SituationLengths[] = [];
 
   for (const situation of level.situationen) {
     const lengths = situation.optionen.map((o) => o.text.length);
@@ -44,7 +58,24 @@ export function levelStats(level: Level, points: EffectPoints): LevelStats {
     if (longestOptions.length === 1 && longestOptions[0]?.einstufung === 'gut') {
       goodIsLongest.push(situation.id);
     }
-    if (longest > shortest * MAX_LENGTH_SPREAD) unevenLength.push(situation.id);
+    const uneven = longest > shortest * MAX_LENGTH_SPREAD;
+    if (uneven) unevenLength.push(situation.id);
+    // With several options of one rating the longest stands for it: that is the one that gives the pattern away.
+    const lengthOf = (rating: string): number | null => {
+      const texts = situation.optionen
+        .filter((o) => o.einstufung === rating)
+        .map((o) => o.text.length);
+      return texts.length > 0 ? Math.max(...texts) : null;
+    };
+    rows.push({
+      id: situation.id,
+      titel: situation.titel,
+      gut: lengthOf('gut'),
+      vertretbar: lengthOf('vertretbar'),
+      riskant: lengthOf('riskant'),
+      goodIsLongest: goodIsLongest.includes(situation.id),
+      uneven,
+    });
 
     for (const option of situation.optionen) {
       options += 1;
@@ -75,6 +106,7 @@ export function levelStats(level: Level, points: EffectPoints): LevelStats {
       zeit: share(cost.zeit),
       stabilitaet: share(cost.stabilitaet),
     },
+    lengths: rows,
   };
 }
 
@@ -119,13 +151,29 @@ export function contentReport(stats: readonly LevelStats[]): string {
     '',
     '## Betroffene Situationen',
     '',
-    ...stats.flatMap((s) => [
-      `**Level ${s.nummer}**`,
-      '',
-      `- Gute Option ist die längste: ${s.goodIsLongest.join(', ') || 'keine'}`,
-      `- Längenunterschied über 30 %: ${s.unevenLength.join(', ') || 'keine'}`,
-      '',
-    ]),
+    'Zeichenzahl der drei Optionstexte nebeneinander, für jede Situation, in der die gute Option die längste ist oder der längste Text mehr als 30 % länger ist als der kürzeste. Ziel für die Überarbeitung: die drei Zahlen einer Zeile etwa gleich gross, und die gute Option nicht regelmässig die grösste. Meist heisst das: riskante und vertretbare Optionen ausführlicher, gute knapper.',
+    '',
+    ...stats.flatMap((s) => {
+      const affected = s.lengths.filter((l) => l.goodIsLongest || l.uneven);
+      const count = (value: number | null): string => (value === null ? '–' : String(value));
+      return [
+        `### Level ${s.nummer}`,
+        '',
+        `${affected.length} von ${s.situations} Situationen betroffen; in ${s.goodIsLongest.length} ist die gute Option die längste.`,
+        '',
+        ...(affected.length === 0
+          ? ['Keine.', '']
+          : [
+              '| Situation | Titel | Gut | Vertretbar | Riskant | Gute ist die längste | Über 30 % Unterschied |',
+              '|---|---|---|---|---|---|---|',
+              ...affected.map(
+                (l) =>
+                  `| ${l.id} | ${l.titel} | ${count(l.gut)} | ${count(l.vertretbar)} | ${count(l.riskant)} | ${l.goodIsLongest ? 'ja' : 'nein'} | ${l.uneven ? 'ja' : 'nein'} |`,
+              ),
+              '',
+            ]),
+      ];
+    }),
   ];
   return lines.join('\n').trimEnd() + '\n';
 }
