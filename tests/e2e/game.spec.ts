@@ -217,6 +217,8 @@ for (const width of [360, 390, 430]) {
     test(`keeps menu button and all three gauges inside a ${width}px window (${mode}) (A5)`, async ({
       page,
     }) => {
+      // The 3D view renders in software on CI machines; that alone can take most of the default time.
+      if (mode === '/') test.slow();
       await page.setViewportSize({ width, height: 800 });
       await page.goto(mode);
       await startLevel1(page);
@@ -330,6 +332,7 @@ test('shows an error page with the report instead of a white page', async ({ pag
 });
 
 test('renders the 3D view without errors and stays playable', async ({ page }) => {
+  test.slow();
   await page.goto('/');
   await expect(page.locator('#app')).toHaveAttribute('data-renderer', '3d');
   await expect(page.locator('.canvas-host canvas')).toBeVisible();
@@ -367,6 +370,7 @@ test('shows the debug overlay only with ?debug=1 and lets it jump to a locked le
   await page.goto('/');
   await expect(page.getByTestId('debug')).toHaveCount(0);
 
+  test.slow();
   await page.goto('/?debug=1');
   const debug = page.getByTestId('debug');
   await expect(debug).toBeVisible();
