@@ -18,6 +18,16 @@ export const TUNING = {
     wobbleAmplitude: 0.02,
     collapseGravity: 15,
     collapseMaxSeconds: 12,
+    /** Delay between one floor starting to fall and the one below it (G-45). */
+    collapseStagger: 0.12,
+    /** After landing, the new floor gives way a little and comes back (G-41). */
+    bounceSeconds: 0.25,
+    dustSeconds: 0.5,
+    /** How fast the lean follows a change of the gauges; no jumping between states (G-43). */
+    tiltEaseRate: 5,
+    roofSeconds: 0.6,
+    shakeSeconds: 0.6,
+    shakeAmplitude: 0.35,
   },
 
   /** B2: haze towards the edge of the city, as distance from the camera along its line of sight. */

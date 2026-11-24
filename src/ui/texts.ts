@@ -99,6 +99,7 @@ export const T = {
   result: {
     completed: 'Gebäude fertig',
     collapsed: 'Gebäude eingestürzt',
+    siteClosed: 'Baustopp',
     completedLead: 'Das Projekt ist abgeschlossen. Dein Gebäude bleibt so in der Stadt stehen.',
     collapsedLead: (gauges: string) =>
       `Das Projekt ist gescheitert: ${gauges} ist auf null gefallen.`,

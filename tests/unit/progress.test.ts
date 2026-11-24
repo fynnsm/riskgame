@@ -258,6 +258,22 @@ describe('sceneModel (F-408, F-409)', () => {
     expect(sceneModel(levels, emptyProgress(), run).lots[0]).toMatchObject({
       collapsed: true,
       construction: false,
+      finished: false,
+    });
+  });
+
+  it('marks the building as finished once the level is passed, not while it is built or rejected', () => {
+    const lot = (choices: OptionId[]) =>
+      sceneModel(levels, emptyProgress(), finished(choices)).lots[0];
+    expect(lot(ALL_GOOD)).toMatchObject({ status: 'active', finished: true, construction: false });
+    expect(lot(['B', 'C', 'B', 'C', 'A', 'A'])).toMatchObject({
+      finished: false,
+      collapsed: false,
+    });
+    const building = replay(level, 1, [], ['A', 'A']);
+    expect(sceneModel(levels, emptyProgress(), building).lots[0]).toMatchObject({
+      finished: false,
+      construction: true,
     });
   });
 
@@ -266,6 +282,7 @@ describe('sceneModel (F-408, F-409)', () => {
     progress = clearRun(progress);
     const done = sceneModel(levels, progress, null);
     expect(done.lots.map((l) => l.status)).toEqual(['done', 'open', 'locked']);
+    expect(done.lots.map((l) => l.finished)).toEqual([true, false, false]);
     expect(done.lots[0]?.building?.floors).toHaveLength(6);
 
     progress = finishRun(progress, replay(makeLevel(2), 1, [], ALL_GOOD), makeLevel(2));

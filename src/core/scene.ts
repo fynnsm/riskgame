@@ -17,6 +17,8 @@ export interface LotModel {
   collapsed: boolean;
   /** True while the level is still being played, i.e. while more floors will follow. */
   construction: boolean;
+  /** True once the building has passed its inspection: it gets its roof and loses the cranes. */
+  finished: boolean;
 }
 
 /** What the 3D view should show. Declarative, so the renderer holds no game state. */
@@ -83,6 +85,7 @@ export function sceneModel(
         building: buildingModel(kind, floorRecords(run)),
         collapsed: run.outcome === 'collapsed',
         construction: run.outcome === 'running',
+        finished: run.outcome === 'completed',
       };
     }
     const lp = levelProgress(progress, level.id);
@@ -95,6 +98,7 @@ export function sceneModel(
         building: buildingModel(kind, lp.best.floors),
         collapsed: false,
         construction: false,
+        finished: true,
       };
     }
     const open = available && isUnlocked(progress, order, level.id);
@@ -106,6 +110,7 @@ export function sceneModel(
       building: null,
       collapsed: false,
       construction: false,
+      finished: false,
     };
   });
   return {

@@ -98,6 +98,7 @@ test('collapses, explains why and restarts the level, not the game', async ({ pa
 
   await expect(screen(page, 'result')).toHaveAttribute('data-outcome', 'collapsed');
   await expect(page.getByTestId('collapse-reason')).toContainText('Stabilität');
+  await expect(page.getByTestId('site-closed')).toHaveText('Baustopp');
   await expect(page.getByTestId('causes').locator('li').first()).toContainText('Riskant');
 
   await page.getByTestId('restart').click();
