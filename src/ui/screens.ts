@@ -1,5 +1,14 @@
 import { checkVideoUrl } from '../content/rules.ts';
-import type { GaugeKey, Level, Option, Rating, Situation, TheoryStep } from '../content/schema.ts';
+import { tourType } from '../content/mechanics-rules.ts';
+import type {
+  GaugeKey,
+  Level,
+  Option,
+  Rating,
+  Situation,
+  TheoryStep,
+  TourSite,
+} from '../content/schema.ts';
 import { GAUGE_KEYS } from '../content/schema.ts';
 import { BALANCE } from '../core/balance.ts';
 import type { ChoiceRecord, LevelRun } from '../core/game.ts';
@@ -17,6 +26,8 @@ import {
   starsFor,
 } from '../core/scoring.ts';
 import { formatDuration } from '../logging/report.ts';
+import type { TourReviewItem, TourState } from '../core/tour.ts';
+import { judgedCount, TOUR_MAX_POINTS, tourReview } from '../core/tour.ts';
 import { button, el } from './dom.ts';
 import { theoryGraphic } from './graphics.ts';
 import { T } from './texts.ts';
@@ -29,13 +40,11 @@ export interface PlayableLevelView {
   available: boolean;
 }
 
-function heading(text: string, level: 'h1' | 'h2' = 'h1'): HTMLElement {
+function heading(text: string, level: 'h1' | 'h2' = 'h1', focus = true): HTMLElement {
   // tabindex -1 lets the app move focus here on every screen change (keyboard and screen readers).
-  return el(level, {
-    text,
-    class: 'screen-title',
-    attrs: { tabindex: '-1', 'data-focus': 'true' },
-  });
+  const attrs: Record<string, string> = { tabindex: '-1' };
+  if (focus) attrs['data-focus'] = 'true';
+  return el(level, { text, class: 'screen-title', attrs });
 }
 
 function starText(stars: Stars): string {
@@ -109,7 +118,9 @@ function stepper(run: LevelRun): HTMLElement {
 export function hud(run: LevelRun): HTMLElement {
   const gauges = run.gauges;
   const last = run.history[run.history.length - 1];
-  const delta = run.phase === 'feedback' && last ? last.delta : null;
+  let delta = run.phase === 'feedback' && last ? last.delta : null;
+  // The tour moves the stability the building starts with; its resolution shows that (M-13).
+  if (run.phase === 'tourResult') delta = run.tour?.result?.delta ?? null;
   const started = run.phase !== 'briefing' && run.phase !== 'theory';
   return el('div', { class: 'hud', attrs: { 'data-testid': 'hud' } }, [
     el(
@@ -401,8 +412,11 @@ export function briefingScreen(level: Level, run: LevelRun, handlers: RunHandler
     el('h2', { text: T.briefing.rulesHeading }),
     el('p', {
       attrs: { 'data-testid': 'rules' },
-      text: T.briefing.rules(rules.max / 2, rules.required, rules.max),
+      text: T.briefing.rules(steps, rules.required, rules.max),
     }),
+    run.tour
+      ? el('p', { attrs: { 'data-testid': 'rules-tour' }, text: T.briefing.tour(TOUR_MAX_POINTS) })
+      : null,
     el('div', { class: 'actions' }, [
       button(T.briefing.start, handlers.next, { primary: true, testId: 'next' }),
       run.canSkipTheory
@@ -715,6 +729,186 @@ function causeItem(level: Level, choice: ChoiceRecord, note: string): HTMLElemen
   ]);
 }
 
+export interface TourHandlers {
+  /** Opens the card of a place; null closes the open one. */
+  open(siteId: string | null): void;
+  classify(siteId: string, risk: boolean): void;
+  finish(): void;
+  next(): void;
+}
+
+function droneNote(site: TourSite): HTMLElement {
+  const marked = site.drohne === 'markiert';
+  return el('span', {
+    class: marked ? 'drone-mark drone-marked' : 'drone-mark',
+    text: marked ? T.tour.marked : T.tour.notMarked,
+  });
+}
+
+function placeItem(
+  site: TourSite,
+  tour: TourState,
+  open: boolean,
+  handlers: TourHandlers,
+  showDraftLabel: boolean,
+): HTMLElement {
+  const judged = Object.hasOwn(tour.judgements, site.id);
+  const chosen = tour.judgements[site.id];
+  const toggle = el(
+    'button',
+    {
+      class: 'btn place',
+      attrs: {
+        type: 'button',
+        'aria-expanded': String(open),
+        'data-testid': `place-${site.id}`,
+      },
+    },
+    [
+      el('span', { class: 'place-name', text: T.tour.place[site.ort] }),
+      droneNote(site),
+      // Before the resolution a place only says that it was judged, not how (M-15).
+      el('span', {
+        class: judged ? 'place-state place-judged' : 'place-state',
+        text: judged ? T.tour.judged : T.tour.open,
+      }),
+    ],
+  );
+  if (open) toggle.dataset.focus = 'true';
+  toggle.addEventListener('click', () => handlers.open(open ? null : site.id));
+
+  const choice = (label: string, risk: boolean, key: string, testId: string): HTMLElement => {
+    const node = button(label, () => handlers.classify(site.id, risk), { testId });
+    node.setAttribute('aria-pressed', String(judged && chosen === risk));
+    node.dataset.key = key;
+    return node;
+  };
+  const card = open
+    ? el('div', { class: 'place-card', attrs: { 'data-testid': 'place-card' } }, [
+        showDraftLabel && site.status === 'entwurf'
+          ? el('p', { class: 'draft-badge', text: T.situation.draft })
+          : null,
+        el('p', { attrs: { 'data-testid': 'observation' }, text: site.beobachtung }),
+        el('p', { class: 'muted small', text: T.tour.question }),
+        el('div', { class: 'actions' }, [
+          choice(T.tour.register, true, '1', 'register'),
+          choice(T.tour.noRisk, false, '2', 'no-risk'),
+        ]),
+      ])
+    : null;
+  return el('li', { attrs: { 'data-site': site.id, 'data-state': judged ? 'judged' : 'open' } }, [
+    toggle,
+    card,
+  ]);
+}
+
+/**
+ * M-12, M-15: the tour as a list of places. It is the whole tour where nothing is drawn
+ * (`?renderer=none`) and the keyboard's way through it everywhere else.
+ */
+export function tourScreen(
+  level: Level,
+  run: LevelRun,
+  openSiteId: string | null,
+  handlers: TourHandlers,
+  showDraftLabel: boolean,
+): HTMLElement {
+  const tour = run.tour;
+  if (!tour || !level.rundgang) throw new Error(`${level.id} has no tour to show`);
+  const review = tourReview(tour, level);
+  const judged = judgedCount(tour);
+  const total = tour.siteIds.length;
+  return el('div', { class: 'screen', attrs: { 'data-screen': 'tour' } }, [
+    eyebrow(level, T.tour.eyebrow),
+    heading(T.tour.heading, 'h1', openSiteId === null),
+    el('p', { text: level.rundgang.einleitung }),
+    el('h2', { text: T.tour.places }),
+    el('p', {
+      class: 'tour-count',
+      text: T.tour.count(judged, total),
+      attrs: { 'data-testid': 'tour-count', 'data-judged': String(judged), 'aria-live': 'polite' },
+    }),
+    el(
+      'ul',
+      { class: 'plain-list places', attrs: { 'data-testid': 'tour-places' } },
+      review.map(({ site }) =>
+        placeItem(site, tour, site.id === openSiteId, handlers, showDraftLabel),
+      ),
+    ),
+    el('p', { class: 'muted small', text: T.tour.finishHint(total - judged) }),
+    el('div', { class: 'actions' }, [
+      // Enter must not end the tour by accident: the button leads only once all is judged.
+      button(T.tour.finish, handlers.finish, { primary: judged === total, testId: 'finish-tour' }),
+    ]),
+  ]);
+}
+
+function reviewItem(item: TourReviewItem): HTMLElement {
+  let yours: string = T.tour.yours.open;
+  if (item.judged) yours = item.judgedRisk ? T.tour.yours.risk : T.tour.yours.none;
+  return el('li', { attrs: { 'data-site': item.site.id, 'data-correct': String(item.correct) } }, [
+    el('h3', { text: T.tour.place[item.site.ort] }),
+    el('p', { text: item.site.beobachtung }),
+    el('p', { class: 'chosen', text: yours }),
+    el('p', {}, [
+      el('span', {
+        class: `rating ${item.correct ? 'rating-gut' : 'rating-riskant'}`,
+        text: item.correct ? T.tour.verdict.right : T.tour.verdict.wrong,
+      }),
+      el('span', {
+        class: 'cause-loss',
+        text: ` ${item.site.istRisiko ? T.tour.truth.risk : T.tour.truth.none}`,
+      }),
+    ]),
+    el('p', { text: item.site.erklaerung }),
+    el('p', { class: 'muted small', text: T.tour.drone[tourType(item.site)] }),
+  ]);
+}
+
+/** M-14: all places with right or wrong, the explanation and whether the drone was right. */
+export function tourResultScreen(
+  level: Level,
+  run: LevelRun,
+  handlers: Pick<TourHandlers, 'next'>,
+): HTMLElement {
+  const tour = run.tour;
+  const result = tour?.result;
+  if (!tour || !result) throw new Error(`${level.id} has no finished tour to show`);
+  const change = result.delta.stabilitaet;
+  return el(
+    'div',
+    {
+      class: 'screen',
+      attrs: {
+        'data-screen': 'tour-result',
+        'data-grade': result.grade,
+        'data-correct': String(result.correct),
+      },
+    },
+    [
+      eyebrow(level, T.tour.eyebrow),
+      heading(T.tour.resultHeading),
+      el('p', {
+        class: 'lead',
+        attrs: { 'data-testid': 'tour-lead' },
+        text: T.tour.resultLead(result.correct, tour.siteIds.length),
+      }),
+      el('p', { attrs: { 'data-testid': 'tour-effect' } }, [
+        el('span', { text: T.tour.effect[result.grade](result.points) }),
+        change !== 0 ? el('strong', { text: ` ${T.tour.stability(signed(change))}.` }) : null,
+      ]),
+      el(
+        'ol',
+        { class: 'decisions', attrs: { 'data-testid': 'tour-review' } },
+        tourReview(tour, level).map(reviewItem),
+      ),
+      el('div', { class: 'actions' }, [
+        button(T.tour.toSituations, handlers.next, { primary: true, testId: 'next' }),
+      ]),
+    ],
+  );
+}
+
 export function resultScreen(level: Level, run: LevelRun, handlers: ResultHandlers): HTMLElement {
   const failed = run.outcome !== 'completed';
   const score = acceptance(run);
@@ -791,6 +985,17 @@ export function resultScreen(level: Level, run: LevelRun, handlers: ResultHandle
         ]),
       ),
     ),
+    run.tour?.result ? el('h2', { text: T.tour.heading }) : null,
+    run.tour?.result
+      ? el('p', {
+          attrs: { 'data-testid': 'tour-summary' },
+          text: T.tour.summary(
+            run.tour.result.correct,
+            run.tour.siteIds.length,
+            run.tour.result.points,
+          ),
+        })
+      : null,
     el('h2', { text: T.result.decisions }),
     decisionList(level, run.history),
   );

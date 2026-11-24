@@ -457,13 +457,13 @@ Stand: **U** = umgesetzt, **O** = offen.
 | ID | Anforderung | Prio | Stand |
 |---|---|---|---|
 | M-01 | Datengetrieben: Ein Level hat Rundgang oder Ereignisse genau dann, wenn seine Datei den Block `rundgang` oder `ereignisse` enthält. Kein Level-spezifischer Code | M | U (Schema) |
-| M-02 | Alle Regeln liegen in `src/core`, alle Zahlen in `src/core/balance.ts`. Jede Regel hat Unit-Tests, bevor Oberfläche oder 3D entstehen | M | O |
-| M-03 | Sämtlicher Zufall (Ziehung, Eintreten von Ereignissen) wird beim Start des Durchgangs aus dem Seed bestimmt und im Spielstand gespeichert. Ein Durchgang ist aus Seed und Eingaben vollständig wiederholbar | M | O |
-| M-04 | Kein Zeitdruck, keine Geschicklichkeit. Alles ist mit Tastatur bedienbar und läuft mit `?renderer=none` als Text | M | O |
+| M-02 | Alle Regeln liegen in `src/core`, alle Zahlen in `src/core/balance.ts`. Jede Regel hat Unit-Tests, bevor Oberfläche oder 3D entstehen | M | O (Rundgang U; Ereignisse O) |
+| M-03 | Sämtlicher Zufall (Ziehung, Eintreten von Ereignissen) wird beim Start des Durchgangs aus dem Seed bestimmt und im Spielstand gespeichert. Ein Durchgang ist aus Seed und Eingaben vollständig wiederholbar | M | O (Rundgang U; Ereignisse O) |
+| M-04 | Kein Zeitdruck, keine Geschicklichkeit. Alles ist mit Tastatur bedienbar und läuft mit `?renderer=none` als Text | M | O (Rundgang U; Ereignisse O) |
 | M-05 | Schema der Inhalte Version 2; Level-Dateien ohne die neuen Blöcke bleiben gültig | M | U |
 | M-06 | Spielstand Version 3: abgeschlossene Level und Sterne bleiben erhalten, ein laufender Durchgang wird mit einmaligem Hinweis verworfen. Ist nur der laufende Durchgang unlesbar, gilt dasselbe | M | U |
 | M-07 | `docs/IMPORT.md` beschreibt beide Formate; `content:report` zeigt Rundgang-Stellen und Ereignisse mit Status und führt von Claude erstellte Inhalte in einer eigenen Liste | M | U |
-| M-08 | Log-Ereignisse `tour.start`, `tour.classify`, `tour.finish`, `event.forecast`, `event.verify`, `event.strategy`, `event.resolve`, je mit IDs und Anzeigewerten; der Fehlerbericht enthält sie | M | O |
+| M-08 | Log-Ereignisse `tour.start`, `tour.classify`, `tour.finish`, `event.forecast`, `event.verify`, `event.strategy`, `event.resolve`, je mit IDs und Anzeigewerten; der Fehlerbericht enthält sie | M | O (`tour.*` U; `event.*` O) |
 
 ### 13.2 Baustellen-Rundgang
 

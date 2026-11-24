@@ -5,7 +5,13 @@ import { expect, test } from '@playwright/test';
 import { criticalGauges } from '../../src/core/gauges.ts';
 import type { Progress } from '../../src/core/progress.ts';
 import { starsFor } from '../../src/core/scoring.ts';
-import { oneBefore, openWith, progressWhere, progressWithCompleted } from './support/progress.ts';
+import {
+  oneBefore,
+  openWith,
+  progressInTour,
+  progressWhere,
+  progressWithCompleted,
+} from './support/progress.ts';
 
 /**
  * B8.3: saves pictures of the states a person should look at after every change to the
@@ -48,6 +54,8 @@ function levelStates(nummer: number): [string, () => Progress][] {
 
 const STATES: [string, () => Progress][] = [
   ['startseite', () => progressWithCompleted(0)],
+  ['level-1-rundgang', () => progressInTour(3)],
+  ['level-1-rundgang-aufloesung', () => progressInTour(5, true)],
   ...levelStates(1).map(([name, build]): [string, () => Progress] => [`level-1-${name}`, build]),
   ...levelStates(5).map(([name, build]): [string, () => Progress] => [`level-5-${name}`, build]),
   ['schlussansicht', () => progressWithCompleted(5)],
