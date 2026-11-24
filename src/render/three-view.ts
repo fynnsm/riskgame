@@ -9,6 +9,7 @@ import {
   Matrix4,
   Fog,
   MeshBasicMaterial,
+  PointLight,
   MeshLambertMaterial,
   OrthographicCamera,
   Quaternion,
@@ -26,6 +27,7 @@ import {
   celebrationFor,
   decorationFor,
   finaleFlight,
+  fireworkSpark,
   finaleProgress,
   momentFor,
   resultSequence,
@@ -267,6 +269,16 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   // The box set above only takes effect once the shadow camera recomputes its projection.
   sun.shadow.camera.updateProjectionMatrix();
   scene.add(hemisphere, sun, sun.target);
+
+  // N3: two floodlights for the building site. They only burn at night and only light what is
+  // near, so the building is as readable as by day while the city around it stays dark.
+  const floodlights = [-1, 1].map((side) => {
+    const lamp = new PointLight(C.floodlight, 0, TUNING.site.lightReach, TUNING.site.lightDecay);
+    lamp.userData.side = side;
+    lamp.visible = false;
+    scene.add(lamp);
+    return lamp;
+  });
 
   const goalColor = new Color();
 
@@ -560,6 +572,14 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
         base.push(box(C.orange, 0.3, 0.5, 0.3, cx, PLOT_TOP + 0.25, cz));
       }
     }
+    if (night && !locked && !roofed) {
+      // N3: the masts the floodlights hang from.
+      for (const side of [-1, 1]) {
+        base.push(box(C.steel, 0.18, 5.4, 0.18, side * 4.3, PLOT_TOP + 2.7, 4.4));
+        base.push(box(C.steel, 0.9, 0.3, 0.5, side * 4.1, PLOT_TOP + 5.5, 4.2));
+        base.push(box(C.lampLight, 0.7, 0.12, 0.34, side * 4.1, PLOT_TOP + 5.32, 4.1));
+      }
+    }
     if (roofed) {
       // G-44: the site fence gives way to a forecourt with trees.
       for (const [cx, cz] of [
@@ -806,7 +826,12 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       );
     }
     if (lot.status === 'active' && lot.finished && celebration.effect !== 'keine') {
-      const sparks = celebration.effect === 'feuerwerk' ? 36 : 40;
+      // N2: three bursts of forty blocks for three stars; a little paper on the site for two
+      // (the rain across the whole picture is drawn by the interface).
+      const sparks =
+        celebration.effect === 'feuerwerk'
+          ? TUNING.firework.bursts * TUNING.firework.sparksPerBurst
+          : 40;
       const colors = [C.vividRed, C.yellow, C.teal, C.pink, C.blue, C.green];
       for (let k = 0; k < sparks; k++) {
         const spark = chunks.length;
@@ -819,9 +844,10 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
         });
         const color =
           celebration.effect === 'feuerwerk'
-            ? colors[Math.floor(k / 12) % colors.length]
+            ? colors[Math.floor(k / TUNING.firework.sparksPerBurst) % colors.length]
             : colors[k % colors.length];
-        parts.push({ ...box(color ?? C.yellow, 0.5, 0.5, 0.5, 0, 0, 0), chunk: spark });
+        const size = celebration.effect === 'feuerwerk' ? TUNING.firework.sparkSize : 0.5;
+        parts.push({ ...box(color ?? C.yellow, size, size, size, 0, 0, 0), chunk: spark });
       }
     }
     if (lot.rejected) {
@@ -1020,24 +1046,21 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
           chunkEuler.x += dust * 5;
         }
       } else if (chunk.kind === 'firework') {
-        // Three bursts, twelve sparks each: a rocket climbs, then the sparks fly apart and fall.
-        const burst = Math.floor(chunk.seed / 12);
-        const since = presentTime - (1 + burst * 0.55);
-        const k = chunk.seed;
-        const ox = (burst - 1) * 2.6;
-        const oy = 3.5 + (burst % 2) * 1.4;
-        if (presentTime < 0 || since < -0.4 || since > 1.3) chunkScale.set(0, 0, 0);
-        else if (since < 0) {
-          chunkPosition.x += ox * (1 + since / 0.4);
-          chunkPosition.y += oy * (1 + since / 0.4);
-          chunkScale.set(0.5, 1.4, 0.5);
-        } else {
-          const angle = hash(k + 720) * Math.PI * 2;
-          const lift = hash(k + 730) * 2 - 0.6;
-          chunkPosition.x += ox + Math.cos(angle) * since * 3.4;
-          chunkPosition.z += Math.sin(angle) * since * 3.4;
-          chunkPosition.y += oy + lift * since * 2.2 - since * since * 1.6;
-          const size = 1 - since / 1.3;
+        // The director says where each spark is; here it only becomes a place above the roof.
+        const spark = presentTime < 0 ? null : fireworkSpark(chunk.seed, presentTime);
+        if (!spark) chunkScale.set(0, 0, 0);
+        else {
+          const F = TUNING.firework;
+          const reach = (spark.age / F.lifeSeconds) * F.radius;
+          chunkPosition.x += (spark.burst - 1) * 3.2 + Math.cos(spark.angle) * reach;
+          chunkPosition.z += Math.sin(spark.angle) * reach * 0.6;
+          chunkPosition.y +=
+            2.2 +
+            (spark.burst % 2) * 1.6 +
+            Math.sin(spark.angle) * reach * 0.8 +
+            spark.lift * spark.age -
+            spark.age * spark.age * 1.2;
+          const size = 1 - (spark.age / F.lifeSeconds) * 0.7;
           chunkScale.set(size, size, size);
         }
       } else if (chunk.kind === 'confetti') {
@@ -1137,7 +1160,9 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     } else {
       const lot = model.lots[model.focus];
       const floors = lot?.building?.floors.length ?? 0;
-      const tall = floors * FLOOR_HEIGHT + (lot?.construction ? HANG_HEIGHT + 3 : 4.5);
+      // While a passed building is celebrated the camera leaves room above the roof for the fireworks.
+      const headroom = presentStart !== null && lot?.finished ? TUNING.firework.headroom : 0;
+      const tall = floors * FLOOR_HEIGHT + (lot?.construction ? HANG_HEIGHT + 3 : 4.5) + headroom;
       const position = lotPosition(model.focus, lotCount);
       spanX = 13.5;
       spanY = tall * elevationCos + 10 * elevationSin + 1.5;
@@ -1239,6 +1264,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
           ? {
               stars: model.lots.reduce((sum, lot) => sum + lot.stars, 0),
               seconds: reducedMotion ? 0 : clock - finaleStart,
+              centre: { x: target.x, z: target.z },
             }
           : null,
       keepClear: focusLot
@@ -1262,13 +1288,25 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     }
 
     const ease = reducedMotion || !cameraSnapped ? 1 : 1 - Math.exp(-dt * TUNING.camera.easeRate);
+    // N3: the floodlights stand at the site in focus and burn while it is night there.
+    const lit = night && focusLot !== null;
+    for (const lamp of floodlights) {
+      lamp.visible = lit;
+      if (!lit || !focusLot) continue;
+      lamp.intensity = TUNING.site.lightIntensity;
+      lamp.position.set(focusLot.x + (lamp.userData.side as number) * 5.2, 9.5, focusLot.z + 5.6);
+    }
+
     // The swing only plays for a passed building, after its roof has landed; never with reduced motion.
     const focused = model && model.focus !== null ? model.lots[model.focus] : undefined;
     let yawGoal = 0;
     if (presentStart !== null && focused?.finished && !reducedMotion) {
       const swing = Math.min(
         1,
-        Math.max(0, (clock - presentStart - 1) / TUNING.sequence.panSeconds),
+        Math.max(
+          0,
+          (clock - presentStart - TUNING.sequence.firstStarSeconds) / TUNING.sequence.panSeconds,
+        ),
       );
       yawGoal = Math.sin(swing * Math.PI) * (Math.PI / 4);
     }
@@ -1463,6 +1501,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     setPresenting(presenting: boolean): void {
       presentStart = presenting ? clock : null;
       for (const visual of visuals) visual.dirty = true;
+      updateCameraGoal();
     },
 
     stats(): RenderStats {

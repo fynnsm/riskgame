@@ -8,13 +8,20 @@ export type LoadStatus =
   | 'invalid'
   /** Stored by a different version of the game. */
   | 'outdated'
+  /**
+   * Carried over from an older version, or saved from a state whose level in play could
+   * no longer be read: completed levels and stars are kept, the level in play is not.
+   */
+  | 'migrated'
   /** The browser refuses access, e.g. in a locked-down private mode. */
   | 'unavailable';
 
 export interface LoadOutcome {
   status: LoadStatus;
-  /** Always usable: a fresh progress whenever status is not 'ok'. */
+  /** Always usable: a fresh progress unless status is 'ok' or 'migrated'. */
   progress: Progress;
+  /** With 'migrated': true if a level in play had to be given up. The player is told once. */
+  droppedRun?: boolean;
 }
 
 /**

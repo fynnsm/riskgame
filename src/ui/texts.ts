@@ -199,6 +199,8 @@ export const T = {
       'Dieser Browser erlaubt kein Speichern. Du kannst spielen, aber dein Fortschritt geht beim Schliessen verloren.',
     saveFailed:
       'Der Fortschritt konnte nicht gespeichert werden. Er geht beim Schliessen möglicherweise verloren.',
+    migrated:
+      'Das Spiel wurde erweitert. Dein angefangenes Level konnte nicht übernommen werden; abgeschlossene Level und Sterne sind erhalten.',
     staleRun:
       'Dein angefangenes Level passt nicht mehr zu den aktuellen Inhalten. Du startest es neu.',
     noWebgl:

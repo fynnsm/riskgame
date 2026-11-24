@@ -5,6 +5,7 @@
 
 /** Colours of objects. They stay the same at every time of day; the light changes around them. */
 export const C = {
+  floodlight: 0xffe6b8,
   cloud: 0xffffff,
   cloudShade: 0xe3edf5,
   smoke: 0xd9dee3,
@@ -162,10 +163,10 @@ export const LIGHTING: Record<TimeOfDay, Lighting> = {
     skyBottom: 0x2b3a67,
     haze: 0x1f2b4f,
     sun: 0x9db4ff,
-    sunIntensity: 0.75,
+    sunIntensity: 0.9,
     ambientSky: 0x6f86c9,
     ambientGround: 0x1b2440,
-    ambientIntensity: 0.95,
+    ambientIntensity: 1.3,
     lightsOn: true,
     windowLit: 0xffd166,
   },

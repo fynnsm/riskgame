@@ -82,10 +82,30 @@ export const TUNING = {
   sequence: {
     maxSeconds: 4,
     floorSetSeconds: 1.2,
-    starIntervalSeconds: 0.35,
+    /** N2: the first star follows the banner at once; all three are there within two seconds. */
+    firstStarSeconds: 0.4,
+    starIntervalSeconds: 0.5,
+    celebrationSeconds: 3.1,
     /** The camera swings past the building and back in this time. */
-    panSeconds: 1.2,
+    panSeconds: 1.6,
     transitionMs: 200,
+  },
+
+  /** N3: the floodlights of a building site at night. */
+  site: { lightIntensity: 26, lightReach: 30, lightDecay: 1 },
+
+  /** N2: three clearly visible bursts over a building passed with three stars. */
+  firework: {
+    bursts: 3,
+    sparksPerBurst: 40,
+    firstAt: 0.3,
+    every: 0.6,
+    lifeSeconds: 1.3,
+    repeatSeconds: 1.9,
+    radius: 4.6,
+    sparkSize: 0.6,
+    /** Room the camera leaves above the roof while the celebration plays. */
+    headroom: 7,
   },
 
   /** B5: the closing view after all five levels. */
@@ -94,7 +114,10 @@ export const TUNING = {
     flightSeconds: 9,
     /** Evening turns into night halfway through this time. */
     duskSeconds: 10,
-    fireworkSparks: 48,
+    /** N2: the plane with the banner crosses the picture in this time, at this height, over this distance. */
+    bannerSeconds: 6,
+    bannerHeight: 15,
+    bannerRange: 70,
   },
 
   /** B5: the start page drifts slowly along the row of lots. */

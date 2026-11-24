@@ -9,6 +9,7 @@ import {
   decorationFor,
   finaleFlight,
   finaleProgress,
+  fireworkSpark,
   momentFor,
   nextPlaneDelay,
   planeLateralOffset,
@@ -210,40 +211,49 @@ describe('decoration per quality step (B3)', () => {
   });
 });
 
-describe('result sequences (B5, B0.5, B0.6)', () => {
-  it('finishes the building, pans, shows the banner and one star after the other', () => {
+describe('result sequences (B5, N2, B0.5, B0.6)', () => {
+  it('opens a passed level with the banner and has every star there within two seconds (N2)', () => {
+    for (const stars of [1, 2, 3] as const) {
+      const sequence = resultSequence('completed', stars, false);
+      expect(sequence.bannerAt).toBe(0);
+      expect(sequence.starsAt).toHaveLength(stars);
+      expect(Math.max(...sequence.starsAt)).toBeLessThanOrEqual(2);
+      // One after the other, the first right after the banner.
+      expect(sequence.starsAt[0]).toBeGreaterThan(sequence.bannerAt);
+      expect([...sequence.starsAt].sort((x, y) => x - y)).toEqual(sequence.starsAt);
+    }
+  });
+
+  it('lets roof, swing and celebration run alongside the banner and the stars', () => {
     const sequence = resultSequence('completed', 3, false);
     expect(sequence.steps.map((s) => s.step)).toEqual([
-      'fertigstellung',
-      'kameraschwenk',
       'banner',
+      'fertigstellung',
       'sterne',
+      'kameraschwenk',
+      'feier',
     ]);
+    expect(sequence.steps.find((s) => s.step === 'banner')?.at).toBe(0);
     expect(sequence.cameraShake).toBe(false);
   });
 
-  it('sends the inspector round a rejected building, without cheering or collapse', () => {
-    expect(resultSequence('rejected', 0, false).steps.map((s) => s.step)).toEqual([
-      'pruefer',
-      'stempel',
-    ]);
+  it('sends the inspector round a rejected building and stamps it afterwards, without stars', () => {
+    const sequence = resultSequence('rejected', 0, false);
+    expect(sequence.steps.map((s) => s.step)).toEqual(['pruefer', 'stempel']);
+    expect(sequence.bannerAt).toBe(2);
+    expect(sequence.starsAt).toEqual([]);
   });
 
-  it('shakes the camera only for a collapse', () => {
-    expect(resultSequence('collapsed', 0, false)).toMatchObject({
-      steps: [{ step: 'einsturz' }],
-      cameraShake: true,
-    });
+  it('shakes the camera only for a collapse and shows «Baustopp» during the fall', () => {
+    const sequence = resultSequence('collapsed', 0, false);
+    expect(sequence).toMatchObject({ steps: [{ step: 'einsturz' }], cameraShake: true });
+    expect(sequence.bannerAt).toBeCloseTo(1.2);
+    expect(sequence.bannerAt).toBeLessThan(sequence.seconds);
   });
 
-  it('shows the banner after the swing, the stamp after the round and «Baustopp» during the fall', () => {
-    expect(resultSequence('completed', 3, false).bannerAt).toBeCloseTo(2.2);
-    expect(resultSequence('rejected', 0, false).bannerAt).toBeCloseTo(2);
-    expect(resultSequence('collapsed', 0, false).bannerAt).toBeCloseTo(1.2);
-    for (const outcome of ['completed', 'rejected', 'collapsed'] as const) {
-      const sequence = resultSequence(outcome, 3, false);
-      expect(sequence.bannerAt).toBeLessThan(sequence.seconds);
-    }
+  it('gives no stars to a building that did not pass, whatever number is handed in', () => {
+    expect(resultSequence('rejected', 3, false).starsAt).toEqual([]);
+    expect(resultSequence('collapsed', 3, true).starsAt).toEqual([]);
   });
 
   it('never holds the player up for more than four seconds', () => {
@@ -251,20 +261,63 @@ describe('result sequences (B5, B0.5, B0.6)', () => {
       for (const stars of [0, 1, 2, 3] as const) {
         const sequence = resultSequence(outcome, stars, false);
         expect(sequence.seconds).toBeLessThanOrEqual(TUNING.sequence.maxSeconds);
-        expect(sequence.seconds).toBeCloseTo(sequence.steps.reduce((sum, s) => sum + s.seconds, 0));
+        expect(sequence.seconds).toBeCloseTo(
+          Math.max(...sequence.steps.map((s) => s.at + s.seconds)),
+        );
       }
     }
   });
 
-  it('shows only the final picture with reduced motion: no pan, no shake', () => {
-    for (const outcome of ['completed', 'rejected', 'collapsed'] as const) {
-      expect(resultSequence(outcome, 3, true)).toEqual({
-        steps: [{ step: 'endbild', seconds: 0.2 }],
-        seconds: 0.2,
-        bannerAt: 0,
-        cameraShake: false,
-      });
+  it('shows only the final picture with reduced motion: no swing, no shake, all stars at once', () => {
+    expect(resultSequence('completed', 3, true)).toEqual({
+      steps: [{ step: 'endbild', at: 0, seconds: 0.2 }],
+      seconds: 0.2,
+      bannerAt: 0,
+      starsAt: [0, 0, 0],
+      cameraShake: false,
+    });
+    expect(resultSequence('collapsed', 0, true).cameraShake).toBe(false);
+  });
+});
+
+describe('fireworks (N2)', () => {
+  const F = TUNING.firework;
+  const total = F.bursts * F.sparksPerBurst;
+
+  it('has at least three bursts of thirty to sixty blocks each', () => {
+    expect(F.bursts).toBeGreaterThanOrEqual(3);
+    expect(F.sparksPerBurst).toBeGreaterThanOrEqual(30);
+    expect(F.sparksPerBurst).toBeLessThanOrEqual(60);
+  });
+
+  it('sets the bursts off one after the other, each with all its sparks', () => {
+    const shown = (seconds: number) =>
+      Array.from({ length: total }, (_, k) => fireworkSpark(k, seconds)).filter((s) => s !== null);
+    expect(shown(0)).toHaveLength(0);
+    expect(shown(F.firstAt + 0.1).map((s) => s.burst)).toEqual(Array(F.sparksPerBurst).fill(0));
+    // Once all three have gone off, a full burst's worth of sparks from each is in the air.
+    const all = shown(F.firstAt + 2 * F.every + 0.1);
+    expect(new Set(all.map((s) => s.burst))).toEqual(new Set([0, 1, 2]));
+    expect(all).toHaveLength(total);
+  });
+
+  it('is going by half a second and still going at two and a half (the three pictures of N2.6)', () => {
+    for (const seconds of [0.5, 1.5, 2.5]) {
+      const visible = Array.from({ length: total }, (_, k) => fireworkSpark(k, seconds)).filter(
+        (s) => s !== null,
+      );
+      expect(visible.length, `at ${seconds} s`).toBeGreaterThanOrEqual(F.sparksPerBurst);
     }
+  });
+
+  it('spreads the sparks of a burst round the full circle and lets them fade', () => {
+    const angles = Array.from({ length: F.sparksPerBurst }, (_, k) =>
+      fireworkSpark(k, F.firstAt + 0.2),
+    );
+    expect(new Set(angles.map((s) => s?.angle)).size).toBe(F.sparksPerBurst);
+    expect(fireworkSpark(0, F.firstAt + F.lifeSeconds + 0.05)).toBeNull();
+    // After the pause the same burst goes off again.
+    expect(fireworkSpark(0, F.firstAt + F.repeatSeconds + 0.1)?.age).toBeCloseTo(0.1);
   });
 });
 

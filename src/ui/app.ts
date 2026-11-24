@@ -18,7 +18,7 @@ import { starsFor } from '../core/scoring.ts';
 import type { Logger } from '../logging/logger.ts';
 import { errorData } from '../logging/logger.ts';
 import { buildErrorReport } from '../logging/report.ts';
-import { cityTitle, resultSequence } from '../render/director.ts';
+import { celebrationFor, cityTitle, resultSequence } from '../render/director.ts';
 import { TUNING } from '../render/tuning.ts';
 import type { ProgressStore } from '../storage/progress-store.ts';
 import type { SettingsStore } from '../storage/settings-store.ts';
@@ -45,9 +45,6 @@ import {
   theoryScreen,
 } from './screens.ts';
 import { T } from './texts.ts';
-
-/** Seconds between one star and the next on the banner; the director plans with the same value. */
-const STAR_INTERVAL = TUNING.sequence.starIntervalSeconds;
 
 /** Longer pauses between two actions do not count as active play time (F-108). */
 const IDLE_CAP_MS = 120_000;
@@ -178,10 +175,8 @@ export function createApp(options: AppOptions): App {
     if (run.outcome === 'rejected') later(plan.bannerAt, () => sound.play('stamp'));
     if (run.outcome === 'completed') {
       later(plan.bannerAt, () => sound.play('success'));
-      for (let i = 0; i < stars; i++) {
-        later(plan.bannerAt + 0.5 + i * STAR_INTERVAL, () => sound.play('star'));
-      }
-      if (stars === 3) later(1, () => sound.play('firework'));
+      for (const at of plan.starsAt) later(at, () => sound.play('star'));
+      if (stars === 3) later(TUNING.firework.firstAt, () => sound.play('firework'));
     }
   }
 
@@ -334,6 +329,11 @@ export function createApp(options: AppOptions): App {
     const card = panel.getBoundingClientRect();
     const bar = topBar.getBoundingClientRect();
     const top = Math.max(0, bar.bottom - host.top);
+    // N2: while the sequence plays the text is out of the way and the site has the whole stage.
+    if (sequence) {
+      view.setInsets({ top, right: 0, bottom: 0, left: 0 });
+      return;
+    }
     // A panel that leaves most of the width free sits at the side; otherwise it is the bottom sheet.
     const atSide = card.left - host.left > host.width * 0.35;
     view.setInsets(
@@ -615,11 +615,13 @@ export function createApp(options: AppOptions): App {
           const plan = resultSequence(run.outcome, stars, env.reducedMotion);
           // Without a picture to watch there is nothing to wait for: show banner and stars at once.
           const staged = hasPicture() && !env.reducedMotion;
-          const bannerAt = plan.bannerAt;
-          const firstStar = bannerAt + (plan.steps.find((s) => s.step === 'banner')?.seconds ?? 0);
-          const delays = [0, 1, 2].map((i) => firstStar + i * STAR_INTERVAL);
-          return sequenceScreen(run.outcome, stars, staged ? delays : null, bannerAt, () =>
-            endSequence(true),
+          return sequenceScreen(
+            run.outcome,
+            stars,
+            staged ? { bannerAt: plan.bannerAt, starsAt: plan.starsAt } : null,
+            // N2: with two stars paper rains across the whole picture.
+            staged && celebrationFor(stars).effect === 'konfetti',
+            () => endSequence(true),
           );
         }
         return resultScreen(level, run, {
@@ -722,6 +724,7 @@ export function createApp(options: AppOptions): App {
     progress = outcome.progress;
     if (outcome.status === 'invalid') addNotice(T.notices.invalid);
     if (outcome.status === 'outdated') addNotice(T.notices.outdated);
+    if (outcome.status === 'migrated' && outcome.droppedRun) addNotice(T.notices.migrated);
     if (outcome.status === 'unavailable') addNotice(T.notices.unavailable);
 
     const run = progress.currentRun;

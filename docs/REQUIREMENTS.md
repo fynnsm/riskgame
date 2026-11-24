@@ -1,6 +1,6 @@
 # Risk Tower (Arbeitstitel) – Requirements
 
-Version 0.9 · Stand 24.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
+Version 0.10 · Stand 24.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
 
 ## 1. Zweck
 
@@ -435,12 +435,59 @@ Aus dem Auftrag «Nachtest zu Update 2» vom 24.11.2026. Stand: **U** = umgesetz
 | ID | Anforderung | Prio | Stand |
 |---|---|---|---|
 | T-01 | Dreiecke: höchstens 150’000 auf Qualitätsstufe 1 und 80’000 auf Stufe 0, als Grenzen in `tuning.ts` und per E2E-Test geprüft; am Handy startet das Spiel auf Stufe 1 | M | U (verdeckte Flächen werden nicht weggelassen, siehe `docs/PERFORMANCE.md`; die Bildrate ist auf keinem echten Gerät gemessen) |
-| T-02 | Feier bei bestandenem Level: Banner zuerst, Sterne gross über dem Bild und nach spätestens 2 Sekunden alle sichtbar, bei 3 Sternen mindestens drei Explosionen mit je 30 bis 60 Klötzen, bei 2 Sternen Konfetti über die ganze Bildbreite; das Textfeld bleibt währenddessen eingeklappt. Dasselbe sinngemäss im Schlussbildschirm | M | O |
-| T-03 | Level 5: Die Baustelle hat eigene Scheinwerfer; Stockwerke, Neigung und Warnzeichen sind nachts so gut lesbar wie am Tag | M | O |
+| T-02 | Feier bei bestandenem Level: Banner zuerst, Sterne gross über dem Bild und nach spätestens 2 Sekunden alle sichtbar, bei 3 Sternen mindestens drei Explosionen mit je 30 bis 60 Klötzen, bei 2 Sternen Konfetti über die ganze Bildbreite; das Textfeld bleibt währenddessen eingeklappt. Dasselbe sinngemäss im Schlussbildschirm | M | U |
+| T-03 | Level 5: Die Baustelle hat eigene Scheinwerfer; Stockwerke, Neigung und Warnzeichen sind nachts so gut lesbar wie am Tag | M | U |
 | T-04 | Anzeigen brechen kein Wort um. Unter 430 px zeigen sie nur Symbol und Wert; die Beschriftung bleibt als `aria-label` | M | U |
 | T-05 | Schlussbildschirm: Level und Sterne in zwei Spalten, Sterne rechtsbündig; «3 von 3 Sternen» bleibt für Bildschirmleser | S | U |
 | T-06 | Ton-Knopf: Lautsprecher als eingebettetes SVG, durchgestrichen im stummen Zustand; Beschriftung «Ton: an» und «Ton: aus»; `aria-pressed` und `aria-label` gesetzt | S | U |
 | T-07 | Handy: Liegen die Optionen unter dem sichtbaren Bereich, führt ein Hinweis «Was tust du? ↓» am Fuss des Textfelds mit einem Tipp dorthin. Während einer Situation darf das Textfeld 65 % der Höhe einnehmen | M | U |
 | T-08 | `index.html` zeigt einen statischen Ladezustand (Schriftzug und «Wird geladen …») ohne Skript und ohne Inline-Stil; er verschwindet, sobald die Oberfläche steht | S | U |
-| T-09 | `docs/CONTENT-REPORT.md` listet pro Level die betroffenen Situationen mit den Zeichenzahlen der drei Optionen nebeneinander | S | O |
+| T-09 | `docs/CONTENT-REPORT.md` listet pro Level die betroffenen Situationen mit den Zeichenzahlen der drei Optionen nebeneinander | S | U |
+
+## 13. Mechaniken (Update 3)
+
+Aus dem Auftrag «Update 3 – Neue Spielmechaniken». Drei Mechaniken verlängern das Spiel um rund 15 bis 20 Minuten und machen das Budget zu einer echten Entscheidungsgrösse. Anders als das Grafik-Update ändert dieses Kapitel Spielregeln. Anforderung F-202 («genau drei Optionen») gilt weiterhin, aber nur für Situationen.
+
+Entschieden am 24.11.2026 (Fynn): Rundgang in Level 1, Ereignisse und Massnahmen in Level 3, 4 und 5; beide zählen für die Bauabnahme nach Qualität des Entscheids; Beispielinhalte von Claude Code als Entwurf mit Autor «CC»; ein Teil der Vorhersagen stammt von einer AI, die sich irren kann.
+
+Stand: **U** = umgesetzt, **O** = offen.
+
+### 13.1 Grundsätze
+
+| ID | Anforderung | Prio | Stand |
+|---|---|---|---|
+| M-01 | Datengetrieben: Ein Level hat Rundgang oder Ereignisse genau dann, wenn seine Datei den Block `rundgang` oder `ereignisse` enthält. Kein Level-spezifischer Code | M | U (Schema) |
+| M-02 | Alle Regeln liegen in `src/core`, alle Zahlen in `src/core/balance.ts`. Jede Regel hat Unit-Tests, bevor Oberfläche oder 3D entstehen | M | O |
+| M-03 | Sämtlicher Zufall (Ziehung, Eintreten von Ereignissen) wird beim Start des Durchgangs aus dem Seed bestimmt und im Spielstand gespeichert. Ein Durchgang ist aus Seed und Eingaben vollständig wiederholbar | M | O |
+| M-04 | Kein Zeitdruck, keine Geschicklichkeit. Alles ist mit Tastatur bedienbar und läuft mit `?renderer=none` als Text | M | O |
+| M-05 | Schema der Inhalte Version 2; Level-Dateien ohne die neuen Blöcke bleiben gültig | M | U |
+| M-06 | Spielstand Version 3: abgeschlossene Level und Sterne bleiben erhalten, ein laufender Durchgang wird mit einmaligem Hinweis verworfen. Ist nur der laufende Durchgang unlesbar, gilt dasselbe | M | U |
+| M-07 | `docs/IMPORT.md` beschreibt beide Formate; `content:report` zeigt Rundgang-Stellen und Ereignisse mit Status und führt von Claude erstellte Inhalte in einer eigenen Liste | M | U |
+| M-08 | Log-Ereignisse `tour.start`, `tour.classify`, `tour.finish`, `event.forecast`, `event.verify`, `event.strategy`, `event.resolve`, je mit IDs und Anzeigewerten; der Fehlerbericht enthält sie | M | O |
+
+### 13.2 Baustellen-Rundgang
+
+| ID | Anforderung | Prio | Stand |
+|---|---|---|---|
+| M-10 | Nach der Theorie und vor Situation 1 geht die Spielerin oder der Spieler über die Baustelle. Eine AI-Drohne hat vorab Stellen markiert | M | O |
+| M-11 | Pro Durchgang 8 Stellen: 3 echte Risiken, von der AI gefunden; 2 Fehlalarme; 2 echte Risiken, von der AI übersehen; 1 Stelle ohne Risiko und ohne Markierung. Jeder Ort kommt höchstens einmal vor | M | O (Zahlen und Inhaltsprüfung U) |
+| M-12 | Jede Stelle öffnet eine Karte mit der Beobachtung und den Knöpfen «Ins Risikoregister» und «Kein Risiko». Die Wahl ist bis zum Abschluss änderbar; ein Zähler zeigt «x von 8 beurteilt»; «Rundgang beenden» ist jederzeit möglich, nicht beurteilte Stellen zählen als «Kein Risiko» | M | O |
+| M-13 | Wirkung: 7 oder 8 richtig geben + klein auf die Start-Stabilität und 2 Punkte für die Bauabnahme; 5 oder 6 lassen die Stabilität unverändert und geben 1 Punkt; 0 bis 4 kosten − klein und geben 0 Punkte | M | O |
+| M-14 | Die Auflösung zeigt alle 8 Stellen mit richtig oder falsch, der Erklärung und einem Hinweis, ob die Drohne richtig lag. Briefing und Auswertung nennen den Rundgang und die Punkte | M | O |
+| M-15 | Darstellung: Kamera über der ganzen Baustelle, die Drohne fliegt eine Runde und setzt Markierungen; jede Stelle ist zusätzlich ein HTML-Knopf in einer Liste «Orte»; beurteilte Stellen zeigen vor der Auflösung nur «beurteilt» | S | O |
+
+### 13.3 Ereignisse und Massnahmen
+
+| ID | Anforderung | Prio | Stand |
+|---|---|---|---|
+| M-20 | Pro Durchgang 3 Ereignis-Runden, nach dem 2., 4. und 6. Entscheid: Meldung mit Wahrscheinlichkeit und Auswirkung, Wahl einer Strategie, Kosten sofort, Auflösung nach dem nächsten Stockwerk | M | O |
+| M-21 | Vier Strategien in fester Reihenfolge: Vermeiden (keine Auswirkung), Vermindern (jede Auswirkung eine Stufe kleiner), Übertragen (Auswirkung auf das Budget entfällt), Akzeptieren (volle Auswirkung, kostenlos). Kosten und Wirkung sind vor der Wahl sichtbar; nicht verfügbare Strategien sind gesperrt und nennen den Grund | M | O |
+| M-22 | Wahrscheinlichkeit: tief 20 %, mittel 40 %, hoch 60 % | M | O (Zahlen U) |
+| M-23 | AI-Prognose: Ein Ereignis kann seine Wahrscheinlichkeit als Prognose einer AI zeigen, mit Begründung. «Im Team prüfen» kostet 3 Punkte Zeit und zeigt die tatsächliche Wahrscheinlichkeit. Die Auswertung hält fest, ob einer unzuverlässigen Prognose ungeprüft vertraut wurde | M | O |
+| M-24 | Reihenfolge: Kosten der Strategie sofort; Auswirkung des Ereignisses bei der Auflösung, nach der Wirkung des Entscheids derselben Runde. Fällt eine Anzeige auf 0, stürzt das Gebäude ein | M | O |
+| M-25 | Punkte: Eine empfohlene Strategie gibt 1 Punkt, unabhängig vom Ausgang. Die Empfehlung bezieht sich auf die tatsächliche Wahrscheinlichkeit | M | O |
+| M-26 | Bauabnahme: Die Schwelle ist ein Anteil von 0.69 der möglichen Punkte, gerundet auf die nächste ganze Zahl (ohne neue Mechaniken 11 von 16). Briefing und Sterne folgen derselben Logik. Ersetzt die Rundung von F-211 | M | O |
+| M-27 | Auswertung pro Ereignis: «Gut entschieden», «Gut entschieden, trotzdem Pech», «Glück gehabt» oder «Hier hat die Vorsorge gefehlt». Nach einem Einsturz erscheinen Ereignisse, die dazu beigetragen haben, in der Liste der Ursachen | M | O |
+| M-28 | Darstellung: Das Ereignis kündigt sich in der Szene an (Wolken, stehender Lastwagen, leere Arbeitsplätze, Funken am Kran, Figur mit Aktenkoffer). Die gewählte Massnahme wird als Bauteil sichtbar und bleibt am fertigen Gebäude. Tritt das Ereignis ein, spielt eine Szene von höchstens 2 Sekunden, überspringbar | S | O |
+| M-29 | Balance: Die Simulation prüft pro Level mit Ereignissen die sechs Kombinationen aus dem Auftrag, Abschnitt 5; keine einzelne Strategie ist immer richtig | M | O |
 

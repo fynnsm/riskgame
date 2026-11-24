@@ -14,6 +14,7 @@ import {
   cloudVisibility,
   createDecorRandom,
   decorationFor,
+  fireworkSpark,
   nextPlaneDelay,
   planeLateralOffset,
   planeMayCrossCentre,
@@ -44,7 +45,7 @@ export interface LifeContext {
   /** Places no cloud may cover: the building in focus, or every lot on the city view. */
   keepClear: readonly { x: number; z: number }[];
   /** The closing view (B5): total stars and seconds since it began; null otherwise. */
-  finale: { stars: number; seconds: number } | null;
+  finale: { stars: number; seconds: number; centre: { x: number; z: number } } | null;
 }
 
 export interface Life {
@@ -77,7 +78,7 @@ const WALKER_BOXES = 3;
 const GLINTS_PER_POND = 3;
 /** A strip behind the plane and one block per star, up to fifteen. */
 const BANNER_BOXES = 16;
-const SPARKS = TUNING.finale.fireworkSparks;
+const SPARKS = TUNING.firework.bursts * TUNING.firework.sparksPerBurst;
 const SPARK_COLORS = [C.vividRed, C.yellow, C.teal, C.pink, C.white, C.green];
 
 const VEHICLE_COLORS: Record<VehicleKind, readonly number[]> = {
@@ -208,7 +209,9 @@ export function createLife(options: LifeOptions): Life {
   for (let b = 0; b < options.ponds.length * GLINTS_PER_POND; b++) paint(AT.glints + b, C.white);
   for (let i = 0; i < MAX_VEHICLES; i++) headlights.setColorAt(i, tint.setHex(C.headlight));
   for (let k = 0; k < SPARKS; k++) {
-    const color = SPARK_COLORS[Math.floor(k / 16) % SPARK_COLORS.length] ?? C.yellow;
+    const color =
+      SPARK_COLORS[Math.floor(k / TUNING.firework.sparksPerBurst) % SPARK_COLORS.length] ??
+      C.yellow;
     headlights.setColorAt(MAX_VEHICLES + k, tint.setHex(color));
   }
   paint(AT.banner, C.white);
@@ -342,7 +345,7 @@ export function createLife(options: LifeOptions): Life {
     // B5: the closing view opens with a plane that pulls a banner with one block per star.
     if (context.finale && !inFinale && decoration.planes) {
       plane.startedAt = time;
-      plane.offset = -12;
+      plane.offset = 0;
       plane.banner = true;
     }
     inFinale = context.finale !== null;
@@ -354,7 +357,10 @@ export function createLife(options: LifeOptions): Life {
       );
     }
     const flight = TUNING.decoration.plane;
-    const flown = plane.startedAt < 0 ? -1 : (time - plane.startedAt) / flight.seconds;
+    // N2: the plane with the banner flies low and quickly through what the camera shows.
+    const pulling = plane.banner && context.finale !== null;
+    const flightSeconds = pulling ? TUNING.finale.bannerSeconds : flight.seconds;
+    const flown = plane.startedAt < 0 ? -1 : (time - plane.startedAt) / flightSeconds;
     if (!decoration.planes || flown < 0 || flown > 1) {
       for (let b = 0; b < PLANE_BOXES; b++) hide(mesh, AT.plane + b);
       for (let b = 0; b < BANNER_BOXES; b++) hide(mesh, AT.banner + b);
@@ -366,12 +372,13 @@ export function createLife(options: LifeOptions): Life {
       }
     } else {
       // The offset is measured on screen, so the path is shifted along the ground under the camera.
-      const along = flight.height / options.viewDirection.y;
-      const centreX = (context.focus?.x ?? 0) + options.viewDirection.x * along;
-      const centreZ = (context.focus?.z ?? 0) + options.viewDirection.z * along;
-      const x = centreX + (flown - 0.5) * flight.range;
-      const z = centreZ + plane.offset;
-      const y = flight.height;
+      const y = pulling ? TUNING.finale.bannerHeight : flight.height;
+      const along = y / options.viewDirection.y;
+      const aim = pulling && context.finale ? context.finale.centre : context.focus;
+      const centreX = (aim?.x ?? 0) + options.viewDirection.x * along;
+      const centreZ = (aim?.z ?? 0) + options.viewDirection.z * along;
+      const x = centreX + (flown - 0.5) * (pulling ? TUNING.finale.bannerRange : flight.range);
+      const z = centreZ + (pulling ? 0 : plane.offset);
       put(mesh, AT.plane, x, y, z, 4.2, 0.7, 0.7);
       put(mesh, AT.plane + 1, x + 0.2, y, z, 1, 0.14, 4.6);
       put(mesh, AT.plane + 2, x - 1.8, y + 0.1, z, 0.6, 0.12, 1.8);
@@ -501,35 +508,36 @@ export function createLife(options: LifeOptions): Life {
       }
     });
 
-    // Fireworks over the city once night has fallen on the closing view
+    // Fireworks over the city for the whole closing view, round what the camera looks at (N2)
+    const showFireworks = context.finale !== null && decoration.nightLights;
     for (let k = 0; k < SPARKS; k++) {
       const at = MAX_VEHICLES + k;
-      if (!context.finale || !context.night) {
+      const spark =
+        showFireworks && context.finale ? fireworkSpark(k, context.finale.seconds) : null;
+      if (!spark || !context.finale) {
         hide(headlights, at);
         continue;
       }
-      const burst = Math.floor(k / 16);
-      const since = (context.finale.seconds + burst * 0.9) % 2.8;
-      if (since > 1.5) {
-        hide(headlights, at);
-        continue;
-      }
-      const angle = ((k % 16) / 16) * Math.PI * 2;
-      const lift = ((k * 7) % 5) / 5 - 0.3;
-      const size = (1 - since / 1.5) * 0.7;
+      const F = TUNING.firework;
+      const reach = (spark.age / F.lifeSeconds) * F.radius * 1.5;
+      const size = (1 - (spark.age / F.lifeSeconds) * 0.7) * 0.9;
       put(
         headlights,
         at,
-        (burst - 1) * grid.pitch + Math.cos(angle) * since * 5,
-        20 + burst * 3 + lift * since * 3 - since * since * 1.8,
-        Math.sin(angle) * since * 5,
+        context.finale.centre.x + (spark.burst - 1) * 9 + Math.cos(spark.angle) * reach,
+        15 + (spark.burst % 2) * 2.5 + Math.sin(spark.angle) * reach * 0.8 - spark.age * spark.age,
+        context.finale.centre.z + Math.sin(spark.angle) * reach * 0.6,
         size,
         size,
         size,
       );
     }
+    // By day only the fireworks are drawn unlit; the headlights wait for the night.
+    if (!(context.night && decoration.nightLights)) {
+      for (let i = 0; i < MAX_VEHICLES; i++) hide(headlights, i);
+    }
 
-    headlights.visible = context.night && decoration.nightLights;
+    headlights.visible = (context.night && decoration.nightLights) || showFireworks;
     shadows.visible = !decoration.softShadows;
     mesh.instanceMatrix.needsUpdate = true;
     shadows.instanceMatrix.needsUpdate = true;

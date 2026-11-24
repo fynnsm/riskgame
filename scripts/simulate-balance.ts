@@ -3,7 +3,7 @@
  * (F-907, F-909, F-910). Any broken rule stops the run.
  */
 import { validateLevelJson } from '../src/content/validate.ts';
-import { BALANCE } from '../src/core/balance.ts';
+import { BALANCE, CONTENT_RULES } from '../src/core/balance.ts';
 import type { BalanceProblem } from '../src/core/simulate.ts';
 import { balanceProblems, simulateLevel } from '../src/core/simulate.ts';
 import { readLevelFiles } from './read-levels.ts';
@@ -27,7 +27,7 @@ const EXPLAIN: Record<BalanceProblem, string> = {
 let failed = false;
 
 for (const [name, json] of Object.entries(readLevelFiles())) {
-  const result = validateLevelJson(json, name, BALANCE.effectPoints);
+  const result = validateLevelJson(json, name, CONTENT_RULES);
   if (!result.ok) {
     console.error(
       `FEHLER  ${name}: Datei ist ungültig, zuerst «npm run validate:content» ausführen.`,

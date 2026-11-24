@@ -19,6 +19,24 @@ export function browserSessionStorage(): Storage {
   return window.sessionStorage;
 }
 
+/** The version whose finished levels have the same shape as today's. */
+const CARRIED_OVER_FROM = 2;
+
+/**
+ * The stored state without its level in play, if the rest is valid. `droppedRun` says
+ * whether there was a level in play to give up.
+ */
+function withoutRun(
+  raw: unknown,
+  version: number,
+): { progress: Progress; droppedRun: boolean } | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const source = raw as Record<string, unknown>;
+  const parsed = progressSchema.safeParse({ ...source, version, currentRun: null });
+  if (!parsed.success) return null;
+  return { progress: parsed.data, droppedRun: source.currentRun != null };
+}
+
 export function createLocalStorageStore(provider: StorageProvider, logger: Logger): ProgressStore {
   function fresh(status: LoadOutcome['status']): LoadOutcome {
     return { status, progress: emptyProgress() };
@@ -67,12 +85,32 @@ export function createLocalStorageStore(provider: StorageProvider, logger: Logge
         typeof raw === 'object' && raw !== null
           ? (raw as { version?: unknown }).version
           : undefined;
+      // Version 2 differs from 3 only in what a level in play looks like. Everything that was
+      // finished is carried over; the level in play cannot be continued and is given up.
+      if (version === CARRIED_OVER_FROM) {
+        const carried = withoutRun(raw, PROGRESS_VERSION);
+        if (carried) {
+          logger.info('storage.load.migrated', {
+            from: CARRIED_OVER_FROM,
+            droppedRun: carried.droppedRun,
+          });
+          save(carried.progress);
+          return { status: 'migrated', ...carried };
+        }
+      }
       if (typeof version === 'number' && version !== PROGRESS_VERSION) {
         logger.warn('storage.load.outdated', { found: version, expected: PROGRESS_VERSION });
         return replaced('outdated');
       }
       const parsed = progressSchema.safeParse(raw);
       if (!parsed.success) {
+        // If only the level in play is unreadable, the finished levels are still worth keeping.
+        const salvaged = withoutRun(raw, PROGRESS_VERSION);
+        if (salvaged && salvaged.droppedRun) {
+          logger.warn('storage.load.salvaged', { issues: parsed.error.issues.length });
+          save(salvaged.progress);
+          return { status: 'migrated', ...salvaged };
+        }
         const first = parsed.error.issues[0];
         logger.warn('storage.load.invalid', {
           reason: 'schema',

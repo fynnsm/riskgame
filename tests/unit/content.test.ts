@@ -7,12 +7,12 @@ import { EFFECT_LEVELS } from '../../src/content/schema.ts';
 import { contentReport, levelStats } from '../../src/content/stats.ts';
 import { formatPath, validateLevel, validateLevelJson } from '../../src/content/validate.ts';
 import { readLevelFiles } from '../../scripts/read-levels.ts';
-import { clone, GOOD, makeLevel, POINTS, RISKY } from './fixtures.ts';
+import { clone, GOOD, makeLevel, makeMechanicsLevel, POINTS, RULES, RISKY } from './fixtures.ts';
 
 function errorsFor(mutate: (level: Level) => void): string[] {
   const level = clone(makeLevel());
   mutate(level);
-  const result = validateLevel(level, 'test.json', POINTS);
+  const result = validateLevel(level, 'test.json', RULES);
   return result.ok ? [] : result.errors;
 }
 
@@ -36,7 +36,7 @@ describe('effects', () => {
 
 describe('validateLevel: valid content', () => {
   it('accepts the fixture level without warnings', () => {
-    const result = validateLevel(makeLevel(), 'test.json', POINTS);
+    const result = validateLevel(makeLevel(), 'test.json', RULES);
     expect(result).toMatchObject({ ok: true, warnings: [] });
   });
 
@@ -44,7 +44,7 @@ describe('validateLevel: valid content', () => {
     const files = readLevelFiles();
     expect(Object.keys(files)).toHaveLength(5);
     for (const [name, json] of Object.entries(files)) {
-      const result = validateLevelJson(json, name, POINTS);
+      const result = validateLevelJson(json, name, RULES);
       expect(result.ok ? [] : result.errors, name).toEqual([]);
     }
   });
@@ -59,13 +59,13 @@ describe('validateLevel: valid content', () => {
       dauerSekunden: 120,
       transkript: 'Kurzfassung.',
     });
-    expect(validateLevel(level, 'test.json', POINTS).ok).toBe(true);
+    expect(validateLevel(level, 'test.json', RULES).ok).toBe(true);
   });
 
   it('warns, but does not fail, if fewer than two situations show an AI output (F-304)', () => {
     const level = makeLevel();
     delete level.situationen[0]?.aiAusgabe;
-    const result = validateLevel(level, 'test.json', POINTS);
+    const result = validateLevel(level, 'test.json', RULES);
     expect(result.ok).toBe(true);
     expect(result.warnings.join()).toContain('aiAusgabe');
   });
@@ -261,7 +261,12 @@ describe('validateLevel: every rule of IMPORT.md rejects a broken file with a cl
     ],
     ['level number too high', (l) => void (l.nummer = 6), 'ist zu gross (höchstens 5)'],
     ['level number too low', (l) => void (l.nummer = 0), 'ist zu klein (mindestens 1)'],
-    ['unsupported schema version', (l) => void (raw(l).schemaVersion = 2), 'unerlaubten Wert'],
+    ['unsupported schema version', (l) => void (raw(l).schemaVersion = 3), 'unerlaubten Wert'],
+    [
+      'the schema version before update 3',
+      (l) => void (raw(l).schemaVersion = 1),
+      'unerlaubten Wert',
+    ],
   ];
 
   it.each(cases)('%s', (_name, mutate, expected) => {
@@ -284,7 +289,7 @@ describe('content statistics and pattern warnings (A1, A2)', () => {
   const warningsFor = (mutate: (level: Level) => void): string => {
     const level = clone(makeLevel());
     mutate(level);
-    const result = validateLevel(level, 'test.json', POINTS);
+    const result = validateLevel(level, 'test.json', RULES);
     expect(result.ok).toBe(true);
     return result.warnings.join('\n');
   };
@@ -309,6 +314,18 @@ describe('content statistics and pattern warnings (A1, A2)', () => {
       unevenLength: [],
       budgetShare: 2 / 3,
       goodCostShare: { budget: 0.5, zeit: 0.5, stabilitaet: 0 },
+      tourSites: { total: 0, drafts: 0 },
+      events: { total: 0, drafts: 0 },
+      byClaude: [],
+      lengths: level.situationen.map((situation) => ({
+        id: situation.id,
+        titel: situation.titel,
+        gut: 8,
+        vertretbar: 8,
+        riskant: 8,
+        goodIsLongest: false,
+        uneven: false,
+      })),
     });
   });
 
@@ -371,6 +388,47 @@ describe('content statistics and pattern warnings (A1, A2)', () => {
     expect(errors.join('\n')).toContain('100 % der Kosten der guten Optionen entfallen auf «zeit»');
   });
 
+  it('lists the length of each rating, a dash where a situation has none, the longest of several', () => {
+    const level = makeLevel();
+    const first = level.situationen[0];
+    if (!first) throw new Error('fixture');
+    first.optionen = first.optionen.filter((o) => o.einstufung !== 'vertretbar');
+    first.optionen.push({ ...first.optionen[0]!, id: 'C', text: 'Eine zweite gute Wahl, länger.' });
+    const row = levelStats(level, POINTS).lengths[0];
+    expect(row).toMatchObject({ gut: 30, vertretbar: null, riskant: 8, uneven: true });
+    expect(contentReport([levelStats(level, POINTS)])).toContain('| 30 | – | 8 |');
+  });
+
+  it('counts tour places and events and lists what Claude wrote for the group to check', () => {
+    const level = makeMechanicsLevel(3);
+    const tour = level.rundgang?.stellen ?? [];
+    const events = level.ereignisse?.pool ?? [];
+    for (const site of tour.slice(0, 2)) Object.assign(site, { autor: 'CC', status: 'entwurf' });
+    Object.assign(events[0] ?? {}, { autor: 'CC', status: 'entwurf' });
+    Object.assign(events[1] ?? {}, { autor: 'CC' });
+    Object.assign(level.situationen[0] ?? {}, { autor: 'CL', status: 'entwurf' });
+
+    const stats = levelStats(level, POINTS);
+    expect(stats.tourSites).toEqual({ total: 12, drafts: 2 });
+    expect(stats.events).toEqual({ total: 5, drafts: 1 });
+    expect(stats.byClaude.map((item) => `${item.kind} ${item.id} ${item.autor}`)).toEqual([
+      'Situation L3-S01 CL',
+      'Rundgang L3-R01 CC',
+      'Rundgang L3-R02 CC',
+      'Ereignis L3-E01 CC',
+      'Ereignis L3-E02 CC',
+    ]);
+
+    const report = contentReport([stats, levelStats(makeLevel(1), POINTS)]);
+    expect(report).toContain('| Level 3 | 8 | 1 | 7 | 12 (2 Entwurf) | 5 (1 Entwurf) |');
+    expect(report).toContain('| Level 1 | 8 | 0 | 8 | – | – |');
+    expect(report).toContain('- Von Claude Code (CC), Rundgang: L3-R01, L3-R02');
+    // Released content keeps its place in the list, marked as such.
+    expect(report).toContain('- Von Claude Code (CC), Ereignisse: L3-E01, L3-E02 (freigegeben)');
+    expect(report).toContain('- Erste Fassung von Claude (CL), Situationen: L3-S01');
+    expect(report).toContain('**Level 1**\n\n- nichts');
+  });
+
   it('writes a report with one row per level and the affected situations', () => {
     const level = makeLevel();
     lengthen(level, 1, 'gut');
@@ -379,17 +437,24 @@ describe('content statistics and pattern warnings (A1, A2)', () => {
       'Stand: 16 Situationen in 2 Leveln, davon 0 im Entwurf und 16 freigegeben.',
     );
     expect(report).toContain(
-      '| Level 1 | 8 | 0 | 8 | 2 (25 %) | 1 (13 %) | 0 | 67 % | 50 % / 50 % / 0 % |',
+      '| Level 1 | 8 | 0 | 8 | – | – | 2 (25 %) | 1 (13 %) | 0 | 67 % | 50 % / 50 % / 0 % |',
     );
-    expect(report).toContain('- Gute Option ist die längste: L1-S01');
-    expect(report).toContain('- Längenunterschied über 30 %: keine');
+    // The three lengths side by side, for the situations that give the answer away.
+    expect(report).toContain(
+      '1 von 8 Situationen betroffen; in 1 ist die gute Option die längste.',
+    );
+    expect(report).toContain('| L1-S01 | Situation 1 | 10 | 8 | 8 | ja | nein |');
+    expect(report).not.toContain('| L1-S02 |');
+    // A level with nothing to fix says so instead of showing an empty table.
+    expect(report).toContain('### Level 2\n\n0 von 8 Situationen betroffen');
+    expect(report).toContain('Keine.');
     expect(contentReport([])).toContain('Stand: 0 Situationen in 0 Leveln');
   });
 });
 
 describe('validateLevelJson', () => {
   it('rejects text that is not JSON with a readable message', () => {
-    const result = validateLevelJson('{ "id": ', 'kaputt.json', POINTS);
+    const result = validateLevelJson('{ "id": ', 'kaputt.json', RULES);
     expect(result.ok).toBe(false);
     expect(result.ok ? '' : result.errors[0]).toContain(
       'kaputt.json, Feld «(Datei)»: ist kein gültiges JSON',
@@ -397,7 +462,7 @@ describe('validateLevelJson', () => {
   });
 
   it('rejects JSON of the wrong shape', () => {
-    const result = validateLevelJson('[]', 'liste.json', POINTS);
+    const result = validateLevelJson('[]', 'liste.json', RULES);
     expect(result.ok ? '' : result.errors[0]).toContain('Feld «(Datei)»');
     expect(formatPath([])).toBe('(Datei)');
   });
@@ -433,7 +498,7 @@ describe('selectPlayable and loadLevels', () => {
     broken.situationen.splice(2);
     const result = loadLevels(
       { 'level-2.json': makeLevel(2), 'level-1.json': makeLevel(1), 'level-3.json': broken },
-      POINTS,
+      RULES,
       true,
     );
     expect(result.levels.map((l) => l.level.nummer)).toEqual([1, 2]);
@@ -441,7 +506,7 @@ describe('selectPlayable and loadLevels', () => {
   });
 
   it('rejects a second file that claims the same level number', () => {
-    const result = loadLevels({ 'a.json': makeLevel(1), 'b.json': makeLevel(1) }, POINTS, true);
+    const result = loadLevels({ 'a.json': makeLevel(1), 'b.json': makeLevel(1) }, RULES, true);
     expect(result.levels).toHaveLength(1);
     expect(result.errors.join()).toContain('b.json, Feld «nummer»');
   });
@@ -449,6 +514,6 @@ describe('selectPlayable and loadLevels', () => {
   it('collects warnings from all files', () => {
     const level = makeLevel();
     for (const s of level.situationen) delete s.aiAusgabe;
-    expect(loadLevels({ 'level-1.json': level }, POINTS, true).warnings).toHaveLength(1);
+    expect(loadLevels({ 'level-1.json': level }, RULES, true).warnings).toHaveLength(1);
   });
 });

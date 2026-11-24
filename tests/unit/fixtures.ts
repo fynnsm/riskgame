@@ -1,7 +1,9 @@
-import type { Effects, Level, Situation } from '../../src/content/schema.ts';
-import { BALANCE } from '../../src/core/balance.ts';
+import type { Effects, Level, RiskEvent, Situation, Tour } from '../../src/content/schema.ts';
+import { TOUR_PLACES } from '../../src/content/schema.ts';
+import { BALANCE, CONTENT_RULES } from '../../src/core/balance.ts';
 
 export const POINTS = BALANCE.effectPoints;
+export const RULES = CONTENT_RULES;
 
 export const GOOD: Effects = { budget: '-klein', zeit: '-klein', stabilitaet: '+mittel' };
 export const RISKY: Effects = { budget: '0', zeit: '+klein', stabilitaet: '-gross' };
@@ -51,7 +53,7 @@ export function makeLevel(nummer = 1): Level {
     situation.aiAusgabe = { prompt: 'Frage?', antwort: 'Antwort.' };
   }
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: `level-${nummer}`,
     nummer,
     titel: `Level ${nummer}`,
@@ -69,6 +71,95 @@ export function makeLevel(nummer = 1): Level {
     })),
     situationenProDurchgang: 6,
     situationen,
+  };
+}
+
+/**
+ * A valid site tour of twelve places: four real risks the drone found, three false alarms,
+ * three real risks it missed, two plain places. Ten different places, so a run of eight
+ * with every place at most once can always be drawn.
+ */
+export function makeTour(nummer = 1): Tour {
+  const kinds: [boolean, 'markiert' | 'nicht_markiert'][] = [
+    ...Array.from({ length: 4 }, (): [boolean, 'markiert'] => [true, 'markiert']),
+    ...Array.from({ length: 3 }, (): [boolean, 'markiert'] => [false, 'markiert']),
+    ...Array.from({ length: 3 }, (): [boolean, 'nicht_markiert'] => [true, 'nicht_markiert']),
+    ...Array.from({ length: 2 }, (): [boolean, 'nicht_markiert'] => [false, 'nicht_markiert']),
+  ];
+  return {
+    einleitung: 'Geh über die Baustelle.',
+    stellenProDurchgang: 8,
+    stellen: kinds.map(([istRisiko, drohne], i) => ({
+      id: `L${nummer}-R${String(i + 1).padStart(2, '0')}`,
+      ort: TOUR_PLACES[i % TOUR_PLACES.length] ?? 'lager',
+      beobachtung: `Beobachtung ${i + 1}.`,
+      istRisiko,
+      drohne,
+      erklaerung: `Erklärung ${i + 1}.`,
+      lernziel: `L${nummer}-Z1`,
+      autor: 'XX',
+      status: 'freigegeben' as const,
+    })),
+  };
+}
+
+export function makeEvent(nummer: number, index: number): RiskEvent {
+  const recommended = ['vermeiden', 'vermindern', 'uebertragen', 'akzeptieren', 'vermindern'][
+    (index - 1) % 5
+  ];
+  const strategy = (id: string, kosten: Effects) => ({
+    verfuegbar: true as const,
+    text: `Strategie ${id}.`,
+    kosten,
+    empfohlen: id === recommended,
+    erklaerung: `Erklärung zu ${id}.`,
+  });
+  const event: RiskEvent = {
+    id: `L${nummer}-E${String(index).padStart(2, '0')}`,
+    titel: `Ereignis ${index}`,
+    meldung: `Meldung ${index}.`,
+    darstellung: 'generisch',
+    wahrscheinlichkeit: index === 2 ? 'hoch' : 'mittel',
+    auswirkung: { budget: '-mittel', zeit: '-klein', stabilitaet: '-mittel' },
+    strategien: {
+      vermeiden: strategy('vermeiden', { budget: '0', zeit: '-gross', stabilitaet: '0' }),
+      vermindern: strategy('vermindern', { budget: '-klein', zeit: '0', stabilitaet: '0' }),
+      uebertragen: strategy('uebertragen', { budget: '-klein', zeit: '0', stabilitaet: '0' }),
+      akzeptieren: strategy('akzeptieren', { budget: '0', zeit: '0', stabilitaet: '0' }),
+    },
+    lernziel: `L${nummer}-Z1`,
+    autor: 'XX',
+    status: 'freigegeben',
+  };
+  // The first forecast is reliable, the second is not: it shows «tief» where «hoch» is true.
+  if (index === 1) {
+    event.aiPrognose = {
+      angezeigt: 'mittel',
+      verlaesslich: true,
+      begruendung: 'Gute Daten.',
+      aufloesung: 'Stimmt.',
+    };
+  }
+  if (index === 2) {
+    event.aiPrognose = {
+      angezeigt: 'tief',
+      verlaesslich: false,
+      begruendung: 'Dünne Daten.',
+      aufloesung: 'Stimmt nicht.',
+    };
+  }
+  return event;
+}
+
+/** A level with both mechanics of update 3. */
+export function makeMechanicsLevel(nummer = 1): Level {
+  return {
+    ...makeLevel(nummer),
+    rundgang: makeTour(nummer),
+    ereignisse: {
+      ereignisseProDurchgang: 3,
+      pool: [1, 2, 3, 4, 5].map((i) => makeEvent(nummer, i)),
+    },
   };
 }
 

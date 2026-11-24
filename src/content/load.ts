@@ -1,4 +1,4 @@
-import type { EffectPoints } from './effects.ts';
+import type { ContentRules } from './effects.ts';
 import type { Level } from './schema.ts';
 import { validateLevel } from './validate.ts';
 
@@ -32,7 +32,7 @@ export function selectPlayable(level: Level, showDrafts: boolean): PlayableLevel
  */
 export function loadLevels(
   files: Readonly<Record<string, unknown>>,
-  points: EffectPoints,
+  rules: ContentRules,
   showDrafts: boolean,
 ): LoadResult {
   const errors: string[] = [];
@@ -40,7 +40,7 @@ export function loadLevels(
   const byNumber = new Map<number, PlayableLevel>();
 
   for (const fileName of Object.keys(files).sort()) {
-    const result = validateLevel(files[fileName], fileName, points);
+    const result = validateLevel(files[fileName], fileName, rules);
     warnings.push(...result.warnings);
     if (!result.ok) {
       errors.push(...result.errors);
