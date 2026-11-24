@@ -18,7 +18,7 @@ import { starsFor } from '../core/scoring.ts';
 import type { Logger } from '../logging/logger.ts';
 import { errorData } from '../logging/logger.ts';
 import { buildErrorReport } from '../logging/report.ts';
-import { resultSequence } from '../render/director.ts';
+import { cityTitle, resultSequence } from '../render/director.ts';
 import { TUNING } from '../render/tuning.ts';
 import type { ProgressStore } from '../storage/progress-store.ts';
 import { clear, button, el } from './dom.ts';
@@ -26,6 +26,9 @@ import {
   briefingScreen,
   cityScreen,
   confirmResetScreen,
+  finaleScreen,
+  lookScreen,
+  totalStars,
   debugAttributes,
   debugFrame,
   debugValues,
@@ -54,6 +57,8 @@ export interface AppEnvironment {
   userAgent: string;
   viewport(): { width: number; height: number };
   copyText(text: string): Promise<void>;
+  /** Hands a picture to the browser as a download; nothing leaves the device (G-54). */
+  downloadPng(fileName: string, dataUrl: string): void;
   reload(): void;
   /** A fresh 32-bit seed per run. Comes from outside core so core stays deterministic. */
   nextSeed(): number;
@@ -98,6 +103,42 @@ export function createApp(options: AppOptions): App {
   let view: SceneView | null = null;
   /** B5: the short sequence between the last decision and the evaluation, while it plays. */
   let sequence: { timer: number } | null = null;
+
+  /** True if there is a picture to stage, look at or save; false in the simple mode. */
+  const hasPicture = (): boolean => view !== null && options.rendererName !== 'none';
+
+  /** G-53: true while the closing screen is shown instead of the start page. */
+  let finale = false;
+  /** G-54: true while the interface is out of the way and the camera is free. */
+  let looking = false;
+
+  function allCompleted(): boolean {
+    return levels.length > 0 && levels.every((l) => levelProgress(progress, l.level.id).completed);
+  }
+
+  function setLooking(on: boolean): void {
+    looking = on;
+    logger.info('finale.look', { on });
+    view?.setFreeCamera(on);
+    render();
+  }
+
+  function savePicture(status: HTMLElement): void {
+    const picture = view?.capture() ?? null;
+    if (!picture) {
+      logger.warn('finale.save.failed');
+      status.textContent = T.finale.saveFailed;
+      return;
+    }
+    try {
+      env.downloadPng(T.finale.fileName, picture);
+      logger.info('finale.save.ok');
+      status.textContent = T.finale.saved;
+    } catch (cause) {
+      logger.warn('finale.save.failed', errorData(cause));
+      status.textContent = T.finale.saveFailed;
+    }
+  }
 
   /** Ends the sequence, whether its time is up or the player skips it (B0.5). */
   function endSequence(skipped: boolean): void {
@@ -327,8 +368,14 @@ export function createApp(options: AppOptions): App {
       levelId: progress.currentRun?.levelId,
       phase: progress.currentRun?.phase,
     });
+    const finished = progress.currentRun?.outcome === 'completed';
     progress = clearRun(progress);
     overlay = 'none';
+    // G-53: finishing the last building leads to the closing screen instead of the start page.
+    if (finished && allCompleted()) {
+      logger.info('finale.opened', { from: 'level' });
+      finale = true;
+    }
     save();
     render();
   }
@@ -342,6 +389,7 @@ export function createApp(options: AppOptions): App {
   }
 
   function resetProgress(): void {
+    finale = false;
     logger.info('progress.reset');
     const cleared = store.clear();
     progress = emptyProgress();
@@ -382,7 +430,28 @@ export function createApp(options: AppOptions): App {
       });
     }
     if (!active) {
-      const screen = cityScreen(levels, progress, notices, options.contentErrors, { startLevel });
+      if (looking) return lookScreen(() => setLooking(false));
+      if (finale && allCompleted()) {
+        const stars = totalStars(levels, progress);
+        const title = T.finale.titles[cityTitle(stars, levels.length * 3)];
+        return finaleScreen(levels, progress, title, {
+          look: hasPicture() ? () => setLooking(true) : null,
+          save: hasPicture() ? savePicture : null,
+          again: () => {
+            logger.info('finale.closed');
+            finale = false;
+            render();
+          },
+        });
+      }
+      const screen = cityScreen(levels, progress, notices, options.contentErrors, {
+        startLevel,
+        showFinale: () => {
+          logger.info('finale.opened', { from: 'start' });
+          finale = true;
+          render();
+        },
+      });
       // Notices are shown once; after that they would only be noise.
       notices = [];
       return screen;
@@ -414,7 +483,7 @@ export function createApp(options: AppOptions): App {
           const stars = starsFor(run);
           const plan = resultSequence(run.outcome, stars, env.reducedMotion);
           // Without a picture to watch there is nothing to wait for: show banner and stars at once.
-          const staged = view !== null && !env.reducedMotion;
+          const staged = hasPicture() && !env.reducedMotion;
           const bannerAt = plan.bannerAt;
           const firstStar = bannerAt + (plan.steps.find((s) => s.step === 'banner')?.seconds ?? 0);
           const delays = [0, 1, 2].map((i) => firstStar + i * STAR_INTERVAL);
@@ -444,7 +513,8 @@ export function createApp(options: AppOptions): App {
       root.dataset.presenting = sequence ? 'true' : 'false';
       menuButton.hidden = overlay === 'error';
 
-      view?.render(sceneModel(levels, progress, active?.run ?? null));
+      view?.render(sceneModel(levels, progress, active?.run ?? null, { finale }));
+      root.dataset.looking = looking ? 'true' : 'false';
       updateInsets();
       renderDebug();
       screen.querySelector<HTMLElement>('[data-focus]')?.focus({ preventScroll: true });
@@ -475,6 +545,19 @@ export function createApp(options: AppOptions): App {
       event.preventDefault();
       endSequence(true);
       return;
+    }
+    if (looking) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setLooking(false);
+        return;
+      }
+      // The keyboard's way of turning the city; dragging does the same for the pointer.
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        view?.orbit(event.key === 'ArrowLeft' ? -0.2 : 0.2);
+        return;
+      }
     }
     if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
     const target = event.target as HTMLElement | null;

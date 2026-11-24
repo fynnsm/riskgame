@@ -20,6 +20,7 @@ for (const [name, build] of Object.entries(SCENES)) {
     page,
   }, testInfo) => {
     await openWith(page, '/?debug=1&quality=1', build());
+    if (name === 'finale') await page.getByTestId('play').click();
     const debug = page.getByTestId('debug');
     await expect
       .poll(async () => Number(await debug.getAttribute('data-draw-calls')))

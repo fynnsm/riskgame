@@ -310,6 +310,21 @@ describe('sceneModel (F-408, F-409)', () => {
     progress = finishRun(progress, replay(makeLevel(2), 1, [], ALL_GOOD), makeLevel(2));
     expect(sceneModel(levels, clearRun(progress), null).lots[2]?.status).toBe('locked');
   });
+
+  it('shows the closing view only when asked for and only once every building stands (G-53)', () => {
+    const two = [1, 2].map((n) => ({ level: makeLevel(n), available: true }));
+    let progress = emptyProgress();
+    for (const { level: each } of two) {
+      progress = clearRun(finishRun(progress, replay(each, 1, [], ALL_GOOD), each));
+    }
+    expect(sceneModel(two, progress, null)).toMatchObject({ mode: 'city', allCompleted: true });
+    expect(sceneModel(two, progress, null, { finale: true }).mode).toBe('finale');
+    // Not all built yet: asking for the closing view changes nothing.
+    expect(sceneModel(levels, progress, null, { finale: true }).mode).toBe('city');
+    // A level in play always wins.
+    const run = replay(level, 1, [], ['A']);
+    expect(sceneModel(two, progress, run, { finale: true }).mode).toBe('level');
+  });
 });
 
 describe('balance simulation (F-907, F-909, F-910)', () => {

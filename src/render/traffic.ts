@@ -90,35 +90,51 @@ function nextCrossing(v: Vehicle, grid: TrafficGrid, from: number): number {
  */
 export function createTraffic(random: () => number, grid: TrafficGrid, rich: boolean): Vehicle[] {
   const vehicles: Vehicle[] = [];
-  const total = span(grid);
   // The road just behind the building lots belongs to the tram alone.
   const tramLine = -grid.pitch / 2;
   const lines: number[] = [];
   for (let k = -3; k <= 2; k++) lines.push((k + 0.5) * grid.pitch);
 
-  const add = (kind: VehicleKind, axis: 'x' | 'z', line: number, dir: 1 | -1, s: number): void => {
+  /**
+   * Every vehicle starts in the middle part of a block, never inside a crossing: there it
+   * could stand in the way of cross traffic before the rules had a chance to apply.
+   */
+  const add = (
+    kind: VehicleKind,
+    axis: 'x' | 'z',
+    line: number,
+    dir: 1 | -1,
+    block: number,
+  ): void => {
     const cruise = T.cruise[kind] * (0.85 + random() * 0.3);
+    const slack = grid.pitch / 2 - T.stopBefore - VEHICLE_SIZE[kind].length / 2 - 0.3;
+    const centre = block * grid.pitch + (axis === 'x' ? grid.shift : 0);
+    const s = centre + (random() - 0.5) * 2 * Math.max(0, slack);
     vehicles.push({ kind, axis, line, dir, s, speed: cruise, cruise });
   };
 
+  const blocks = grid.reach * 2 + 1;
   for (const axis of ['x', 'z'] as const) {
     for (const line of lines) {
       if (axis === 'x' && line === tramLine) continue;
       for (const dir of [1, -1] as const) {
-        // Two vehicles per lane, half the city apart, so a queue never reaches back into a crossing.
+        // The vehicles of a lane start in different parts of the city, so a queue never
+        // reaches back into a crossing.
         for (let n = 0; n < T.perLane; n++) {
           const roll = random();
           const kind: VehicleKind =
             !rich || roll < 0.7 ? 'auto' : roll < 0.9 ? 'lieferwagen' : 'bus';
-          const s = -total / 2 + ((n + random() * 0.6 + 0.2) * total) / T.perLane;
-          add(kind, axis, line, dir, s);
+          // Each vehicle of the lane gets a stretch of blocks of its own.
+          const stretch = Math.floor(blocks / T.perLane);
+          const block = -grid.reach + n * stretch + Math.floor(random() * stretch);
+          add(kind, axis, line, dir, Math.min(grid.reach, block));
         }
       }
     }
   }
   if (rich) {
-    add('tram', 'x', tramLine, 1, -total / 4);
-    add('tram', 'x', tramLine, -1, total / 4);
+    add('tram', 'x', tramLine, 1, -Math.ceil(grid.reach / 2));
+    add('tram', 'x', tramLine, -1, Math.ceil(grid.reach / 2));
   }
   return vehicles;
 }
@@ -168,4 +184,19 @@ export function stepTraffic(
     if (v.s > half) v.s -= total;
     if (v.s < -half) v.s += total;
   }
+}
+
+/**
+ * Advances the traffic over a whole frame, however long it was. The rules only hold for
+ * short steps (the signal is read once per step), so a long frame is walked in small ones.
+ */
+export function advanceTraffic(
+  vehicles: Vehicle[],
+  time: number,
+  dt: number,
+  grid: TrafficGrid,
+): void {
+  const steps = Math.max(1, Math.ceil(dt / T.maxStepSeconds));
+  const h = dt / steps;
+  for (let i = 0; i < steps; i++) stepTraffic(vehicles, time + i * h, h, grid);
 }

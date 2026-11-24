@@ -116,6 +116,20 @@ async function boot(): Promise<void> {
       userAgent: navigator.userAgent,
       viewport: () => ({ width: window.innerWidth, height: window.innerHeight }),
       copyText: (text) => navigator.clipboard.writeText(text),
+      downloadPng: (fileName, dataUrl) => {
+        // From data URL to a file in memory: no request leaves the page, nothing is uploaded.
+        const bytes = atob(dataUrl.slice(dataUrl.indexOf(',') + 1));
+        const buffer = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) buffer[i] = bytes.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([buffer], { type: 'image/png' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      },
       reload: () => window.location.reload(),
       reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
       nextSeed: () => {

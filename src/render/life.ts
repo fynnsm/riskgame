@@ -20,7 +20,7 @@ import {
 } from './director.ts';
 import { C } from './palette.ts';
 import type { TrafficGrid, Vehicle, VehicleKind } from './traffic.ts';
-import { createTraffic, stepTraffic, VEHICLE_SIZE, vehiclePosition } from './traffic.ts';
+import { advanceTraffic, createTraffic, VEHICLE_SIZE, vehiclePosition } from './traffic.ts';
 import { TUNING } from './tuning.ts';
 
 /**
@@ -43,6 +43,8 @@ export interface LifeContext {
   focus: { x: number; z: number } | null;
   /** Places no cloud may cover: the building in focus, or every lot on the city view. */
   keepClear: readonly { x: number; z: number }[];
+  /** The closing view (B5): total stars and seconds since it began; null otherwise. */
+  finale: { stars: number; seconds: number } | null;
 }
 
 export interface Life {
@@ -73,6 +75,10 @@ const BALLOON_BOXES = 4;
 const SMOKE_PUFFS = 3;
 const WALKER_BOXES = 3;
 const GLINTS_PER_POND = 3;
+/** A strip behind the plane and one block per star, up to fifteen. */
+const BANNER_BOXES = 16;
+const SPARKS = TUNING.finale.fireworkSparks;
+const SPARK_COLORS = [C.vividRed, C.yellow, C.teal, C.pink, C.white, C.green];
 
 const VEHICLE_COLORS: Record<VehicleKind, readonly number[]> = {
   auto: [C.red, C.yellow, C.carBlue, C.green, C.white, C.carOrange],
@@ -106,6 +112,7 @@ export function createLife(options: LifeOptions): Life {
     walkers: range(walkers * WALKER_BOXES),
     trees: range(options.swayTrees.length * 2),
     glints: range(options.ponds.length * GLINTS_PER_POND),
+    banner: range(BANNER_BOXES),
   };
 
   const mesh = new InstancedMesh(options.unitBox, options.lit, cursor);
@@ -124,7 +131,8 @@ export function createLife(options: LifeOptions): Life {
   shadows.frustumCulled = false;
   shadows.renderOrder = 1;
 
-  const headlights = new InstancedMesh(options.unitBox, options.glow, MAX_VEHICLES);
+  // Unlit things: headlights at night, and the fireworks of the closing view.
+  const headlights = new InstancedMesh(options.unitBox, options.glow, MAX_VEHICLES + SPARKS);
   headlights.frustumCulled = false;
 
   const matrix = new Matrix4();
@@ -174,7 +182,8 @@ export function createLife(options: LifeOptions): Life {
     shirt: SHIRTS[i % SHIRTS.length] ?? C.white,
     skin: SKIN[i % SKIN.length] ?? C.skinA,
   }));
-  const plane = { nextAt: nextPlaneDelay(random()) * 0.3, startedAt: -1, offset: 0 };
+  const plane = { nextAt: nextPlaneDelay(random()) * 0.3, startedAt: -1, offset: 0, banner: false };
+  let inFinale = false;
 
   // Colours never change, so they are set once.
   clouds.forEach((_, i) => {
@@ -198,6 +207,12 @@ export function createLife(options: LifeOptions): Life {
   });
   for (let b = 0; b < options.ponds.length * GLINTS_PER_POND; b++) paint(AT.glints + b, C.white);
   for (let i = 0; i < MAX_VEHICLES; i++) headlights.setColorAt(i, tint.setHex(C.headlight));
+  for (let k = 0; k < SPARKS; k++) {
+    const color = SPARK_COLORS[Math.floor(k / 16) % SPARK_COLORS.length] ?? C.yellow;
+    headlights.setColorAt(MAX_VEHICLES + k, tint.setHex(color));
+  }
+  paint(AT.banner, C.white);
+  for (let b = 1; b < BANNER_BOXES; b++) paint(AT.banner + b, C.yellow);
   for (let i = 0; i < MAX_CLOUDS + 2; i++) shadows.setColorAt(i, tint.setHex(0x000000));
 
   let quality: Quality = 2;
@@ -236,7 +251,7 @@ export function createLife(options: LifeOptions): Life {
     const { time, dt } = context;
 
     // Traffic
-    stepTraffic(vehicles, time, dt, grid);
+    advanceTraffic(vehicles, time, dt, grid);
     for (let i = 0; i < MAX_VEHICLES; i++) {
       const vehicle = vehicles[i];
       const at = AT.vehicles + i * 2;
@@ -324,6 +339,13 @@ export function createLife(options: LifeOptions): Life {
 
     // Plane: now and then, and never over the building while a level is played
     const planeShadow = MAX_CLOUDS;
+    // B5: the closing view opens with a plane that pulls a banner with one block per star.
+    if (context.finale && !inFinale && decoration.planes) {
+      plane.startedAt = time;
+      plane.offset = -12;
+      plane.banner = true;
+    }
+    inFinale = context.finale !== null;
     if (decoration.planes && plane.startedAt < 0 && time >= plane.nextAt) {
       plane.startedAt = time;
       plane.offset = planeLateralOffset(
@@ -335,8 +357,10 @@ export function createLife(options: LifeOptions): Life {
     const flown = plane.startedAt < 0 ? -1 : (time - plane.startedAt) / flight.seconds;
     if (!decoration.planes || flown < 0 || flown > 1) {
       for (let b = 0; b < PLANE_BOXES; b++) hide(mesh, AT.plane + b);
+      for (let b = 0; b < BANNER_BOXES; b++) hide(mesh, AT.banner + b);
       hide(shadows, planeShadow);
       if (flown > 1) {
+        plane.banner = false;
         plane.startedAt = -1;
         plane.nextAt = time + nextPlaneDelay(random());
       }
@@ -356,6 +380,13 @@ export function createLife(options: LifeOptions): Life {
       put(mesh, AT.plane + 5, x + 1.3, y + 0.2, z, 0.9, 0.36, 0.72);
       if (decoration.softShadows) hide(shadows, planeShadow);
       else put(shadows, planeShadow, x - 5, 0.5, z - 1.5, 4, 0.02, 4);
+      const stars = plane.banner ? Math.min(BANNER_BOXES - 1, context.finale?.stars ?? 0) : 0;
+      if (plane.banner) put(mesh, AT.banner, x - 7.4, y, z, 9.6, 0.06, 1.5);
+      else hide(mesh, AT.banner);
+      for (let b = 1; b < BANNER_BOXES; b++) {
+        if (b <= stars) put(mesh, AT.banner + b, x - 2.9 - b * 0.58, y + 0.08, z, 0.42, 0.14, 0.9);
+        else hide(mesh, AT.banner + b);
+      }
     }
 
     // Balloon, drifting very slowly near the edge
@@ -469,6 +500,34 @@ export function createLife(options: LifeOptions): Life {
           );
       }
     });
+
+    // Fireworks over the city once night has fallen on the closing view
+    for (let k = 0; k < SPARKS; k++) {
+      const at = MAX_VEHICLES + k;
+      if (!context.finale || !context.night) {
+        hide(headlights, at);
+        continue;
+      }
+      const burst = Math.floor(k / 16);
+      const since = (context.finale.seconds + burst * 0.9) % 2.8;
+      if (since > 1.5) {
+        hide(headlights, at);
+        continue;
+      }
+      const angle = ((k % 16) / 16) * Math.PI * 2;
+      const lift = ((k * 7) % 5) / 5 - 0.3;
+      const size = (1 - since / 1.5) * 0.7;
+      put(
+        headlights,
+        at,
+        (burst - 1) * grid.pitch + Math.cos(angle) * since * 5,
+        20 + burst * 3 + lift * since * 3 - since * since * 1.8,
+        Math.sin(angle) * since * 5,
+        size,
+        size,
+        size,
+      );
+    }
 
     headlights.visible = context.night && decoration.nightLights;
     shadows.visible = !decoration.softShadows;

@@ -18,14 +18,37 @@ export type SceneMoment =
   /** `progress` runs from 0 to 1 over the closing sequence. */
   | { kind: 'finale'; progress: number };
 
-/** Which moment of the game a scene model shows. */
+/**
+ * Which moment of the game a scene model shows. `finaleProgress` runs from 0 to 1 over the
+ * closing sequence; the view counts it, because only the view knows how long it has played.
+ */
 export function momentFor(
-  model: Pick<SceneModel, 'mode' | 'focus' | 'lots' | 'allCompleted'>,
+  model: Pick<SceneModel, 'mode' | 'focus' | 'lots'>,
+  finaleProgress = 0,
 ): SceneMoment {
   const focused = model.focus === null ? undefined : model.lots[model.focus];
   if (model.mode === 'level' && focused) return { kind: 'level', nummer: focused.nummer };
-  // The full closing sequence follows later; until then the finished city rests in evening light.
-  return model.allCompleted ? { kind: 'finale', progress: 0 } : { kind: 'start' };
+  if (model.mode === 'finale') return { kind: 'finale', progress: finaleProgress };
+  // The start page is always at noon, also once every building stands.
+  return { kind: 'start' };
+}
+
+/** B5: where the camera looks during the flight past the buildings, as a share of the row, 0 to 1. */
+export function finaleFlight(
+  seconds: number,
+  reducedMotion: boolean,
+): { along: number; flying: boolean } {
+  const total = TUNING.finale.flightSeconds;
+  if (reducedMotion || seconds >= total) return { along: 0.5, flying: false };
+  const t = Math.max(0, seconds) / total;
+  // Ease in and out, so the flight starts and ends gently.
+  return { along: t * t * (3 - 2 * t), flying: true };
+}
+
+/** B5: progress of the closing sequence for the time of day; night falls halfway through. */
+export function finaleProgress(seconds: number, reducedMotion: boolean): number {
+  if (reducedMotion) return 1;
+  return Math.min(1, Math.max(0, seconds) / TUNING.finale.duskSeconds);
 }
 
 const LEVEL_TIMES: readonly TimeOfDay[] = ['morgen', 'mittag', 'nachmittag', 'abend', 'nacht'];

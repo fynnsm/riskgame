@@ -48,6 +48,8 @@ export const TUNING = {
     sampleSeconds: 3,
     minFps: 28,
     /** A frame slower than this is followed by a pause of the same length, at most the second value. */
+    /** Longest step of the scene's clock for one frame. */
+    maxFrameSeconds: 0.5,
     slowFrameMs: 50,
     maxBreatherMs: 250,
     /** Pixel ratio is capped here (N-205). */
@@ -66,6 +68,8 @@ export const TUNING = {
     braking: 7,
     acceleration: 4,
     perLane: 2,
+    /** Longest step the traffic rules are walked in; longer frames are split. */
+    maxStepSeconds: 0.05,
     cruise: { auto: 5, lieferwagen: 4.2, bus: 3.6, tram: 3.8 },
   },
 
@@ -78,6 +82,18 @@ export const TUNING = {
     panSeconds: 1.2,
     transitionMs: 200,
   },
+
+  /** B5: the closing view after all five levels. */
+  finale: {
+    /** The camera flies past the five buildings in this time. */
+    flightSeconds: 9,
+    /** Evening turns into night halfway through this time. */
+    duskSeconds: 10,
+    fireworkSparks: 48,
+  },
+
+  /** B5: the start page drifts slowly along the row of lots. */
+  start: { driftSeconds: 46, driftDistance: 10 },
 
   /** B3: purely decorative life, per quality step 0, 1, 2. */
   decoration: {

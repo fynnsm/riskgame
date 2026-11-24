@@ -9,6 +9,7 @@ import { step } from '../../src/core/game.ts';
 import type { Progress } from '../../src/core/progress.ts';
 import { starsFor } from '../../src/core/scoring.ts';
 import {
+  LEVELS,
   openWith,
   progressInLevel,
   progressWhere,
@@ -442,7 +443,7 @@ test('hides the label «Entwurf» from players and shows it in debug mode (A3)',
   await expect(page.getByTestId('draft')).toHaveText('Entwurf');
 });
 
-test('gives each level its time of day, the start page noon and the finished city evening (G-21)', async ({
+test('gives each level its time of day and keeps the start page at noon (G-21)', async ({
   page,
 }) => {
   test.slow();
@@ -459,13 +460,105 @@ test('gives each level its time of day, the start page noon and the finished cit
     await page.reload();
     await expect(host).toHaveAttribute('data-time-of-day', time);
   }
+});
+
+test('opens the closing screen with its title, turns evening into night and saves a picture (G-53, G-54)', async ({
+  page,
+}) => {
+  test.slow();
+  await openWith(page, '/?quality=1', progressWithCompleted(5));
+  // The start page stays at noon, also when every building stands.
+  await expect(page.locator('.canvas-host')).toHaveAttribute('data-time-of-day', 'mittag');
+  await expect(page.getByTestId('intro')).toHaveCount(0);
+  await expect(page.getByTestId('play')).toHaveText('Schlussbild ansehen');
+  await page.getByTestId('play').click();
+
+  await expect(screen(page, 'finale')).toBeVisible();
+  await expect(page.getByTestId('finale-title')).toHaveText('Goldene Stadt');
+  await expect(page.getByTestId('finale-title')).toBeFocused();
+  await expect(page.getByTestId('summary')).toContainText('15 von 15 Sternen');
+  await expect(page.locator('.canvas-host')).toHaveAttribute('data-time-of-day', 'abend');
+  // Night falls five seconds in; the generous limit is for machines that draw very slowly.
+  await expect(page.locator('.canvas-host')).toHaveAttribute('data-time-of-day', 'nacht', {
+    timeout: 45_000,
+  });
+
+  const download = page.waitForEvent('download');
+  await page.getByTestId('save-picture').click();
+  expect((await download).suggestedFilename()).toBe('risk-tower-stadt.png');
+  await expect(page.getByTestId('save-status')).toContainText('gespeichert');
+
+  // Looking at the city: the interface steps aside, arrow keys turn the camera, Escape returns.
+  await page.getByTestId('look').click();
+  await expect(screen(page, 'look')).toBeVisible();
+  await expect(page.getByTestId('menu')).toBeHidden();
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('Escape');
+  await expect(screen(page, 'finale')).toBeVisible();
+
+  await page.getByTestId('again').click();
+  await expect(screen(page, 'city')).toBeVisible();
+  await expect(screen(page, 'error')).toHaveCount(0);
+});
+
+for (const [stars, title, ratings] of [
+  [15, 'Goldene Stadt', ['gut', 'gut', 'gut', 'gut', 'gut', 'gut', 'gut', 'gut']],
+  [
+    10,
+    'Stadt mit Baustellen',
+    ['gut', 'gut', 'gut', 'gut', 'gut', 'vertretbar', 'vertretbar', 'vertretbar'],
+  ],
+] as const) {
+  test(`shows the closing screen as text without 3D: «${title}» (G-06)`, async ({ page }) => {
+    const progress = progressWithCompleted(5, ratings);
+    const total = Object.values(progress.levels).reduce((sum, l) => sum + (l.best?.stars ?? 0), 0);
+    expect(total).toBe(stars);
+    await openWith(page, SIMPLE, progress);
+    await page.getByTestId('play').click();
+    await expect(page.getByTestId('finale-title')).toHaveText(title);
+    await expect(page.getByTestId('summary')).toContainText(`${stars} von 15 Sternen`);
+    // Nothing to look at and nothing to save without a picture.
+    await expect(page.getByTestId('look')).toHaveCount(0);
+    await expect(page.getByTestId('save-picture')).toHaveCount(0);
+    await expect(page.getByTestId('again')).toBeVisible();
+  });
+}
+
+test('leads from the last building straight to the closing screen (G-53)', async ({ page }) => {
+  await playLastDecision(
+    page,
+    SIMPLE,
+    oneBefore((run) => run.outcome === 'completed', 5),
+  );
+  await skipSequence(page);
+  await page.getByTestId('to-city').click();
+  await expect(screen(page, 'finale')).toBeVisible();
+  await expect(page.getByTestId('finale-title')).toBeVisible();
+});
+
+test('offers one main button on the start page and drops the introduction once something is built (G-55)', async ({
+  page,
+}) => {
+  await page.goto(SIMPLE);
+  await expect(page.getByTestId('play')).toHaveText('Spielen');
+  await expect(page.getByTestId('intro')).toBeVisible();
+  await page.getByTestId('play').click();
+  await expect(screen(page, 'briefing')).toContainText('Level 1');
+  // «Weiterspielen» once the player has got as far as the first situation.
+  await throughBriefingAndTheory(page);
+
+  await page.getByTestId('menu').click();
+  await page.getByTestId('abort').click();
+  await expect(page.getByTestId('play')).toHaveText('Weiterspielen');
 
   await page.evaluate(
     ([key, value]) => window.localStorage.setItem(key as string, value as string),
-    ['risk-tower.progress', JSON.stringify(progressWithCompleted(5))],
+    ['risk-tower.progress', JSON.stringify(progressWithCompleted(1))],
   );
   await page.reload();
-  await expect(host).toHaveAttribute('data-time-of-day', 'abend');
+  await expect(page.getByTestId('intro')).toHaveCount(0);
+  await page.getByTestId('play').click();
+  await expect(screen(page, 'briefing')).toContainText('Level 2');
 });
 
 test('runs the 3D view with reduced motion: no error, and the decoration stands still (B0.6)', async ({
@@ -499,14 +592,15 @@ async function playLastDecision(page: Page, url: string, last: LastStep): Promis
 }
 
 /** A state one decision before the level ends in the wanted way, and the option that does it. */
-function oneBefore(wanted: (run: LevelRun) => boolean): LastStep {
+function oneBefore(wanted: (run: LevelRun) => boolean, nummer = 1): LastStep {
   let option = '';
-  const progress = progressWhere(1, (run) => {
+  const level = LEVELS[nummer - 1] as Level;
+  const progress = progressWhere(nummer, (run) => {
     if (run.phase !== 'situation') return false;
-    const situation = level1.situationen.find((s) => s.id === run.situationIds[run.step]);
+    const situation = level.situationen.find((s) => s.id === run.situationIds[run.step]);
     const ending = situation?.optionen.find((candidate) => {
-      let after = step(run, level1, { type: 'choose', optionId: candidate.id });
-      after = step(after, level1, { type: 'continue' });
+      let after = step(run, level, { type: 'choose', optionId: candidate.id });
+      after = step(after, level, { type: 'continue' });
       return after.phase === 'result' && wanted(after);
     });
     if (ending) option = ending.text;
