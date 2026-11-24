@@ -10,6 +10,7 @@ import {
   LEVELS,
   longestSituation,
   played,
+  progressInTour,
   TOUR_CORRECT,
   oneBefore,
   openWith,
@@ -1092,4 +1093,32 @@ test('names the tour in the evaluation of the level (M-14)', async ({ page }) =>
   await expect(page.getByTestId('tour-summary')).toContainText(
     `${TOUR_CORRECT} von 8 Orten richtig beurteilt, 1 Punkt`,
   );
+});
+
+test('keeps the open place in view when the list is longer than the sheet (M-12)', async ({
+  page,
+}) => {
+  await openWith(page, SIMPLE, progressInTour(0));
+  await expect(screen(page, 'tour')).toBeVisible();
+  const ids = await placeIds(page);
+  /** Whether the card of the open place lies inside what the player sees. */
+  const cardInView = () =>
+    page.getByTestId('place-card').evaluate((card) => {
+      const box = card.getBoundingClientRect();
+      const panel = card.closest('.panel')?.getBoundingClientRect();
+      const top = Math.max(0, panel?.top ?? 0);
+      const bottom = Math.min(window.innerHeight, panel?.bottom ?? window.innerHeight);
+      return box.top >= top - 1 && box.bottom <= bottom + 1;
+    });
+  // The last place of the list, then the walk onwards from there.
+  await page.getByTestId(`place-${ids[7]}`).click();
+  await expect.poll(cardInView).toBe(true);
+  await page.getByTestId('register').click();
+  await expect(page.getByTestId(`place-${ids[0]}`)).toHaveAttribute('aria-expanded', 'true');
+  await expect.poll(cardInView).toBe(true);
+  for (const id of ids.slice(0, 6)) {
+    await expect(page.getByTestId(`place-${id}`)).toHaveAttribute('aria-expanded', 'true');
+    await expect.poll(cardInView).toBe(true);
+    await page.getByTestId('no-risk').click();
+  }
 });

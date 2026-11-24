@@ -719,7 +719,13 @@ export function createApp(options: AppOptions): App {
       root.dataset.looking = looking ? 'true' : 'false';
       updateInsets();
       renderDebug();
-      screen.querySelector<HTMLElement>('[data-focus]')?.focus({ preventScroll: true });
+      const focused = screen.querySelector<HTMLElement>('[data-focus]');
+      focused?.focus({ preventScroll: true });
+      // Every screen starts at its top, except the tour: there the place just opened must be
+      // in view, wherever it is in the list.
+      if (active?.run.phase === 'tour' && openSite !== null) {
+        focused?.closest('li')?.scrollIntoView({ block: 'nearest' });
+      }
     } catch (cause) {
       showFatal(cause);
     }
