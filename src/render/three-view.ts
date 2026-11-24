@@ -1199,6 +1199,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
 
   // --- Loop ---
   let frame = 0;
+  /** Timer of the pause after a slow frame, or 0. */
+  let breather = 0;
   let lastTime: number | null = null;
   let sampleStart = 0;
   let sampleFrames = 0;
@@ -1207,7 +1209,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
 
   function tick(now: number): void {
     if (disposed) return;
-    frame = requestAnimationFrame(tick);
+    frame = 0;
+    const frameStarted = performance.now();
     const seconds = now / 1000;
     const dt = lastTime === null ? 0 : Math.min(0.1, seconds - lastTime);
     if (lastTime === null) sampleStart = seconds;
@@ -1279,6 +1282,21 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
 
     renderer.render(scene, camera);
 
+    // A device that needs long for a frame gets as long again to breathe before the next one.
+    // Otherwise drawing would take every moment, and taps and keys would hang (N-202).
+    const cost = performance.now() - frameStarted;
+    if (cost > TUNING.quality.slowFrameMs) {
+      breather = window.setTimeout(
+        () => {
+          breather = 0;
+          if (!disposed && !document.hidden && frame === 0) frame = requestAnimationFrame(tick);
+        },
+        Math.min(cost, TUNING.quality.maxBreatherMs),
+      );
+    } else {
+      frame = requestAnimationFrame(tick);
+    }
+
     sampleFrames += 1;
     frameStats.frame(seconds);
     if (seconds - sampleStart >= TUNING.quality.sampleSeconds) {
@@ -1294,7 +1312,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   }
 
   function start(): void {
-    if (disposed || frame !== 0) return;
+    if (disposed || frame !== 0 || breather !== 0) return;
     lastTime = null;
     sampleFrames = 0;
     frameStats.reset();
@@ -1303,6 +1321,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
 
   function stop(): void {
     cancelAnimationFrame(frame);
+    window.clearTimeout(breather);
+    breather = 0;
     frame = 0;
   }
 
