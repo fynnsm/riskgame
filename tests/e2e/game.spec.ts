@@ -885,10 +885,12 @@ for (const nummer of [1, 2, 3, 4, 5]) {
     await openWith(page, '/?quality=0', progressAtSituation(nummer, longestSituation(nummer)));
     await expect(screen(page, 'situation')).toBeVisible();
 
+    // The sheet glides to its height in a fifth of a second; measured once it has arrived.
+    // A slow machine otherwise catches the height it starts from.
     const panel = page.locator('.panel');
-    const share = ((await panel.boundingBox())?.height ?? 0) / 844;
-    expect(share).toBeGreaterThan(0.6);
-    expect(share).toBeLessThanOrEqual(0.66);
+    const share = async (): Promise<number> => ((await panel.boundingBox())?.height ?? 0) / 844;
+    await expect.poll(share).toBeGreaterThan(0.6);
+    expect(await share()).toBeLessThanOrEqual(0.66);
 
     const inView = () =>
       page.getByTestId('option-1').evaluate((option) => {
