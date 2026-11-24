@@ -12,7 +12,7 @@ import {
   levelProgress,
   withRun,
 } from '../core/progress.ts';
-import type { SceneView } from '../core/scene.ts';
+import type { RenderStats, SceneView } from '../core/scene.ts';
 import { sceneModel } from '../core/scene.ts';
 import { starsFor } from '../core/scoring.ts';
 import type { Logger } from '../logging/logger.ts';
@@ -24,6 +24,9 @@ import {
   briefingScreen,
   cityScreen,
   confirmResetScreen,
+  debugAttributes,
+  debugFrame,
+  debugValues,
   errorScreen,
   feedbackScreen,
   hud,
@@ -62,6 +65,8 @@ export interface AppOptions {
   /** Called once with the element the 3D canvas goes into. */
   createView(host: HTMLElement): SceneView;
   startupNotices?: string[];
+  /** L-09: `?debug=1` shows the overlay and allows jumping to any level. */
+  debug?: boolean;
 }
 
 export interface App {
@@ -85,7 +90,44 @@ export function createApp(options: AppOptions): App {
   const canvasHost = el('div', { class: 'canvas-host', attrs: { 'aria-hidden': 'true' } });
   const hudHost = el('div', { class: 'hud-host' });
   const panel = el('main', { class: 'panel' });
-  const menuButton = button(T.menu, () => toggleMenu(), { class: 'btn-menu', testId: 'menu' });
+  const menuButton = button('', () => toggleMenu(), { class: 'btn-menu', testId: 'menu' });
+  // On a narrow phone only the symbol is shown; the word stays for screen readers (A5).
+  menuButton.append(
+    el('span', { class: 'menu-symbol', text: T.menuSymbol, attrs: { 'aria-hidden': 'true' } }),
+    el('span', { class: 'menu-word', text: T.menu }),
+  );
+  const debugHost = el('div', { class: 'debug-host' });
+  const noStats: RenderStats = {
+    fps: null,
+    fpsAverage: null,
+    fpsMinimum: null,
+    drawCalls: null,
+    triangles: null,
+    quality: null,
+  };
+
+  const debugValuesHost = el('div');
+  let debugBox: HTMLElement | null = null;
+
+  function renderDebug(): void {
+    if (!options.debug) return;
+    const levelList = levels.map((l) => ({ id: l.level.id, nummer: l.level.nummer }));
+    const info = { stats: view?.stats() ?? noStats, run: progress.currentRun, levels: levelList };
+    if (!debugBox) {
+      debugBox = debugFrame(levelList, debugValuesHost, (levelId) => {
+        logger.info('debug.level.jump', { levelId });
+        overlay = 'none';
+        startLevel(levelId, true);
+      });
+      debugHost.append(debugBox);
+    }
+    clear(debugValuesHost);
+    debugValuesHost.append(debugValues(info));
+    for (const [name, value] of Object.entries(debugAttributes(info))) {
+      debugBox.setAttribute(name, value);
+    }
+  }
+
   const topBar = el('div', { class: 'top-bar' }, [menuButton, hudHost]);
 
   /**
@@ -144,6 +186,7 @@ export function createApp(options: AppOptions): App {
       userAgent: env.userAgent,
       viewport: env.viewport(),
       renderer: options.rendererName,
+      render: view?.stats() ?? noStats,
       playTimeMs: progress.playTimeMs,
       levels: Object.entries(progress.levels).map(([id, lp]) => ({
         id,
@@ -181,9 +224,11 @@ export function createApp(options: AppOptions): App {
     );
   }
 
-  function startLevel(levelId: string): void {
+  /** `force` skips the lock; only the debug overlay uses it. */
+  function startLevel(levelId: string, force = false): void {
     const entry = levels.find((l) => l.level.id === levelId);
-    if (!entry || !entry.available || !isUnlocked(progress, levelOrder, levelId)) {
+    const unlocked = force || isUnlocked(progress, levelOrder, levelId);
+    if (!entry || !entry.available || !unlocked) {
       logger.warn('level.start.rejected', { levelId });
       return;
     }
@@ -354,6 +399,7 @@ export function createApp(options: AppOptions): App {
 
       view?.render(sceneModel(levels, progress, active?.run ?? null));
       updateInsets();
+      renderDebug();
       screen.querySelector<HTMLElement>('[data-focus]')?.focus({ preventScroll: true });
     } catch (cause) {
       showFatal(cause);
@@ -423,7 +469,7 @@ export function createApp(options: AppOptions): App {
   return {
     start(): void {
       clear(root);
-      root.append(canvasHost, topBar, panel);
+      root.append(canvasHost, topBar, panel, debugHost);
       restore();
       try {
         view = options.createView(canvasHost);
@@ -436,6 +482,11 @@ export function createApp(options: AppOptions): App {
       root.dataset.renderer = view ? options.rendererName : 'none';
       document.addEventListener('keydown', onKeyDown);
       window.addEventListener('resize', updateInsets);
+      if (options.debug) {
+        logger.info('debug.enabled');
+        // The frame rate changes without any action of the player, so the overlay refreshes itself.
+        window.setInterval(renderDebug, 500);
+      }
       logger.info('app.ready', { levels: levels.length, renderer: options.rendererName });
       render();
     },

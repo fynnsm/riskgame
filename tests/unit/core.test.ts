@@ -16,6 +16,7 @@ import {
 } from '../../src/core/game.ts';
 import {
   applyEffects,
+  criticalGauges,
   isCollapsed,
   lowestValue,
   startGauges,
@@ -133,6 +134,15 @@ describe('gauges (F-201, F-203, F-204)', () => {
     expect(isCollapsed({ budget: 1, zeit: 0, stabilitaet: 1 })).toBe(true);
   });
 
+  it('calls a gauge critical below 30, not at 30 (A6)', () => {
+    expect(criticalGauges({ budget: 30, zeit: 29, stabilitaet: 100 })).toEqual(['zeit']);
+    expect(criticalGauges({ budget: 0, zeit: 60, stabilitaet: 12 })).toEqual([
+      'budget',
+      'stabilitaet',
+    ]);
+    expect(criticalGauges({ budget: 54, zeit: 42, stabilitaet: 100 })).toEqual([]);
+  });
+
   it('names the weakest gauge and resolves ties in a fixed order', () => {
     expect(weakestGauge({ budget: 50, zeit: 20, stabilitaet: 30 })).toBe('zeit');
     expect(weakestGauge({ budget: 40, zeit: 40, stabilitaet: 40 })).toBe('budget');
@@ -193,6 +203,20 @@ describe('lean (F-205, F-206)', () => {
     expect(model.floors[2]?.offsetX).toBeGreaterThan(model.floors[1]?.offsetX as number);
     expect(model.tiltDegrees).toBeGreaterThan(0);
     expect(model.tiltDegrees).toBeLessThanOrEqual(BALANCE.lean.maxTiltDegrees);
+  });
+
+  it('warns exactly about the gauges that are critical after the last decision (A6)', () => {
+    const calm = buildingModel('buero', [
+      { gauges: { budget: 54, zeit: 42, stabilitaet: 100 }, rating: 'gut' },
+    ]);
+    expect(calm.warnings).toEqual([]);
+    const alarmed = buildingModel('buero', [
+      { gauges: { budget: 10, zeit: 80, stabilitaet: 80 }, rating: 'riskant' },
+      { gauges: { budget: 40, zeit: 20, stabilitaet: 80 }, rating: 'gut' },
+    ]);
+    // Only the current state counts: budget has recovered, time is now short.
+    expect(alarmed.warnings).toEqual(['zeit']);
+    expect(buildingModel('buero', []).warnings).toEqual([]);
   });
 
   it('returns an upright, empty model for a building without floors', () => {

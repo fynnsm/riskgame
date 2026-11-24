@@ -5,6 +5,14 @@ export function createNullView(): SceneView {
   return {
     render: () => undefined,
     setInsets: () => undefined,
+    stats: () => ({
+      fps: null,
+      fpsAverage: null,
+      fpsMinimum: null,
+      drawCalls: null,
+      triangles: null,
+      quality: null,
+    }),
     dispose: () => undefined,
   };
 }

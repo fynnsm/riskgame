@@ -33,6 +33,11 @@ export function isCollapsed(gauges: Gauges): boolean {
   return GAUGE_KEYS.some((key) => gauges[key] <= BALANCE.gauge.min);
 }
 
+/** The gauges that are in the critical range, in fixed order. Empty means: nothing to warn about. */
+export function criticalGauges(gauges: Gauges): GaugeKey[] {
+  return GAUGE_KEYS.filter((key) => gauges[key] < BALANCE.gauge.criticalBelow);
+}
+
 /** Ties resolve in the fixed order of GAUGE_KEYS so the result is deterministic. */
 export function weakestGauge(gauges: Gauges): GaugeKey {
   let weakest: GaugeKey = GAUGE_KEYS[0];

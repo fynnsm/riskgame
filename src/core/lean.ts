@@ -1,7 +1,7 @@
-import type { BuildingKind, Rating } from '../content/schema.ts';
+import type { BuildingKind, GaugeKey, Rating } from '../content/schema.ts';
 import { BALANCE } from './balance.ts';
 import type { Gauges } from './gauges.ts';
-import { highestValue, lowestValue, weakestGauge } from './gauges.ts';
+import { criticalGauges, highestValue, lowestValue, weakestGauge } from './gauges.ts';
 
 export interface Lean {
   /** 0 = upright, 1 = as crooked as it gets. */
@@ -35,6 +35,8 @@ export interface BuildingModel {
   dirX: number;
   dirZ: number;
   wobble: number;
+  /** Gauges in the critical range; each gets its own warning sign. Never a sign without a cause. */
+  warnings: GaugeKey[];
 }
 
 function unit(value: number): number {
@@ -65,6 +67,7 @@ export function buildingModel(kind: BuildingKind, records: readonly FloorRecord[
   let offsetX = 0;
   let offsetZ = 0;
   let last: Lean = { tilt: 0, wobble: 0, dirX: 0, dirZ: 0 };
+  const final = records[records.length - 1];
   for (const record of records) {
     last = computeLean(record.gauges);
     offsetX += last.dirX * last.tilt * BALANCE.lean.maxFloorShift;
@@ -78,5 +81,6 @@ export function buildingModel(kind: BuildingKind, records: readonly FloorRecord[
     dirX: last.dirX,
     dirZ: last.dirZ,
     wobble: last.wobble,
+    warnings: final ? criticalGauges(final.gauges) : [],
   };
 }

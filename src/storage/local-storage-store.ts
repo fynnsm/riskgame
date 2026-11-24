@@ -24,6 +24,25 @@ export function createLocalStorageStore(provider: StorageProvider, logger: Logge
     return { status, progress: emptyProgress() };
   }
 
+  function save(progress: Progress): boolean {
+    try {
+      provider().setItem(PROGRESS_KEY, JSON.stringify(progress));
+      return true;
+    } catch (cause) {
+      logger.warn('storage.save.failed', errorData(cause));
+      return false;
+    }
+  }
+
+  /**
+   * A broken state is replaced at once (A4). Otherwise every visit would find it again
+   * and repeat the hint until the player happened to trigger the first save.
+   */
+  function replaced(status: 'invalid' | 'outdated'): LoadOutcome {
+    if (save(emptyProgress())) logger.info('storage.load.replaced', { reason: status });
+    return fresh(status);
+  }
+
   return {
     load(): LoadOutcome {
       let serialised: string | null;
@@ -42,7 +61,7 @@ export function createLocalStorageStore(provider: StorageProvider, logger: Logge
         raw = JSON.parse(serialised);
       } catch (cause) {
         logger.warn('storage.load.invalid', { reason: 'json', ...errorData(cause) });
-        return fresh('invalid');
+        return replaced('invalid');
       }
       const version =
         typeof raw === 'object' && raw !== null
@@ -50,7 +69,7 @@ export function createLocalStorageStore(provider: StorageProvider, logger: Logge
           : undefined;
       if (typeof version === 'number' && version !== PROGRESS_VERSION) {
         logger.warn('storage.load.outdated', { found: version, expected: PROGRESS_VERSION });
-        return fresh('outdated');
+        return replaced('outdated');
       }
       const parsed = progressSchema.safeParse(raw);
       if (!parsed.success) {
@@ -61,22 +80,14 @@ export function createLocalStorageStore(provider: StorageProvider, logger: Logge
           path: first ? first.path.map(String).join('.') : '',
           code: first ? first.code : '',
         });
-        return fresh('invalid');
+        return replaced('invalid');
       }
       const progress: Progress = parsed.data;
       logger.info('storage.load.ok', { levels: Object.keys(progress.levels).length });
       return { status: 'ok', progress };
     },
 
-    save(progress: Progress): boolean {
-      try {
-        provider().setItem(PROGRESS_KEY, JSON.stringify(progress));
-        return true;
-      } catch (cause) {
-        logger.warn('storage.save.failed', errorData(cause));
-        return false;
-      }
-    },
+    save,
 
     clear(): boolean {
       try {

@@ -32,6 +32,8 @@ export interface ReportInput {
   userAgent: string;
   viewport: { width: number; height: number };
   renderer: string;
+  /** Frame rate of the last 30 seconds and quality step; all null without 3D. */
+  render: { fpsAverage: number | null; fpsMinimum: number | null; quality: number | null };
   playTimeMs: number;
   levels: ReportLevel[];
   run: ReportRun | null;
@@ -48,6 +50,12 @@ export function formatDuration(ms: number): string {
   return `${minutes} min ${seconds} s`;
 }
 
+function describeFrameRate(render: ReportInput['render']): string {
+  if (render.fpsAverage === null || render.fpsMinimum === null) return 'Bildrate: nicht gemessen';
+  const quality = render.quality === null ? 'unbekannt' : String(render.quality);
+  return `Bildrate (letzte 30 s): Durchschnitt ${render.fpsAverage}, Minimum ${render.fpsMinimum}, Qualitätsstufe ${quality}`;
+}
+
 export function buildErrorReport(input: ReportInput): string {
   const lines: string[] = [
     REPORT_TITLE,
@@ -56,6 +64,7 @@ export function buildErrorReport(input: ReportInput): string {
     `Browser: ${input.userAgent}`,
     `Fenster: ${input.viewport.width}x${input.viewport.height}`,
     `Grafikmodus: ${input.renderer}`,
+    describeFrameRate(input.render),
     `Spielzeit: ${formatDuration(input.playTimeMs)}`,
     '',
     'Spielstand:',

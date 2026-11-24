@@ -14,12 +14,13 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three';
-import type { BuildingKind } from '../content/schema.ts';
-import type { LotModel, SceneInsets, SceneModel, SceneView } from '../core/scene.ts';
+import type { BuildingKind, GaugeKey } from '../content/schema.ts';
+import type { LotModel, RenderStats, SceneInsets, SceneModel, SceneView } from '../core/scene.ts';
 import type { Logger } from '../logging/logger.ts';
 import type { Part } from './boxes.ts';
 import { box, hash, shade } from './boxes.ts';
 import { buildCity, CAR_COUNT, carPlacement, lotPosition } from './city.ts';
+import { createFrameStats } from './frame-stats.ts';
 
 /**
  * Draws what core decided. No rule lives here: tilt, wobble, floor offsets and damage
@@ -296,6 +297,27 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     }
   }
 
+  /** A red plate with a symbol for what is running out: a coin, a clock or a cracked wall. */
+  function addWarningSign(parts: TowerPart[], chunk: number, gauge: GaugeKey): void {
+    const push = (part: Part) => parts.push({ ...part, chunk });
+    push(box(0xe63946, 1.2, 1.2, 0.16, 0, 0, 0));
+    push(box(0xe63946, 0.3, 0.3, 0.16, -0.36, -0.7, 0));
+    const front = 0.1;
+    if (gauge === 'budget') {
+      push(box(0xffd23f, 0.78, 0.78, 0.1, 0, 0, front));
+      push(box(0xb8860b, 0.16, 0.5, 0.12, 0, 0, front + 0.02));
+    } else if (gauge === 'zeit') {
+      push(box(0xffffff, 0.82, 0.82, 0.1, 0, 0, front));
+      push(box(0x26334d, 0.1, 0.34, 0.12, 0, 0.13, front + 0.02));
+      push(box(0x26334d, 0.3, 0.1, 0.12, 0.12, 0, front + 0.02));
+    } else {
+      push(box(0xc9d3e6, 0.82, 0.82, 0.1, 0, 0, front));
+      push(box(0x26334d, 0.12, 0.3, 0.12, 0.14, 0.24, front + 0.02));
+      push(box(0x26334d, 0.3, 0.12, 0.12, 0, 0.06, front + 0.02));
+      push(box(0x26334d, 0.12, 0.34, 0.12, -0.14, -0.2, front + 0.02));
+    }
+  }
+
   function addWorker(parts: Part[], x: number, z: number, seed: number): void {
     const vest = seed % 2 === 0 ? 0xf77f00 : 0xfcbf49;
     const helmet = seed % 2 === 0 ? 0xfcbf49 : 0xf77f00;
@@ -473,27 +495,25 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       parts.push({ ...box(0xfcbf49, 0.5, 0.3, 0.5, 0, FLOOR_HEIGHT / 2 + 0.15, 0), chunk: hang });
     }
 
-    // Only while the level is being played: a finished building needs no alarm.
-    if (building.wobble > 0 && lot.construction) {
-      // Warning signs: decoration only, the gauges above carry the actual information (N-303).
-      const count = building.wobble > 0.5 ? 3 : 2;
-      for (let b = 0; b < count; b++) {
-        const bubble = chunks.length;
+    // One sign per gauge that core reports as critical, each with its own symbol (A6).
+    // No sign without such a cause, and none on a finished building.
+    if (lot.construction && building.warnings.length > 0) {
+      building.warnings.forEach((gauge, b) => {
+        const sign = chunks.length;
         const side = b % 2 === 0 ? 1 : -1;
         chunks.push({
           kind: 'bubble',
           floor: 0,
           seed: b,
-          home: new Vector3(side * 3.4, topY * (0.35 + 0.3 * b) + 1.2, -side * 0.6 + 2.6),
+          home: new Vector3(
+            side * 3.5,
+            Math.max(1.6, topY * (0.3 + 0.25 * b)) + 0.6,
+            2.7 - side * 0.7,
+          ),
           rotation: new Euler(0, Math.PI / 4, 0),
         });
-        parts.push(
-          { ...box(0xe63946, 0.95, 0.95, 0.16, 0, 0, 0), chunk: bubble },
-          { ...box(0xffffff, 0.16, 0.42, 0.2, 0, 0.12, 0.02), chunk: bubble },
-          { ...box(0xffffff, 0.16, 0.16, 0.2, 0, -0.28, 0.02), chunk: bubble },
-          { ...box(0xe63946, 0.26, 0.26, 0.16, -0.3, -0.56, 0), chunk: bubble },
-        );
-      }
+        addWarningSign(parts, sign, gauge);
+      });
       for (let d = 0; d < 6; d++) {
         const fixed = chunks.length;
         chunks.push({
@@ -687,6 +707,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   let lastTime: number | null = null;
   let sampleStart = 0;
   let sampleFrames = 0;
+  const frameStats = createFrameStats(30);
   let disposed = false;
 
   function tick(now: number): void {
@@ -718,6 +739,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     renderer.render(scene, camera);
 
     sampleFrames += 1;
+    frameStats.frame(seconds);
     if (seconds - sampleStart >= 3) {
       const fps = sampleFrames / (seconds - sampleStart);
       if (fps < 28 && quality > 0) {
@@ -734,6 +756,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     if (disposed || frame !== 0) return;
     lastTime = null;
     sampleFrames = 0;
+    frameStats.reset();
     frame = requestAnimationFrame(tick);
   }
 
@@ -796,6 +819,18 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       visuals = updated;
       model = next;
       updateCameraGoal();
+    },
+
+    stats(): RenderStats {
+      const frames = frameStats.snapshot();
+      return {
+        fps: frames.current,
+        fpsAverage: frames.average,
+        fpsMinimum: frames.minimum,
+        drawCalls: renderer.info.render.calls,
+        triangles: renderer.info.render.triangles,
+        quality,
+      };
     },
 
     setInsets(next: SceneInsets): void {

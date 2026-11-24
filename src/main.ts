@@ -20,6 +20,7 @@ import { T } from './ui/texts.ts';
 const paramsSchema = z.object({
   renderer: z.enum(['none', '3d']).optional(),
   seed: z.coerce.number().int().min(0).max(0xffffffff).optional(),
+  debug: z.literal('1').optional(),
 });
 
 function sink(entry: LogEntry): void {
@@ -103,6 +104,7 @@ async function boot(): Promise<void> {
     rendererName,
     createView,
     startupNotices,
+    debug: params.debug === '1',
     env: {
       now: () => performance.now(),
       timestamp: () => new Date().toISOString(),
