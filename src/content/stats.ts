@@ -25,7 +25,23 @@ export interface LevelStats {
   goodCostShare: Record<GaugeKey, number>;
   /** Per situation: the length of each option's text, so authors see what to even out. */
   lengths: SituationLengths[];
+  /** Update 3: places of the site tour and events, with how many are still drafts. */
+  tourSites: { total: number; drafts: number };
+  events: { total: number; drafts: number };
+  /**
+   * Every piece of content written by Claude rather than by the group, by author code:
+   * «CL» for the first version of the situations, «CC» for the contents of update 3.
+   */
+  byClaude: {
+    id: string;
+    kind: 'Situation' | 'Rundgang' | 'Ereignis';
+    autor: string;
+    status: string;
+  }[];
 }
+
+/** Author codes that mark content as written by Claude and not yet checked by the group. */
+export const CLAUDE_AUTHORS: readonly string[] = ['CL', 'CC'];
 
 export interface SituationLengths {
   id: string;
@@ -88,6 +104,8 @@ export function levelStats(level: Level, points: EffectPoints): LevelStats {
     }
   }
 
+  const tourSites = level.rundgang?.stellen ?? [];
+  const events = level.ereignisse?.pool ?? [];
   const totalCost = cost.budget + cost.zeit + cost.stabilitaet;
   const share = (value: number) => (totalCost === 0 ? 0 : value / totalCost);
   const drafts = level.situationen.filter((s) => s.status === 'entwurf').length;
@@ -107,6 +125,21 @@ export function levelStats(level: Level, points: EffectPoints): LevelStats {
       stabilitaet: share(cost.stabilitaet),
     },
     lengths: rows,
+    tourSites: {
+      total: tourSites.length,
+      drafts: tourSites.filter((site) => site.status === 'entwurf').length,
+    },
+    events: {
+      total: events.length,
+      drafts: events.filter((event) => event.status === 'entwurf').length,
+    },
+    byClaude: [
+      ...level.situationen.map((item) => ({ ...item, kind: 'Situation' as const })),
+      ...tourSites.map((item) => ({ ...item, kind: 'Rundgang' as const })),
+      ...events.map((item) => ({ ...item, kind: 'Ereignis' as const })),
+    ]
+      .filter((item) => CLAUDE_AUTHORS.includes(item.autor))
+      .map(({ id, kind, autor, status }) => ({ id, kind, autor, status })),
   };
 }
 
@@ -123,6 +156,8 @@ export function contentReport(stats: readonly LevelStats[]): string {
       s.situations,
       s.drafts,
       s.released,
+      s.tourSites.total === 0 ? '–' : `${s.tourSites.total} (${s.tourSites.drafts} Entwurf)`,
+      s.events.total === 0 ? '–' : `${s.events.total} (${s.events.drafts} Entwurf)`,
       `${s.withAi} (${percent(s.withAi / Math.max(1, s.situations))})`,
       `${s.goodIsLongest.length} (${percent(s.goodIsLongest.length / Math.max(1, s.situations))})`,
       s.unevenLength.length,
@@ -138,8 +173,8 @@ export function contentReport(stats: readonly LevelStats[]): string {
     '',
     `Stand: ${situations} Situationen in ${stats.length} Leveln, davon ${total((s) => s.drafts)} im Entwurf und ${total((s) => s.released)} freigegeben.`,
     '',
-    '| Level | Situationen | Entwurf | Freigegeben | Mit AI-Ausgabe | Gute Option ist die längste | Längenunterschied über 30 % | Optionen mit Budgetwirkung | Kosten der guten Optionen: Budget / Zeit / Stabilität |',
-    '|---|---|---|---|---|---|---|---|---|',
+    '| Level | Situationen | Entwurf | Freigegeben | Rundgang-Stellen | Ereignisse | Mit AI-Ausgabe | Gute Option ist die längste | Längenunterschied über 30 % | Optionen mit Budgetwirkung | Kosten der guten Optionen: Budget / Zeit / Stabilität |',
+    '|---|---|---|---|---|---|---|---|---|---|---|',
     ...rows.map((row) => `| ${row} |`),
     '',
     '## Was die Spalten bedeuten',
@@ -149,6 +184,29 @@ export function contentReport(stats: readonly LevelStats[]): string {
     '- **Optionen mit Budgetwirkung:** Liegt der Anteil unter 40 %, spielt das Budget im Level kaum eine Rolle.',
     '- **Kosten der guten Optionen:** Entfallen mehr als 60 % auf eine Anzeige, bestraft das Level genau jene, die gut entscheiden.',
     '',
+    '## Von Claude erstellt, fachlich zu prüfen',
+    '',
+    'Diese Inhalte hat nicht die Gruppe geschrieben. «CC» steht für die Beispielinhalte von Claude Code zu Rundgang und Ereignissen (Update 3), «CL» für die erste Fassung der Situationen. Alle brauchen eine fachliche Prüfung, bevor ihr Status auf `freigegeben` gesetzt wird.',
+    '',
+    ...stats.flatMap((s) => {
+      const list = (autor: string, kind: string): string =>
+        s.byClaude
+          .filter((item) => item.autor === autor && item.kind === kind)
+          .map((item) => (item.status === 'entwurf' ? item.id : `${item.id} (${item.status})`))
+          .join(', ');
+      const lines = [
+        ['Von Claude Code (CC), Rundgang', list('CC', 'Rundgang')],
+        ['Von Claude Code (CC), Ereignisse', list('CC', 'Ereignis')],
+        ['Von Claude Code (CC), Situationen', list('CC', 'Situation')],
+        ['Erste Fassung von Claude (CL), Situationen', list('CL', 'Situation')],
+      ].filter(([, ids]) => ids !== '');
+      return [
+        `**Level ${s.nummer}**`,
+        '',
+        ...(lines.length === 0 ? ['- nichts'] : lines.map(([label, ids]) => `- ${label}: ${ids}`)),
+        '',
+      ];
+    }),
     '## Betroffene Situationen',
     '',
     'Zeichenzahl der drei Optionstexte nebeneinander, für jede Situation, in der die gute Option die längste ist oder der längste Text mehr als 30 % länger ist als der kürzeste. Ziel für die Überarbeitung: die drei Zahlen einer Zeile etwa gleich gross, und die gute Option nicht regelmässig die grösste. Meist heisst das: riskante und vertretbare Optionen ausführlicher, gute knapper.',

@@ -32,7 +32,7 @@ import {
 } from '../../src/core/simulate.ts';
 import { validateLevelJson } from '../../src/content/validate.ts';
 import { readLevelFiles } from '../../scripts/read-levels.ts';
-import { clone, makeLevel, POINTS } from './fixtures.ts';
+import { clone, makeLevel, RULES } from './fixtures.ts';
 
 const level = makeLevel();
 const finished = (choices: OptionId[], seed = 1): LevelRun => replay(level, seed, [], choices);
@@ -403,7 +403,7 @@ describe('balance simulation (F-907, F-909, F-910)', () => {
 
   it('holds every rule in every level that ships', () => {
     for (const [name, json] of Object.entries(readLevelFiles())) {
-      const result = validateLevelJson(json, name, POINTS);
+      const result = validateLevelJson(json, name, RULES);
       if (!result.ok) throw new Error(result.errors.join('\n'));
       const report = simulateLevel(result.level);
       expect(balanceProblems(report), name).toEqual([]);

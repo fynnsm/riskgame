@@ -1,5 +1,6 @@
 import type { z } from 'zod';
-import type { EffectPoints } from './effects.ts';
+import type { ContentRules } from './effects.ts';
+import { checkMechanicsRules } from './mechanics-rules.ts';
 import { checkLevelRules } from './rules.ts';
 import type { Level } from './schema.ts';
 import { levelSchema } from './schema.ts';
@@ -44,7 +45,7 @@ function line(fileName: string, path: string, message: string): string {
 export function validateLevel(
   raw: unknown,
   fileName: string,
-  points: EffectPoints,
+  rules: ContentRules,
 ): ValidationResult {
   const parsed = levelSchema.safeParse(raw);
   if (!parsed.success) {
@@ -56,7 +57,10 @@ export function validateLevel(
       warnings: [],
     };
   }
-  const issues = checkLevelRules(parsed.data, points);
+  const issues = [
+    ...checkLevelRules(parsed.data, rules.effectPoints),
+    ...checkMechanicsRules(parsed.data, rules),
+  ];
   const errors = issues
     .filter((i) => i.severity === 'error')
     .map((i) => line(fileName, i.path, i.message));
@@ -70,7 +74,7 @@ export function validateLevel(
 export function validateLevelJson(
   json: string,
   fileName: string,
-  points: EffectPoints,
+  rules: ContentRules,
 ): ValidationResult {
   let raw: unknown;
   try {
@@ -83,5 +87,5 @@ export function validateLevelJson(
       warnings: [],
     };
   }
-  return validateLevel(raw, fileName, points);
+  return validateLevel(raw, fileName, rules);
 }

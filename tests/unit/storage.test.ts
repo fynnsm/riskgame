@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { replay, startRun, step } from '../../src/core/game.ts';
 import { emptyProgress, finishRun, withRun } from '../../src/core/progress.ts';
@@ -46,16 +48,16 @@ describe('LocalStorageStore (F-701 to F-704)', () => {
   });
 
   it('starts fresh with a hint if the stored text is not JSON', () => {
-    const { store, events } = setup(memoryStorage({ [PROGRESS_KEY]: '{"version":2,' }));
+    const { store, events } = setup(memoryStorage({ [PROGRESS_KEY]: '{"version":3,' }));
     expect(store.load()).toEqual({ status: 'invalid', progress: emptyProgress() });
     expect(events()).toContain('storage.load.invalid');
   });
 
   it.each([
-    ['a gauge out of range', (p: Loose) => void (p.currentRun.gauges.budget = 250)],
+    ['a gauge out of range', (p: Loose) => void (p.levels['level-1'].best.gauges.budget = 250)],
     ['an unknown field', (p: Loose) => void (p.hacked = '<script>')],
     ['a wrong type', (p: Loose) => void (p.playTimeMs = 'lange')],
-    ['an unknown option id', (p: Loose) => void (p.currentRun.history[0].optionId = 'Z')],
+    ['an unknown rating', (p: Loose) => void (p.levels['level-1'].best.floors[0].rating = 'super')],
     ['a missing field', (p: Loose) => void delete p.levels['level-1'].attempts],
   ])('rejects a stored progress with %s', (_name, mutate) => {
     const data = JSON.parse(JSON.stringify(sampleProgress())) as Loose;
@@ -68,6 +70,24 @@ describe('LocalStorageStore (F-701 to F-704)', () => {
       data: { reason: 'schema' },
     });
   });
+
+  it.each([
+    ['a gauge out of range', (p: Loose) => void (p.currentRun.gauges.budget = 250)],
+    ['an unknown option id', (p: Loose) => void (p.currentRun.history[0].optionId = 'Z')],
+  ])(
+    'gives up only the level in play if it holds %s, and keeps what was finished',
+    (_name, mutate) => {
+      const good = sampleProgress();
+      const data = JSON.parse(JSON.stringify(good)) as Loose;
+      mutate(data);
+      const { store } = setup(memoryStorage({ [PROGRESS_KEY]: JSON.stringify(data) }));
+      expect(store.load()).toEqual({
+        status: 'migrated',
+        droppedRun: true,
+        progress: { ...good, currentRun: null },
+      });
+    },
+  );
 
   it('rejects stored values that are not an object at all', () => {
     for (const stored of ['null', '"text"', '[]', '42']) {
@@ -82,7 +102,7 @@ describe('LocalStorageStore (F-701 to F-704)', () => {
     expect(store.load()).toEqual({ status: 'outdated', progress: emptyProgress() });
     expect(logger.entries().find((e) => e.event === 'storage.load.outdated')?.data).toEqual({
       found: 0,
-      expected: 2,
+      expected: 3,
     });
   });
 
@@ -133,8 +153,8 @@ describe('LocalStorageStore (F-701 to F-704)', () => {
 
 describe('replacing a broken progress (A4)', () => {
   it.each([
-    ['damaged', '{"version":2,'],
-    ['of the wrong shape', '{"version":2,"levels":"x","currentRun":null,"playTimeMs":0}'],
+    ['damaged', '{"version":3,'],
+    ['of the wrong shape', '{"version":3,"levels":"x","currentRun":null,"playTimeMs":0}'],
     ['outdated', '{"version":1,"levels":{},"currentRun":null,"playTimeMs":0}'],
   ])('writes a fresh progress at once when the stored one is %s', (_name, stored) => {
     const storage = memoryStorage({ [PROGRESS_KEY]: stored });
@@ -166,6 +186,70 @@ describe('replacing a broken progress (A4)', () => {
     const storage = memoryStorage();
     setup(storage).store.load();
     expect(storage.getItem(PROGRESS_KEY)).toBeNull();
+  });
+});
+
+describe('migration to version 3 (update 3)', () => {
+  // A real state as version 2 of the game wrote it: two finished levels, a third in play.
+  const v2 = readFileSync(join(import.meta.dirname, 'data', 'progress-v2.json'), 'utf8');
+
+  it('keeps finished levels, stars and play time and gives up the level in play, saying so', () => {
+    const storage = memoryStorage({ [PROGRESS_KEY]: v2 });
+    const { store, events } = setup(storage);
+    const outcome = store.load();
+    expect(outcome.status).toBe('migrated');
+    expect(outcome.droppedRun).toBe(true);
+    expect(outcome.progress.version).toBe(3);
+    expect(outcome.progress.currentRun).toBeNull();
+    expect(outcome.progress.playTimeMs).toBe(754000);
+    expect(outcome.progress.levels['level-1']).toMatchObject({
+      completed: true,
+      best: { stars: 3 },
+    });
+    expect(outcome.progress.levels['level-2']?.best?.floors).toHaveLength(8);
+    expect(outcome.progress.levels['level-3']).toMatchObject({
+      completed: false,
+      theorySeen: true,
+    });
+    expect(events()).toContain('storage.load.migrated');
+
+    // The migrated state is written at once: the next visit loads it without another hint.
+    expect(JSON.parse(storage.getItem(PROGRESS_KEY) ?? '').version).toBe(3);
+    expect(store.load()).toEqual({ status: 'ok', progress: outcome.progress });
+  });
+
+  it('migrates silently when no level was in play', () => {
+    const state = JSON.parse(v2) as Loose;
+    state.currentRun = null;
+    const { store } = setup(memoryStorage({ [PROGRESS_KEY]: JSON.stringify(state) }));
+    expect(store.load()).toMatchObject({ status: 'migrated', droppedRun: false });
+  });
+
+  it('starts fresh if the old state is damaged beyond its level in play', () => {
+    const state = JSON.parse(v2) as Loose;
+    state.levels['level-1'].best.stars = 9;
+    const { store } = setup(memoryStorage({ [PROGRESS_KEY]: JSON.stringify(state) }));
+    expect(store.load()).toEqual({ status: 'outdated', progress: emptyProgress() });
+  });
+
+  it('salvages the finished levels of a current state whose level in play cannot be read', () => {
+    const state = JSON.parse(v2) as Loose;
+    state.version = 3;
+    state.currentRun.phase = 'somewhere';
+    const { store, events } = setup(memoryStorage({ [PROGRESS_KEY]: JSON.stringify(state) }));
+    const outcome = store.load();
+    expect(outcome).toMatchObject({ status: 'migrated', droppedRun: true });
+    expect(outcome.progress.levels['level-2']?.completed).toBe(true);
+    expect(events()).toContain('storage.load.salvaged');
+  });
+
+  it('does not salvage a state that is broken elsewhere', () => {
+    const state = JSON.parse(v2) as Loose;
+    state.version = 3;
+    state.currentRun = null;
+    state.playTimeMs = -5;
+    const { store } = setup(memoryStorage({ [PROGRESS_KEY]: JSON.stringify(state) }));
+    expect(store.load().status).toBe('invalid');
   });
 });
 

@@ -8,3 +8,4 @@ docs
 CLAUDE.md
 content/levels
 docs/CONTENT-REPORT.md
+tests/unit/data

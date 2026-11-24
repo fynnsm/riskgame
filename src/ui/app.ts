@@ -724,6 +724,7 @@ export function createApp(options: AppOptions): App {
     progress = outcome.progress;
     if (outcome.status === 'invalid') addNotice(T.notices.invalid);
     if (outcome.status === 'outdated') addNotice(T.notices.outdated);
+    if (outcome.status === 'migrated' && outcome.droppedRun) addNotice(T.notices.migrated);
     if (outcome.status === 'unavailable') addNotice(T.notices.unavailable);
 
     const run = progress.currentRun;

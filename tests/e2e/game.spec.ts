@@ -215,7 +215,7 @@ test('starts cleanly with a hint if the stored progress is damaged', async ({ pa
   await page.evaluate(() => {
     window.localStorage.setItem(
       'risk-tower.progress',
-      '{"version":2,"levels":"<img onerror=alert(1)>"',
+      '{"version":3,"levels":"<img onerror=alert(1)>"',
     );
   });
   await page.reload();
@@ -227,11 +227,39 @@ test('starts cleanly with a hint if the stored progress is damaged', async ({ pa
   await page.evaluate(() => {
     window.localStorage.setItem(
       'risk-tower.progress',
-      JSON.stringify({ version: 2, levels: {}, currentRun: { levelId: 'level-1' }, playTimeMs: 0 }),
+      JSON.stringify({
+        version: 3,
+        levels: { 'level-1': 'kaputt' },
+        currentRun: null,
+        playTimeMs: 0,
+      }),
     );
   });
   await page.reload();
   await expect(page.getByTestId('notices')).toContainText('beschädigt');
+});
+
+test('carries finished levels over from the version before update 3 and says so once', async ({
+  page,
+}) => {
+  // A real state as version 2 wrote it: two finished levels, a third in play.
+  const old = readFileSync(
+    join(import.meta.dirname, '..', 'unit', 'data', 'progress-v2.json'),
+    'utf8',
+  );
+  await page.goto(SIMPLE);
+  await page.evaluate((value) => window.localStorage.setItem('risk-tower.progress', value), old);
+  await page.reload();
+  await expect(screen(page, 'city')).toBeVisible();
+  await expect(page.getByTestId('notices')).toContainText(
+    'abgeschlossene Level und Sterne sind erhalten',
+  );
+  await expect(page.getByTestId('level-1')).toContainText('Abgeschlossen');
+  await expect(page.getByTestId('level-2')).toContainText('Abgeschlossen');
+  await expect(page.getByTestId('start-level-3')).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId('notices')).toHaveCount(0);
+  await expect(page.getByTestId('level-2')).toContainText('Abgeschlossen');
 });
 
 test('shows the hint about a damaged progress exactly once (A4)', async ({ page }) => {

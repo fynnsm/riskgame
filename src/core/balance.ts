@@ -52,6 +52,30 @@ export const BALANCE = {
   /** F-602: share of the possible rating points needed for a learning goal to count as reached. */
   goalReachedRatio: 0.75,
 
+  /**
+   * M-10 to M-13: the site tour. Eight places per run: three real risks the AI drone found,
+   * two false alarms, two real risks it missed, one place that is no risk and not marked.
+   */
+  tour: {
+    draw: { gefunden: 3, fehlalarm: 2, uebersehen: 2, unauffaellig: 1 },
+    /** Correct judgements needed for the better outcomes. */
+    goodFrom: 7,
+    fairFrom: 5,
+    /** Points for the final inspection: good, fair, poor. */
+    points: { good: 2, fair: 1, poor: 0 },
+  },
+
+  /** M-20 to M-28: events and the four strategies. */
+  events: {
+    /** After which decisions an event is announced. */
+    afterDecisions: [2, 4, 6],
+    probability: { tief: 0.2, mittel: 0.4, hoch: 0.6 },
+    /** What «Im Team prüfen» costs, in points of time. */
+    verifyCostTime: 3,
+    /** Points for a recommended strategy, whatever the outcome. */
+    recommendedPoints: 1,
+  },
+
   /** F-205: how gauges turn into tilt and wobble. */
   lean: {
     /** The weakest gauge starts to tilt the building below this value. */
@@ -72,4 +96,11 @@ export const BALANCE = {
       stabilitaet: { x: 0.5, z: 0.866 },
     },
   },
+} as const;
+
+/** What the validation of content needs to know of the balance; handed in, never copied. */
+export const CONTENT_RULES = {
+  effectPoints: BALANCE.effectPoints,
+  tourDraw: BALANCE.tour.draw,
+  eventRounds: BALANCE.events.afterDecisions.length,
 } as const;

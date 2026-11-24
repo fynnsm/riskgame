@@ -1,0 +1,285 @@
+{
+  "version": 2,
+  "levels": {
+    "level-1": {
+      "completed": true,
+      "theorySeen": true,
+      "attempts": 1,
+      "best": {
+        "stars": 3,
+        "gauges": {
+          "budget": 46,
+          "zeit": 58,
+          "stabilitaet": 100
+        },
+        "floors": [
+          {
+            "gauges": {
+              "budget": 70,
+              "zeit": 76,
+              "stabilitaet": 90
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 70,
+              "zeit": 70,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 70,
+              "zeit": 64,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 64,
+              "zeit": 64,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 58,
+              "zeit": 64,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 58,
+              "zeit": 58,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 52,
+              "zeit": 58,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 46,
+              "zeit": 58,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          }
+        ],
+        "goalsReached": [
+          "L1-Z1",
+          "L1-Z2",
+          "L1-Z3"
+        ]
+      },
+      "recentIds": [
+        "L1-S12",
+        "L1-S03",
+        "L1-S11",
+        "L1-S01",
+        "L1-S07",
+        "L1-S08",
+        "L1-S05",
+        "L1-S04"
+      ]
+    },
+    "level-2": {
+      "completed": true,
+      "theorySeen": true,
+      "attempts": 1,
+      "best": {
+        "stars": 3,
+        "gauges": {
+          "budget": 46,
+          "zeit": 58,
+          "stabilitaet": 100
+        },
+        "floors": [
+          {
+            "gauges": {
+              "budget": 76,
+              "zeit": 70,
+              "stabilitaet": 90
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 70,
+              "zeit": 70,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 70,
+              "zeit": 64,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 64,
+              "zeit": 64,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 64,
+              "zeit": 58,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 58,
+              "zeit": 58,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 52,
+              "zeit": 58,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          },
+          {
+            "gauges": {
+              "budget": 46,
+              "zeit": 58,
+              "stabilitaet": 100
+            },
+            "rating": "gut"
+          }
+        ],
+        "goalsReached": [
+          "L2-Z1",
+          "L2-Z2",
+          "L2-Z3"
+        ]
+      },
+      "recentIds": [
+        "L2-S03",
+        "L2-S04",
+        "L2-S01",
+        "L2-S02",
+        "L2-S11",
+        "L2-S07",
+        "L2-S05",
+        "L2-S10"
+      ]
+    },
+    "level-3": {
+      "completed": false,
+      "theorySeen": true,
+      "attempts": 0,
+      "best": null,
+      "recentIds": []
+    }
+  },
+  "currentRun": {
+    "levelId": "level-3",
+    "seed": 777,
+    "recentIds": [],
+    "canSkipTheory": false,
+    "phase": "feedback",
+    "theoryIndex": 0,
+    "situationIds": [
+      "L3-S11",
+      "L3-S08",
+      "L3-S05",
+      "L3-S07",
+      "L3-S04",
+      "L3-S12",
+      "L3-S03",
+      "L3-S06"
+    ],
+    "optionOrders": [
+      [
+        "B",
+        "A",
+        "C"
+      ],
+      [
+        "A",
+        "B",
+        "C"
+      ],
+      [
+        "A",
+        "B",
+        "C"
+      ],
+      [
+        "C",
+        "B",
+        "A"
+      ],
+      [
+        "A",
+        "B",
+        "C"
+      ],
+      [
+        "B",
+        "C",
+        "A"
+      ],
+      [
+        "C",
+        "B",
+        "A"
+      ],
+      [
+        "A",
+        "C",
+        "B"
+      ]
+    ],
+    "step": 0,
+    "gauges": {
+      "budget": 76,
+      "zeit": 70,
+      "stabilitaet": 90
+    },
+    "history": [
+      {
+        "situationId": "L3-S11",
+        "optionId": "A",
+        "rating": "gut",
+        "delta": {
+          "budget": 0,
+          "zeit": -6,
+          "stabilitaet": 14
+        },
+        "gaugesAfter": {
+          "budget": 76,
+          "zeit": 70,
+          "stabilitaet": 90
+        }
+      }
+    ],
+    "outcome": "running"
+  },
+  "playTimeMs": 754000
+}

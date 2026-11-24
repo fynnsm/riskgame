@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { bundledLevelFiles } from './content/bundle.ts';
 import { loadLevels } from './content/load.ts';
-import { BALANCE } from './core/balance.ts';
+import { CONTENT_RULES } from './core/balance.ts';
 import type { SceneView } from './core/scene.ts';
 import { consoleSink } from './logging/console-sink.ts';
 import type { LogEntry } from './logging/logger.ts';
@@ -64,7 +64,7 @@ async function boot(): Promise<void> {
   const params = readParams();
 
   const showDrafts = import.meta.env.DEV || import.meta.env.VITE_SHOW_DRAFTS === '1';
-  const content = loadLevels(bundledLevelFiles(), BALANCE.effectPoints, showDrafts);
+  const content = loadLevels(bundledLevelFiles(), CONTENT_RULES, showDrafts);
   logger.info('content.loaded', {
     levels: content.levels.length,
     errors: content.errors.length,

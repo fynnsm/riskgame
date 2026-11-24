@@ -6,7 +6,7 @@ import type { FloorRecord } from './lean.ts';
 import type { Stars } from './scoring.ts';
 import { goalResults, starsFor } from './scoring.ts';
 
-export const PROGRESS_VERSION = 2;
+export const PROGRESS_VERSION = 3;
 
 export interface LevelBest {
   stars: Stars;

@@ -136,7 +136,7 @@ Option:
 
 | Feld | Pflicht | Inhalt |
 |---|---|---|
-| `schemaVersion` | ja | `1` |
+| `schemaVersion` | ja | `2` |
 | `id` | ja | `level-1` bis `level-5` |
 | `nummer` | ja | 1 bis 5 |
 | `titel` | ja | Titel des Levels |
@@ -159,7 +159,7 @@ Gekürzt auf eine Karte und eine Situation. Eine echte Level-Datei braucht minde
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "level-1",
   "nummer": 1,
   "titel": "Risiken mit AI identifizieren",
@@ -229,6 +229,184 @@ Gekürzt auf eine Karte und eine Situation. Eine echte Level-Datei braucht minde
   ]
 }
 ```
+
+## Rundgang und Ereignisse (ab Schema 2)
+
+Zwei weitere Arten von Inhalt. Ein Level hat sie genau dann, wenn seine Datei den Block `rundgang` oder `ereignisse` enthält. Für beide gelten dieselben Grundregeln wie für Situationen: nur JSON ausgeben, keine Fachinhalte erfinden, Schweizer Schreibweise ohne ß, Du-Form, CHF, keine echten Namen, nur reiner Text, `status` immer `"entwurf"`. Schreibe keine Zahlen, Gesetze oder Studien hinein, die im Rohtext nicht stehen.
+
+### Format «Rundgang»
+
+Vor der ersten Situation geht die Spielerin oder der Spieler über die Baustelle. Eine AI-Drohne hat Stellen markiert. Manche Markierungen sind Fehlalarme, und manche echten Risiken hat die Drohne übersehen, weil nur der Betrieb sie kennt. Zu jeder Stelle wird entschieden: «Ins Risikoregister» oder «Kein Risiko».
+
+| Feld | Pflicht | Inhalt |
+|---|---|---|
+| `einleitung` | ja | Kurzer Text vor dem Rundgang, max. 300 Zeichen |
+| `stellenProDurchgang` | ja | Immer `8` |
+| `stellen` | ja | Der Pool, mindestens 12 Stellen (siehe Regeln) |
+
+Stelle:
+
+| Feld | Pflicht | Inhalt |
+|---|---|---|
+| `id` | ja | `L<Level>-R<zweistellige Nummer>`, z. B. `L1-R03` |
+| `ort` | ja | Einer von: `lager`, `kran`, `container`, `geruest`, `zufahrt`, `baubuero`, `team`, `material`, `nachbarn`, `technik` |
+| `beobachtung` | ja | Was man an dieser Stelle sieht oder erfährt, max. 200 Zeichen. Sie verrät nicht, ob es ein Risiko ist |
+| `istRisiko` | ja | `true` oder `false` |
+| `drohne` | ja | `"markiert"` oder `"nicht_markiert"` |
+| `erklaerung` | ja | Warum es ein Risiko ist oder nicht, und warum die Drohne richtig oder falsch lag, max. 300 Zeichen |
+| `lernziel` | ja | ID eines Lernziels des Levels |
+| `autor` | ja | Kürzel |
+| `status` | ja | `"entwurf"` oder `"freigegeben"` |
+
+Aus `istRisiko` und `drohne` ergeben sich vier Typen. Pro Durchgang werden gezogen:
+
+| Typ | `istRisiko` | `drohne` | Gezogen | Mindestens im Pool |
+|---|---|---|---|---|
+| Echtes Risiko, von der AI gefunden | `true` | `markiert` | 3 | 4 |
+| Fehlalarm der AI | `false` | `markiert` | 2 | 3 |
+| Echtes Risiko, von der AI übersehen | `true` | `nicht_markiert` | 2 | 3 |
+| Kein Risiko, nicht markiert | `false` | `nicht_markiert` | 1 | 2 |
+
+Regeln, die geprüft werden:
+
+1. `stellenProDurchgang` ist 8.
+2. Von jedem Typ gibt es mindestens eine Stelle mehr, als gezogen wird.
+3. Pro Durchgang kommt jeder `ort` höchstens einmal vor. Verteile die Stellen deshalb auf möglichst viele verschiedene Orte; liegen zu viele am selben Ort, lässt sich kein Durchgang ziehen.
+4. IDs sind eindeutig und folgen dem Muster; `lernziel` ist ein Lernziel des Levels; die Maximallängen sind eingehalten.
+
+Ein guter Fehlalarm ist ein Risiko, das allgemein plausibel klingt, hier aber nicht zutrifft. Ein gutes übersehenes Risiko ist etwas, das nur der Betrieb wissen kann (Kalender, Personen, Altlasten).
+
+```json
+{
+  "rundgang": {
+    "einleitung": "Bevor du planst, gehst du durch den Betrieb. Die AI-Drohne hat schon Stellen markiert. Prüfe sie und halte die Augen offen für das, was sie nicht wissen kann.",
+    "stellenProDurchgang": 8,
+    "stellen": [
+      {
+        "id": "L1-R01",
+        "ort": "lager",
+        "beobachtung": "Im Lager läuft im November die Hochsaison. Genau dann ist der Start des neuen Systems geplant.",
+        "istRisiko": true,
+        "drohne": "nicht_markiert",
+        "erklaerung": "Das weiss nur der Betrieb. Die AI kennt euren Kalender nicht, darum fehlt dieses Risiko in ihrer Liste.",
+        "lernziel": "L1-Z1",
+        "autor": "FM",
+        "status": "entwurf"
+      }
+    ]
+  }
+}
+```
+
+### Format «Ereignisse»
+
+Zwischen den Stockwerken kündigt sich ein Risiko an, mit Wahrscheinlichkeit und Auswirkung. Gewählt wird eine der vier Strategien. Anders als bei den Situationen sind Kosten und Wirkung **vor** der Wahl sichtbar: Die Aufgabe ist das Abwägen, nicht das Erraten.
+
+| Feld | Pflicht | Inhalt |
+|---|---|---|
+| `ereignisseProDurchgang` | ja | Standard `3`, höchstens 3 |
+| `pool` | ja | Mindestens `ereignisseProDurchgang + 2` Ereignisse |
+
+Ereignis:
+
+| Feld | Pflicht | Inhalt |
+|---|---|---|
+| `id` | ja | `L<Level>-E<zweistellige Nummer>`, z. B. `L3-E02` |
+| `titel` | ja | max. 60 Zeichen |
+| `meldung` | ja | Was droht, max. 300 Zeichen |
+| `darstellung` | ja | Einer von: `sturm`, `lieferverzug`, `ausfall`, `defekt`, `behoerde`, `generisch` |
+| `wahrscheinlichkeit` | ja | Die **tatsächliche** Wahrscheinlichkeit: `tief` (20 %), `mittel` (40 %) oder `hoch` (60 %) |
+| `aiPrognose` | nein | Wenn die Wahrscheinlichkeit von einer AI stammt, siehe unten |
+| `auswirkung` | ja | Was passiert, wenn das Ereignis eintritt: `budget`, `zeit`, `stabilitaet`, nur negative Stufen oder `"0"` |
+| `strategien` | ja | Objekt mit genau `vermeiden`, `vermindern`, `uebertragen`, `akzeptieren` |
+| `lernziel`, `autor`, `status` | ja | wie bei Situationen |
+
+Strategie, wenn verfügbar: `verfuegbar: true`, `text` (max. 100), `kosten` (Stufen wie bei `wirkung`, nie positiv), `empfohlen` (`true` oder `false`), `erklaerung` (max. 300).
+
+Strategie, wenn nicht verfügbar: `verfuegbar: false`, `text` (max. 100), `grund` (max. 120). `kosten`, `empfohlen` und `erklaerung` entfallen.
+
+`aiPrognose`: `angezeigt` (was die AI behauptet), `verlaesslich` (`true` oder `false`), `begruendung` (auf welcher Datenbasis die AI steht, max. 200), `aufloesung` (was die Prüfung im Team ergibt, max. 250). Bei einer unzuverlässigen Prognose enthält die `begruendung` einen erkennbaren Hinweis, etwa eine dünne oder unpassende Datenbasis.
+
+Was jede Strategie bewirkt, wenn das Ereignis eintritt, ist fest und steht nicht im Inhalt:
+
+| Strategie | Wirkung |
+|---|---|
+| `vermeiden` | Keine Auswirkung |
+| `vermindern` | Jede Auswirkung eine Stufe kleiner (gross wird mittel, mittel wird klein, klein entfällt) |
+| `uebertragen` | Auswirkung auf das Budget entfällt; auf Zeit und Stabilität bleibt sie voll |
+| `akzeptieren` | Volle Auswirkung |
+
+Regeln, die geprüft werden:
+
+1. Der Pool enthält mindestens `ereignisseProDurchgang + 2` Ereignisse.
+2. `auswirkung` enthält nur negative Stufen oder `"0"`, mindestens eine ist negativ.
+3. `akzeptieren` ist immer verfügbar und kostenlos. Mindestens zwei weitere Strategien sind verfügbar.
+4. Kosten sind nie positiv. `vermeiden`, `vermindern` und `uebertragen` kosten mindestens etwas.
+5. `uebertragen` ist nur verfügbar, wenn die Auswirkung auf das Budget negativ ist.
+6. Mindestens eine und höchstens zwei Strategien sind empfohlen. Die Empfehlung bezieht sich auf die tatsächliche Wahrscheinlichkeit.
+7. `aiPrognose.verlaesslich: true` verlangt `angezeigt` gleich `wahrscheinlichkeit`; `false` verlangt ungleich.
+8. Pro Pool hat mindestens ein Drittel der Ereignisse eine `aiPrognose`, davon mindestens eine verlässliche und eine unzuverlässige.
+9. Über den Pool verteilt ist jede der vier Strategien mindestens einmal empfohlen.
+10. IDs sind eindeutig und folgen dem Muster; `lernziel` ist ein Lernziel des Levels; die Maximallängen sind eingehalten.
+
+```json
+{
+  "ereignisse": {
+    "ereignisseProDurchgang": 3,
+    "pool": [
+      {
+        "id": "L3-E01",
+        "titel": "Gewitter bei offenem Dach",
+        "meldung": "In zwei Wochen ist das Dach von Haus B für fünf Tage offen. Zieht in dieser Zeit ein Gewitter durch, dringt Wasser in die oberen Wohnungen.",
+        "darstellung": "sturm",
+        "wahrscheinlichkeit": "hoch",
+        "aiPrognose": {
+          "angezeigt": "tief",
+          "verlaesslich": false,
+          "begruendung": "Die AI stützt sich auf Wetterdaten des ganzen Kantons über das ganze Jahr.",
+          "aufloesung": "Der Polier weiss: Am Hang gewittert es im Juli fast jede Woche. Die Jahreswerte des Kantons sagen dazu wenig."
+        },
+        "auswirkung": { "budget": "-mittel", "zeit": "-klein", "stabilitaet": "-mittel" },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Die Dacharbeiten in den September verschieben.",
+            "kosten": { "budget": "0", "zeit": "-gross", "stabilitaet": "0" },
+            "empfohlen": false,
+            "erklaerung": "Das Risiko ist weg, aber der Preis ist hoch: Der ganze Terminplan verschiebt sich, und die Mieter warten länger."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Ein Notdach bereitstellen und die Wetterlage täglich prüfen.",
+            "kosten": { "budget": "-klein", "zeit": "0", "stabilitaet": "0" },
+            "empfohlen": true,
+            "erklaerung": "Für wenig Geld sinkt der Schaden deutlich. Bei hoher Wahrscheinlichkeit und spürbarer Auswirkung lohnt sich das."
+          },
+          "uebertragen": {
+            "verfuegbar": true,
+            "text": "Eine Bauwesenversicherung für Wasserschäden abschliessen.",
+            "kosten": { "budget": "-klein", "zeit": "0", "stabilitaet": "0" },
+            "empfohlen": false,
+            "erklaerung": "Die Versicherung zahlt den Schaden, aber die Wohnungen sind trotzdem nass und die Arbeiten stehen. Übertragen deckt Geld, nicht Zeit."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": { "budget": "0", "zeit": "0", "stabilitaet": "0" },
+            "empfohlen": false,
+            "erklaerung": "Akzeptieren passt bei kleinen oder unwahrscheinlichen Risiken. Dieses ist beides nicht."
+          }
+        },
+        "lernziel": "L3-Z1",
+        "autor": "FM",
+        "status": "entwurf"
+      }
+    ]
+  }
+}
+```
+
+Prüfe vor der Ausgabe eines Rundgangs oder von Ereignissen zusätzlich: Stimmen die vier Typen und ihre Anzahl? Ist jede Strategie vorhanden, `akzeptieren` kostenlos, sind ein bis zwei Strategien empfohlen? Passt `verlaesslich` zu `angezeigt` und `wahrscheinlichkeit`?
 
 ### Prüfe vor der Ausgabe
 

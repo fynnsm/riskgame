@@ -8,14 +8,14 @@ import { join } from 'node:path';
 import type { LevelStats } from '../src/content/stats.ts';
 import { contentReport, levelStats } from '../src/content/stats.ts';
 import { validateLevelJson } from '../src/content/validate.ts';
-import { BALANCE } from '../src/core/balance.ts';
+import { BALANCE, CONTENT_RULES } from '../src/core/balance.ts';
 import { readLevelFiles } from './read-levels.ts';
 
 const target = join(import.meta.dirname, '..', 'docs', 'CONTENT-REPORT.md');
 const stats: LevelStats[] = [];
 
 for (const [name, json] of Object.entries(readLevelFiles())) {
-  const result = validateLevelJson(json, name, BALANCE.effectPoints);
+  const result = validateLevelJson(json, name, CONTENT_RULES);
   if (!result.ok) {
     console.error(
       `FEHLER  ${name}: Datei ist ungültig, zuerst «npm run validate:content» ausführen.`,

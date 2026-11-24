@@ -8,6 +8,20 @@ export interface EffectPoints {
   readonly gross: number;
 }
 
+/**
+ * Everything the validation of content needs to know of the balance. The numbers live in
+ * src/core/balance.ts and are handed in, so they exist in one place only.
+ */
+export interface ContentRules {
+  readonly effectPoints: EffectPoints;
+  /** How many places of each type a site tour draws. */
+  readonly tourDraw: Readonly<
+    Record<'gefunden' | 'fehlalarm' | 'uebersehen' | 'unauffaellig', number>
+  >;
+  /** How many rounds of events a run has. */
+  readonly eventRounds: number;
+}
+
 export function effectValue(level: EffectLevel, points: EffectPoints): number {
   if (level === '0') return 0;
   const sign = level.startsWith('-') ? -1 : 1;

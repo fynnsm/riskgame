@@ -3,7 +3,7 @@
  * Exit code 1 if any file is invalid, so the CI stops before a broken file ships.
  */
 import { validateLevelJson } from '../src/content/validate.ts';
-import { BALANCE } from '../src/core/balance.ts';
+import { CONTENT_RULES } from '../src/core/balance.ts';
 import { readLevelFiles } from './read-levels.ts';
 
 const files = readLevelFiles();
@@ -17,7 +17,7 @@ if (names.length === 0) {
 }
 
 for (const name of names) {
-  const result = validateLevelJson(files[name] ?? '', name, BALANCE.effectPoints);
+  const result = validateLevelJson(files[name] ?? '', name, CONTENT_RULES);
   for (const warning of result.warnings) console.warn(`Hinweis: ${warning}`);
   warningCount += result.warnings.length;
   if (result.ok) {
