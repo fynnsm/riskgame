@@ -63,6 +63,9 @@ jobs:
         env:
           # F-906: set the repository variable SHOW_DRAFTS to "1" to publish draft situations too.
           VITE_SHOW_DRAFTS: ${{ vars.SHOW_DRAFTS }}
+      - name: Warn while drafts are published (A3)
+        if: vars.SHOW_DRAFTS == '1'
+        run: echo "::warning title=Entwürfe veröffentlicht::$(node scripts/content-report.ts --drafts) Situationen im Status «entwurf» sind auf der veröffentlichten Seite sichtbar. Sobald alle Fälle freigegeben sind, die Variable SHOW_DRAFTS entfernen."
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist

@@ -387,6 +387,7 @@ export function situationScreen(
   situation: Situation,
   options: readonly Option[],
   handlers: RunHandlers,
+  showDraftLabel: boolean,
 ): HTMLElement {
   const position = T.situation.progress(run.step + 1, run.situationIds.length);
   return el(
@@ -394,8 +395,12 @@ export function situationScreen(
     { class: 'screen', attrs: { 'data-screen': 'situation', 'data-situation': situation.id } },
     [
       eyebrow(level, position),
-      situation.status === 'entwurf'
-        ? el('p', { class: 'draft-badge', text: T.situation.draft })
+      showDraftLabel && situation.status === 'entwurf'
+        ? el('p', {
+            class: 'draft-badge',
+            text: T.situation.draft,
+            attrs: { 'data-testid': 'draft' },
+          })
         : null,
       heading(situation.titel),
       el('p', { text: situation.situation }),

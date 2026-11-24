@@ -105,6 +105,7 @@ async function boot(): Promise<void> {
     createView,
     startupNotices,
     debug: params.debug === '1',
+    showDraftLabels: import.meta.env.DEV || params.debug === '1',
     env: {
       now: () => performance.now(),
       timestamp: () => new Date().toISOString(),

@@ -29,8 +29,25 @@ export const BALANCE = {
     two: { minScoreRatio: 0.8, minGauge: 5 },
   },
 
-  /** F-909: how often a player who picks at random may pass a level, at most. */
-  checks: { maxRandomPassRate: 0.2, randomRuns: 2000, randomSeed: 20261123 },
+  /**
+   * What `npm run simulate:balance` demands of every level (F-907, F-909, F-910).
+   * Careful play must be rewarded with a building that stands straight, careless play must fail.
+   */
+  checks: {
+    /** F-909: how often a player who picks at random may pass a level, at most. */
+    maxRandomPassRate: 0.2,
+    randomRuns: 5000,
+    randomSeed: 20261123,
+    /** Only good options: every gauge ends at least here ... */
+    goodMinGauge: 40,
+    /** ... and the building leans at most this share of the maximum. */
+    goodMaxTilt: 0.1,
+    /** Only risky options: the building has collapsed by this decision at the latest. */
+    riskyCollapseBy: 5,
+    /** Random choice: share of runs that must end in a collapse or a failed inspection. */
+    randomFailMin: 0.6,
+    randomFailMax: 0.9,
+  },
 
   /** F-602: share of the possible rating points needed for a learning goal to count as reached. */
   goalReachedRatio: 0.75,

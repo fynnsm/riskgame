@@ -28,6 +28,7 @@ Nützliche Adressen:
 | `npm run test:e2e`         | End-to-End-Tests in Handy- und Laptop-Grösse (einmalig vorher: `npx playwright install chromium`) |
 | `npm run validate:content` | Inhaltsdateien prüfen                                                                             |
 | `npm run simulate:balance` | Balance pro Level simulieren                                                                      |
+| `npm run content:report`   | Zahlen zu den Inhalten ausgeben und `docs/CONTENT-REPORT.md` schreiben                            |
 | `npm run format`           | Code formatieren                                                                                  |
 
 ## Fälle schreiben

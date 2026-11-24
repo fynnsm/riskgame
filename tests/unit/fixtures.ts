@@ -16,21 +16,21 @@ export function makeSituation(level: number, index: number, goal = 1): Situation
     optionen: [
       {
         id: 'A',
-        text: `Gute Wahl ${index}`,
+        text: `Wahl G ${index}`,
         wirkung: GOOD,
         einstufung: 'gut',
         erklaerung: 'Gut, weil.',
       },
       {
         id: 'B',
-        text: `Riskante Wahl ${index}`,
+        text: `Wahl R ${index}`,
         wirkung: RISKY,
         einstufung: 'riskant',
         erklaerung: 'Riskant, weil.',
       },
       {
         id: 'C',
-        text: `Vertretbare Wahl ${index}`,
+        text: `Wahl V ${index}`,
         wirkung: OKAY,
         einstufung: 'vertretbar',
         erklaerung: 'Vertretbar, weil.',
