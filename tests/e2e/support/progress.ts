@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from '@playwright/test';
-import { withoutTour } from '../../../src/content/load.ts';
 import type { Level, OptionId, Rating } from '../../../src/content/schema.ts';
 import type { LevelRun } from '../../../src/core/game.ts';
 import { startRun, step } from '../../../src/core/game.ts';
@@ -25,8 +24,7 @@ export function readLevel(nummer: number): Level {
     'levels',
     `level-${nummer}.json`,
   );
-  // The app holds the site tour back until it has a screen; the tests play what the app plays.
-  return withoutTour(JSON.parse(readFileSync(file, 'utf8')) as Level);
+  return JSON.parse(readFileSync(file, 'utf8')) as Level;
 }
 
 export const LEVELS: Level[] = [1, 2, 3, 4, 5].map(readLevel);
