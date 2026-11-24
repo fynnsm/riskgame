@@ -596,5 +596,315 @@
       "autor": "CL",
       "status": "entwurf"
     }
-  ]
+  ],
+  "ereignisse": {
+    "ereignisseProDurchgang": 3,
+    "pool": [
+      {
+        "id": "L3-E01",
+        "titel": "Gewitter bei offenem Dach",
+        "meldung": "In zwei Wochen ist das Dach von Haus B für fünf Tage offen. Zieht in dieser Zeit ein Gewitter durch, dringt Wasser in die oberen Wohnungen.",
+        "darstellung": "sturm",
+        "wahrscheinlichkeit": "hoch",
+        "aiPrognose": {
+          "angezeigt": "tief",
+          "verlaesslich": false,
+          "begruendung": "Die AI stützt sich auf Wetterdaten des ganzen Kantons über das ganze Jahr.",
+          "aufloesung": "Der Polier weiss: Am Hang gewittert es im Juli fast jede Woche. Die Jahreswerte des Kantons sagen dazu wenig."
+        },
+        "auswirkung": {
+          "budget": "-mittel",
+          "zeit": "-klein",
+          "stabilitaet": "-mittel"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Die Dacharbeiten in den September verschieben.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "-gross",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Das Risiko ist weg, aber der Preis ist hoch: Der ganze Terminplan verschiebt sich, und die Mieter warten länger."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Ein Notdach bereitstellen und die Wetterlage täglich prüfen.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Für wenig Geld sinkt der Schaden deutlich. Bei hoher Wahrscheinlichkeit und spürbarer Auswirkung lohnt sich das."
+          },
+          "uebertragen": {
+            "verfuegbar": true,
+            "text": "Eine Bauwesenversicherung für Wasserschäden abschliessen.",
+            "kosten": {
+              "budget": "-mittel",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Die Versicherung zahlt den Schaden, aber die Wohnungen sind trotzdem nass und die Arbeiten stehen. Übertragen deckt Geld, nicht Zeit."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Akzeptieren passt bei kleinen oder unwahrscheinlichen Risiken. Dieses ist beides nicht."
+          }
+        },
+        "lernziel": "L3-Z3",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L3-E02",
+        "titel": "Die Fenster kommen zu spät",
+        "meldung": "Der Lieferant meldet Engpässe bei den bestellten Fenstern. Kommen sie zu spät, steht das Gerüst wochenlang ungenutzt, und die Wohnungen bleiben zugig.",
+        "darstellung": "lieferverzug",
+        "wahrscheinlichkeit": "mittel",
+        "auswirkung": {
+          "budget": "-mittel",
+          "zeit": "-gross",
+          "stabilitaet": "-klein"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Auf einen Fenstertyp wechseln, den der Lieferant an Lager hat.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "-klein",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Mit wenig Umplanung fällt das Risiko ganz weg. Wenn Vermeiden so günstig zu haben ist, ist es die beste Wahl."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Die Reihenfolge der Häuser umstellen, damit die Arbeiten weiterlaufen.",
+            "kosten": {
+              "budget": "-mittel",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Das hilft, kostet aber viel: Gerüste und Equipen müssen umziehen. Und ein Teil der Verspätung bleibt trotzdem."
+          },
+          "uebertragen": {
+            "verfuegbar": true,
+            "text": "Im Liefervertrag eine Konventionalstrafe vereinbaren.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Die Strafe ersetzt Geld. Die Fenster kommen deshalb nicht früher, und die Mieter frieren trotzdem."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Der mögliche Schaden ist gross und trifft vor allem die Zeit. Das einfach hinzunehmen, ist hier zu riskant."
+          }
+        },
+        "lernziel": "L3-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L3-E03",
+        "titel": "Wasserschaden in einer bewohnten Wohnung",
+        "meldung": "Die alten Leitungen werden ersetzt, während die Mieter in ihren Wohnungen bleiben. Bricht eine Leitung, werden Möbel und Böden nass.",
+        "darstellung": "defekt",
+        "wahrscheinlichkeit": "mittel",
+        "aiPrognose": {
+          "angezeigt": "mittel",
+          "verlaesslich": true,
+          "begruendung": "Die AI hat die Schadenmeldungen aus euren letzten drei Sanierungen ausgewertet, die du ihr gegeben hast.",
+          "aufloesung": "Der Sanitär bestätigt: Bei Leitungen dieses Alters rechnet er etwa in jedem zweiten Haus mit einem Bruch."
+        },
+        "auswirkung": {
+          "budget": "-gross",
+          "zeit": "0",
+          "stabilitaet": "-klein"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Leitungen nur in leeren Wohnungen ersetzen und auf Mieterwechsel warten.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "-gross",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "So kann nichts nass werden. Aber auf Mieterwechsel zu warten, zieht die Sanierung um viele Monate in die Länge."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Das Wasser strangweise abstellen und jede Leitung nach der Arbeit prüfen.",
+            "kosten": {
+              "budget": "-mittel",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Sorgfalt senkt den Schaden, kostet aber viel Arbeitszeit der Sanitäre. Ein Rest des Risikos bleibt bei euch."
+          },
+          "uebertragen": {
+            "verfuegbar": true,
+            "text": "Schäden am Eigentum der Mieter über die Haftpflicht des Sanitärs decken.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Der Schaden wäre fast nur Geld, und genau das kann jemand anderes tragen. Dafür ist Übertragen gemacht."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Ein Wasserschaden in einer bewohnten Wohnung ist teuer. Für ein Risiko dieser Grösse braucht es eine Massnahme."
+          }
+        },
+        "lernziel": "L3-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L3-E04",
+        "titel": "Beschwerden wegen Baulärm",
+        "meldung": "Die Abbrucharbeiten in den Küchen sind laut. Einzelne Mieter könnten sich bei der Verwaltung beschweren und Gespräche verlangen.",
+        "darstellung": "generisch",
+        "wahrscheinlichkeit": "tief",
+        "auswirkung": {
+          "budget": "0",
+          "zeit": "-klein",
+          "stabilitaet": "-klein"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Laute Arbeiten nur noch an zwei Vormittagen pro Woche erlauben.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "-mittel",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Das kostet sicher mehr Zeit, als die Beschwerden je kosten würden. Der Aufwand passt nicht zum Risiko."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Eine Ansprechperson für die Mieter stundenweise freistellen.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Gut gemeint, aber für ein kleines und unwahrscheinliches Risiko gibst du hier sicher Geld aus."
+          },
+          "uebertragen": {
+            "verfuegbar": false,
+            "text": "Die Beschwerden an jemand anderen abgeben.",
+            "grund": "Es gibt keinen Geldschaden, den jemand übernehmen könnte."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Klein und unwahrscheinlich: Hier ist Akzeptieren ein bewusster Entscheid. Du hältst das Risiko im Register fest und beobachtest es."
+          }
+        },
+        "lernziel": "L3-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L3-E05",
+        "titel": "Der Polier fällt aus",
+        "meldung": "Der Polier des Baumeisters kennt als Einziger alle Absprachen mit den Mietern. Fällt er länger aus, stehen die Arbeiten in den Wohnungen still.",
+        "darstellung": "ausfall",
+        "wahrscheinlichkeit": "mittel",
+        "auswirkung": {
+          "budget": "0",
+          "zeit": "-gross",
+          "stabilitaet": "-mittel"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Die Arbeiten auf zwei Baumeister aufteilen.",
+            "kosten": {
+              "budget": "-mittel",
+              "zeit": "-mittel",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Dann hängt nichts mehr an einer Person. Aber zwei Firmen zu koordinieren, kostet Geld und Zeit, und zwar sicher."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Einen Stellvertreter einarbeiten und die Absprachen schriftlich festhalten.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Eine konkrete Massnahme mit kleinem Aufwand: Fällt der Polier aus, geht es mit kurzer Verzögerung weiter."
+          },
+          "uebertragen": {
+            "verfuegbar": false,
+            "text": "Den Ausfall versichern.",
+            "grund": "Der Schaden ist Zeit, nicht Geld. Zeit lässt sich nicht versichern."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Wissen in einem einzigen Kopf ist ein bekanntes Risiko mit grosser Auswirkung. Es lohnt sich, etwas zu tun."
+          }
+        },
+        "lernziel": "L3-Z2",
+        "autor": "CC",
+        "status": "entwurf"
+      }
+    ]
+  }
 }

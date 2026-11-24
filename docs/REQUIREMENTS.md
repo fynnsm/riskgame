@@ -491,7 +491,7 @@ Balance mit Rundgang: In der Simulation beurteilt die sorgfältige Spielweise de
 | M-26 | Bauabnahme: Die Schwelle ist ein Anteil von 0.69 der möglichen Punkte, gerundet auf die nächste ganze Zahl (ohne neue Mechaniken 11 von 16). Briefing und Sterne folgen derselben Logik. Ersetzt die Rundung von F-211 | M | U |
 | M-27 | Auswertung pro Ereignis: «Gut entschieden», «Gut entschieden, trotzdem Pech», «Glück gehabt» oder «Hier hat die Vorsorge gefehlt». Nach einem Einsturz erscheinen Ereignisse, die dazu beigetragen haben, in der Liste der Ursachen | M | O (Regeln U; Oberfläche O) |
 | M-28 | Darstellung: Das Ereignis kündigt sich in der Szene an (Wolken, stehender Lastwagen, leere Arbeitsplätze, Funken am Kran, Figur mit Aktenkoffer). Die gewählte Massnahme wird als Bauteil sichtbar und bleibt am fertigen Gebäude. Tritt das Ereignis ein, spielt eine Szene von höchstens 2 Sekunden, überspringbar | S | O |
-| M-29 | Balance: Die Simulation prüft pro Level mit Ereignissen die sechs Kombinationen aus dem Auftrag, Abschnitt 5; keine einzelne Strategie ist immer richtig | M | O |
+| M-29 | Balance: Die Simulation prüft pro Level mit Ereignissen die sechs Kombinationen aus dem Auftrag, Abschnitt 5; keine einzelne Strategie ist immer richtig | M | O (Simulation U; drei Bedingungen offen, siehe 13.4) |
 
 
 Offen zu M-27, bitte bestätigen: Der Auftrag nennt vier Aussagen. Für einen Fall passt keine davon: Jemand wählt mehr Schutz, als das Risiko wert war (zum Beispiel «Vermeiden», wo «Akzeptieren» empfohlen ist). Das ist weder Glück noch fehlende Vorsorge. Die Regeln kennen dafür eine fünfte Aussage, Arbeitstitel «Sicher, aber teuer». Sie gibt wie jede nicht empfohlene Strategie keinen Punkt.
@@ -502,3 +502,33 @@ Ebenfalls festgelegt, weil der Auftrag es offen lässt:
 - Fällt eine Anzeige schon durch die Kosten der Strategie oder durch die Prüfung im Team auf null, stürzt das Gebäude sofort ein.
 - Das oberste Stockwerk zeigt die Anzeigen von jetzt, nicht die vom Moment, als es gesetzt wurde: Was ein Ereignis seither gekostet hat, sieht man an der Neigung.
 - Wurde eine empfohlene Strategie gewählt und das Ereignis richtete keinen Schaden an (weil es ausblieb oder vermieden wurde), heisst es «Gut entschieden»; «trotzdem Pech» nur, wenn trotz empfohlener Strategie Schaden blieb.
+
+### 13.4 Balance mit Ereignissen: Stand und offene Entscheidung
+
+`npm run simulate:balance` spielt jedes Level mit Ereignissen in 5000 Durchgängen pro Spielweise, mit denselben Schritten wie das Spiel. Gemessen in Level 3, 4 und 5 (die Werte der drei Level liegen innerhalb von einem Prozentpunkt):
+
+| Spielweise (gute Entscheide, ausser «zufällig») | Auftrag | Gemessen | Stand |
+|---|---|---|---|
+| Immer empfohlen, alle drei Ereignisse treten ein | kein Einsturz, bestanden | 0 Einstürze, 0 nicht bestanden | erfüllt, erzwungen |
+| dito | jede Anzeige mindestens 30 | tiefste Anzeige 14; in der Hälfte der Durchgänge mindestens 32 | **offen** |
+| Erst alle Prognosen prüfen, dann empfohlen | kein Einsturz | 0 Einstürze | erfüllt, erzwungen |
+| Immer akzeptieren | mindestens 40 % scheitern | 5 % scheitern; 52 % scheitern oder enden mit einer kritischen Anzeige | **offen** |
+| Immer vermeiden | Zeit unter 20 in mindestens 50 % | 97 % | erfüllt, erzwungen |
+| Immer vermindern | Budget unter 30 in mindestens 50 % | 88 % | erfüllt, erzwungen |
+| Immer übertragen | Budget unter 30 in mindestens 50 % | 54 % | erfüllt, erzwungen |
+| Zufällige Entscheide, zufällige Strategien | 60 bis 90 % scheitern | 94 % | **offen** |
+
+«Erzwungen» heisst: Wird die Bedingung verletzt, bricht `npm run check` ab. Die drei offenen Bedingungen werden gemessen und mit «OFFEN» ausgegeben, brechen aber nicht ab, bis entschieden ist, was für sie gilt.
+
+Warum die drei nicht zusammen mit den anderen zu erfüllen sind:
+
+- Gute Entscheide kosten in Level 3 bis 5 je 6 Punkte Budget oder 6 Punkte Zeit. Nach acht Entscheiden stehen Budget und Zeit zusammen bei 104, einzeln zwischen 40 und 64; die Stabilität steht immer bei 100. In der ungünstigsten Ziehung bleiben also 10 Punkte Abstand zu 30. Das reicht für eine einzige kleine Massnahme. Eine Mindestanzeige von 30 lässt sich nur halten, wenn empfohlene Strategien fast nichts kosten oder ihre Kosten auf der Stabilität liegen. Dann ist das Budget gerade keine Entscheidungsgrösse.
+- Wer gut entscheidet und alles akzeptiert, hat genug Punkte für die Bauabnahme (16 von 19, nötig 13). Scheitern kann er nur durch Einsturz. Dafür müssten zwei bis drei Ereignisse dieselbe Anzeige um zusammen 50 bis 60 Punkte senken, und zwar in 40 % der Durchgänge. Solche Ereignisse dürften mit der empfohlenen Strategie aber fast nichts kosten (erster Punkt). Empfohlen wäre dann immer «Vermeiden», und die Regel «jede Strategie mindestens einmal empfohlen» fiele.
+- Zufällig gewählte Strategien treffen die empfohlene in rund 28 % der Fälle, zufällig gewählte Optionen holen die Hälfte der Punkte. Die Ereignisse heben die Schwelle (13 von 19) also stärker, als sie zufälligen Spielern Punkte bringen.
+
+Vorschlag, zu entscheiden von Fynn (ändert Werte in `src/core/balance.ts`):
+
+1. Mindestanzeige bei empfohlenen Strategien: 10 statt 30 (gemessen 14).
+2. «Immer akzeptieren»: mindestens 40 % der Durchgänge scheitern **oder enden mit einer Anzeige im kritischen Bereich** (gemessen 52 %). Wer nichts tut, bekommt dann meist ein schiefes Gebäude mit Warnschild statt eines Einsturzes.
+3. Zufälliges Spielen in Leveln mit Ereignissen: 60 bis 95 % statt 60 bis 90 %.
+
