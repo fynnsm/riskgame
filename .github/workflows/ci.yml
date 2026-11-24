@@ -32,6 +32,13 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: End-to-end tests
         run: npm run test:e2e
+      - name: Keep the screenshots of the reference states (B8.3)
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: screenshots
+          path: test-results/screenshots
+          retention-days: 14
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

@@ -4,6 +4,7 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 import type { Level, OptionId } from '../../src/content/schema.ts';
 import { replay } from '../../src/core/game.ts';
+import { progressInLevel, progressWithCompleted } from './support/progress.ts';
 
 type Rating = 'gut' | 'vertretbar' | 'riskant';
 
@@ -410,6 +411,32 @@ test('hides the label «Entwurf» from players and shows it in debug mode (A3)',
   await page.goto(`${SIMPLE}&debug=1`);
   await expect(screen(page, 'situation')).toBeVisible();
   await expect(page.getByTestId('draft')).toHaveText('Entwurf');
+});
+
+test('gives each level its time of day, the start page noon and the finished city evening (G-21)', async ({
+  page,
+}) => {
+  test.slow();
+  const host = page.locator('.canvas-host');
+  await page.goto('/?quality=1');
+  await expect(host).toHaveAttribute('data-time-of-day', 'mittag');
+
+  const times = ['morgen', 'mittag', 'nachmittag', 'abend', 'nacht'];
+  for (const [index, time] of times.entries()) {
+    await page.evaluate(
+      ([key, value]) => window.localStorage.setItem(key as string, value as string),
+      ['risk-tower.progress', JSON.stringify(progressInLevel(index + 1, ['gut']))],
+    );
+    await page.reload();
+    await expect(host).toHaveAttribute('data-time-of-day', time);
+  }
+
+  await page.evaluate(
+    ([key, value]) => window.localStorage.setItem(key as string, value as string),
+    ['risk-tower.progress', JSON.stringify(progressWithCompleted(5))],
+  );
+  await page.reload();
+  await expect(host).toHaveAttribute('data-time-of-day', 'abend');
 });
 
 test('ignores invalid URL parameters', async ({ page }) => {

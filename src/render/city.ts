@@ -1,5 +1,6 @@
 import type { Part } from './boxes.ts';
 import { box, hash } from './boxes.ts';
+import { createDecorRandom } from './director.ts';
 import { C } from './palette.ts';
 import { TUNING } from './tuning.ts';
 
@@ -28,6 +29,41 @@ const WALLS = [
 const ROOFS = [C.roofBrick, C.slate, C.roofRed, C.roofBrown, C.roofTeal];
 const AWNINGS = [C.red, C.yellow, C.teal, C.orange];
 
+export interface CityParts {
+  /** Everything that is lit by the sun. */
+  parts: Part[];
+  /** Lamp heads and windows that glow at night; drawn unlit and only then (B2). */
+  lights: Part[];
+  /** Flat dark patches under houses and trees, shown instead of real shadows on low quality (B2). */
+  blobs: Part[];
+}
+
+// Collected while the blocks are laid out; reset by buildCity.
+let lights: Part[] = [];
+let blobs: Part[] = [];
+let decor = createDecorRandom(1);
+
+/** A window, and for some of them the copy that glows at night. */
+function addWindow(
+  parts: Part[],
+  w: number,
+  h: number,
+  d: number,
+  x: number,
+  y: number,
+  z: number,
+): void {
+  parts.push(box(C.houseGlass, w, h, d, x, y, z));
+  if (decor() < TUNING.litWindowShare)
+    lights.push(box(C.nightGlass, w + 0.02, h, d + 0.02, x, y, z));
+}
+
+function addLamp(parts: Part[], x: number, z: number): void {
+  parts.push(box(C.steel, 0.14, 1.9, 0.14, x, 0.3 + 0.95, z));
+  parts.push(box(C.lampHead, 0.42, 0.16, 0.42, x, 0.3 + 1.98, z));
+  lights.push(box(C.lampLight, 0.46, 0.2, 0.46, x, 0.3 + 1.98, z));
+}
+
 /** With an even number of lots the grid shifts by half a block so lots still sit on blocks. */
 function gridShift(lotCount: number): number {
   return lotCount % 2 === 0 ? PITCH / 2 : 0;
@@ -41,6 +77,9 @@ export function lotPosition(index: number, count: number): { x: number; z: numbe
 function addTree(parts: Part[], x: number, z: number, seed: number): void {
   const size = 1.1 + hash(seed) * 0.5;
   const dark = hash(seed + 1) > 0.5 ? C.treeMid : C.treeDark;
+  blobs.push(
+    box(C.blobOnGrass, size * 1.2, 0.02, size * 1.2, x - 0.3, GROUND_TOP + 0.012, z - 0.25),
+  );
   parts.push(
     box(C.trunk, 0.36, 0.8, 0.36, x, GROUND_TOP + 0.4, z),
     box(dark, size, 0.8, size, x, GROUND_TOP + 1.1, z),
@@ -62,6 +101,7 @@ function addHouse(
   const wall = WALLS[Math.floor(hash(seed + 4) * WALLS.length)] ?? C.white;
   const roof = ROOFS[Math.floor(hash(seed + 5) * ROOFS.length)] ?? C.slate;
   const y0 = GROUND_TOP;
+  blobs.push(box(C.blobOnGrass, w + 0.5, 0.02, d + 0.5, x - 0.5, y0 + 0.012, z - 0.4));
   parts.push(box(wall, w, h, d, x, y0 + h / 2, z));
   parts.push(box(roof, w + 0.3, 0.3, d + 0.3, x, y0 + h + 0.15, z));
   if (hash(seed + 6) > 0.55) {
@@ -80,23 +120,14 @@ function addHouse(
     for (let c = 0; c < columnsX; c++) {
       const offset = (c - (columnsX - 1) / 2) * 1.3;
       if (detail === 'full') parts.push(box(C.white, 0.06, 0.78, 0.7, x + w / 2, y, z + offset));
-      parts.push(box(C.houseGlass, 0.1, 0.62, 0.54, x + w / 2, y, z + offset));
+      addWindow(parts, 0.1, 0.62, 0.54, x + w / 2, y, z + offset);
     }
     for (let c = 0; c < columnsZ; c++) {
       const offset = (c - (columnsZ - 1) / 2) * 1.3;
       const door = r === 0 && c === 0;
       if (detail === 'full') parts.push(box(C.white, 0.7, 0.78, 0.06, x + offset, y, z + d / 2));
-      parts.push(
-        box(
-          door ? C.door : C.houseGlass,
-          0.54,
-          door ? 0.95 : 0.62,
-          0.1,
-          x + offset,
-          door ? y - 0.2 : y,
-          z + d / 2,
-        ),
-      );
+      if (door) parts.push(box(C.door, 0.54, 0.95, 0.1, x + offset, y - 0.2, z + d / 2));
+      else addWindow(parts, 0.54, 0.62, 0.1, x + offset, y, z + d / 2);
     }
   }
   if (detail === 'full' && hash(seed + 7) > 0.5) {
@@ -116,6 +147,9 @@ function addBlock(
   const seed = (column + 50) * 131 + (row + 50) * 17;
   parts.push(box(C.pavement, BLOCK, 0.3, BLOCK, cx, 0.15, cz));
   parts.push(box(C.grass, BLOCK - 1.2, 0.1, BLOCK - 1.2, cx, 0.35, cz));
+  // Street lamps at the two corners that face the camera; they glow at night.
+  addLamp(parts, cx + 5.7, cz + 5.7);
+  addLamp(parts, cx - 5.7, cz + 5.7);
 
   if (isLot) {
     // Only a few trees at the back corners, so nothing hides the tower.
@@ -162,12 +196,18 @@ function addBlock(
   }
 }
 
-export function buildCity(lotCount: number): Part[] {
+export function buildCity(lotCount: number): CityParts {
   const parts: Part[] = [];
+  lights = [];
+  blobs = [];
+  // A fixed seed: the same windows glow on every visit.
+  decor = createDecorRandom(20261124);
   const shift = gridShift(lotCount);
   const span = (REACH * 2 + 1) * PITCH;
   // Asphalt under everything; the blocks sit on top and leave the roads showing.
   parts.push(box(C.asphalt, span + 4, 0.2, span + 4, shift, -0.1, 0));
+  // Meadow around the city, so its edge fades into the haze instead of ending in mid-air.
+  parts.push(box(C.grass, span + 150, 0.1, span + 150, shift, -0.26, 0));
 
   const firstLot = -Math.floor(lotCount / 2);
   for (let column = -REACH; column <= REACH; column++) {
@@ -188,7 +228,7 @@ export function buildCity(lotCount: number): Part[] {
       parts.push(box(C.roadMark, 0.16, 0.02, 1.3, across + shift, 0.02, along));
     }
   }
-  return parts;
+  return { parts, lights, blobs };
 }
 
 /** Position of car `index` at `time`. Cars keep to the right of the dashed line. */

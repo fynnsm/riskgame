@@ -1,4 +1,5 @@
 import type { Outcome } from '../core/game.ts';
+import type { SceneModel } from '../core/scene.ts';
 import type { Stars } from '../core/scoring.ts';
 import type { TimeOfDay } from './palette.ts';
 import { TUNING } from './tuning.ts';
@@ -16,6 +17,16 @@ export type SceneMoment =
   | { kind: 'level'; nummer: number }
   /** `progress` runs from 0 to 1 over the closing sequence. */
   | { kind: 'finale'; progress: number };
+
+/** Which moment of the game a scene model shows. */
+export function momentFor(
+  model: Pick<SceneModel, 'mode' | 'focus' | 'lots' | 'allCompleted'>,
+): SceneMoment {
+  const focused = model.focus === null ? undefined : model.lots[model.focus];
+  if (model.mode === 'level' && focused) return { kind: 'level', nummer: focused.nummer };
+  // The full closing sequence follows later; until then the finished city rests in evening light.
+  return model.allCompleted ? { kind: 'finale', progress: 0 } : { kind: 'start' };
+}
 
 const LEVEL_TIMES: readonly TimeOfDay[] = ['morgen', 'mittag', 'nachmittag', 'abend', 'nacht'];
 

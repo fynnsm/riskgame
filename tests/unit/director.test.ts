@@ -6,6 +6,7 @@ import {
   cityTitle,
   createDecorRandom,
   decorationFor,
+  momentFor,
   nextPlaneDelay,
   planeMayCrossCentre,
   resultSequence,
@@ -40,6 +41,27 @@ describe('time of day (B2)', () => {
   it('repeats the cycle for level numbers outside one to five instead of failing', () => {
     expect(timeOfDay({ kind: 'level', nummer: 6 })).toBe('morgen');
     expect(timeOfDay({ kind: 'level', nummer: 0 })).toBe('nacht');
+  });
+
+  it('reads the moment off the scene model: level, start page or finished city', () => {
+    const lots = [{ nummer: 1 }, { nummer: 2 }, { nummer: 3 }] as never;
+    expect(momentFor({ mode: 'level', focus: 2, lots, allCompleted: false })).toEqual({
+      kind: 'level',
+      nummer: 3,
+    });
+    expect(momentFor({ mode: 'city', focus: null, lots, allCompleted: false })).toEqual({
+      kind: 'start',
+    });
+    expect(momentFor({ mode: 'city', focus: null, lots, allCompleted: true })).toEqual({
+      kind: 'finale',
+      progress: 0,
+    });
+  });
+
+  it('falls back to the start page if the focused lot does not exist', () => {
+    expect(momentFor({ mode: 'level', focus: 9, lots: [], allCompleted: false })).toEqual({
+      kind: 'start',
+    });
   });
 
   it('has a lighting for every time of day, with lights on only at night', () => {

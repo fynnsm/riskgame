@@ -29,6 +29,8 @@ Auf Qualitätsstufe 2 kommen die Schatten dazu; jedes Objekt wird dann ein zweit
 
 Reicht die Leistung nicht, wird in dieser Reihenfolge gestrichen: Schatten, Menge der Dekoration, Partikel. Nie die Lesbarkeit von Gebäude und Anzeigen.
 
+Die Nacht (Level 5) braucht einen Zeichenaufruf mehr als der Tag, weil Lampen und leuchtende Fenster unbeleuchtet gezeichnet werden. Die Dreiecke sind mit den Strassenlampen und Schattenflächen auf rund 175’000 bis 186’000 gestiegen.
+
 ## Messen
 
 ```bash
@@ -42,3 +44,4 @@ gibt pro Szene eine Zeile `MEASURE …` mit Zeichenaufrufen und Dreiecken aus. V
 | Datum | Stand | Startseite | Level | Schlussansicht | Übertragung |
 |---|---|---|---|---|---|
 | 24.11.2026 | vor dem Grafik-Update (Pull Request 12) | 7 | 8 | 12 | 213.9 kB |
+| 24.11.2026 | Himmel, Licht, Tageszeiten (B2): Strassenlampen, Nachtlichter, Schattenflächen | 8 | 9 | 13 | 215.0 kB |
