@@ -63,7 +63,8 @@ export default tseslint.config(
     rules: { 'no-restricted-globals': 'off' },
   },
   {
-    files: ['src/logging/console-sink.ts', 'scripts/**'],
+    // The performance test prints its measurements, so they can be copied into docs/PERFORMANCE.md.
+    files: ['src/logging/console-sink.ts', 'scripts/**', 'tests/e2e/performance.spec.ts'],
     rules: { 'no-console': 'off' },
   },
   prettier,

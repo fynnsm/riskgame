@@ -1,0 +1,44 @@
+# Leistung
+
+Messwerte der 3D-Darstellung und die Grenzen, die für das Grafik-Update gelten (Auftrag Update 2, B0).
+
+## Ist-Zustand vor dem Grafik-Update
+
+Gemessen am 24.11.2026 auf dem Stand von Pull Request 12, mit `?debug=1&quality=1` (Qualitätsstufe 1, ohne Schatten), in einem Headless-Chromium mit Software-Rendering. Zeichenaufrufe und Dreiecke stammen aus `renderer.info` und sind in beiden Fenstergrössen (390×844 und 1366×768) gleich.
+
+| Szene | Zeichenaufrufe | Dreiecke |
+|---|---|---|
+| Startseite (Stadt, fünf leere Bauplätze) | 7 | 140’856 |
+| Level mit acht Stockwerken | 8 | 143’160 |
+| Schlussansicht (fünf fertige Gebäude) | 12 | 151’416 |
+
+Übertragung beim ersten Laden (gzip): 213.9 kB, davon HTML 0.5 kB, CSS 3.0 kB, Spiel 71.2 kB und 3D-Darstellung 139.2 kB. Im Einfach-Modus `?renderer=none` wird die 3D-Darstellung nicht geladen.
+
+**Bildrate: nicht gemessen.** Ein Headless-Browser rendert in Software und sagt nichts über ein Handy aus (dort gemessen: rund 14 Bilder pro Sekunde bei 1280×760, was auf echter Hardware nicht zutrifft). Die Bildrate muss auf echten Geräten gemessen werden: Das Debug-Overlay (`?debug=1`) zeigt sie an, und der Fehlerbericht enthält Durchschnitt und Minimum der letzten 30 Sekunden. Siehe `docs/CHECKLIST.md`.
+
+Auf Qualitätsstufe 2 kommen die Schatten dazu; jedes Objekt wird dann ein zweites Mal gezeichnet, die Zeichenaufrufe verdoppeln sich also ungefähr.
+
+## Grenzen für das Grafik-Update
+
+| Grösse | Grenze | Wo geprüft |
+|---|---|---|
+| Zeichenaufrufe auf Qualitätsstufe 1 | höchstens das 1.5-Fache des Ist-Zustands: Startseite 10, Level 12, Schlussansicht 18 | `tests/e2e/performance.spec.ts`, bei jedem Lauf |
+| Zusätzliche Übertragung | höchstens 80 kB komprimiert, also insgesamt höchstens 293.9 kB | von Hand nach `npm run build`, Werte hier nachführen |
+| Bildrate auf einem Mittelklasse-Handy, Qualitätsstufe 1 | mindestens 30 | nur auf echten Geräten |
+| Gleiche Objekte | als `InstancedMesh` | Code-Review; die Zeichenaufrufe zeigen Verstösse sofort |
+
+Reicht die Leistung nicht, wird in dieser Reihenfolge gestrichen: Schatten, Menge der Dekoration, Partikel. Nie die Lesbarkeit von Gebäude und Anzeigen.
+
+## Messen
+
+```bash
+npx playwright test performance
+```
+
+gibt pro Szene eine Zeile `MEASURE …` mit Zeichenaufrufen und Dreiecken aus. Von Hand: Seite mit `?debug=1&quality=1` öffnen und das Overlay ablesen. `quality=0`, `1` oder `2` legt die Qualitätsstufe fest und schaltet das automatische Herunterstufen aus.
+
+## Verlauf
+
+| Datum | Stand | Startseite | Level | Schlussansicht | Übertragung |
+|---|---|---|---|---|---|
+| 24.11.2026 | vor dem Grafik-Update (Pull Request 12) | 7 | 8 | 12 | 213.9 kB |

@@ -19,6 +19,8 @@ import type { LotModel, RenderStats, SceneInsets, SceneModel, SceneView } from '
 import type { Logger } from '../logging/logger.ts';
 import type { Part } from './boxes.ts';
 import { box, hash, shade } from './boxes.ts';
+import { C, LIGHTING } from './palette.ts';
+import { TUNING } from './tuning.ts';
 import { buildCity, CAR_COUNT, carPlacement, lotPosition } from './city.ts';
 import { createFrameStats } from './frame-stats.ts';
 
@@ -33,18 +35,27 @@ import { createFrameStats } from './frame-stats.ts';
 const MODULE = 2;
 const FLOOR_HEIGHT = 1.5;
 const PLOT_TOP = 0.42;
-const HANG_HEIGHT = 3.4;
+const HANG_HEIGHT = TUNING.tower.hangHeight;
 
 /** The bright container colours of the sketch. Every kind uses all of them, starting elsewhere. */
-const VIVID = [0xe5534b, 0xf28c38, 0xf6c945, 0x7bc950, 0x3f8fd9, 0x8e6bd1, 0x2ec4b6, 0xc9d3e6];
+const VIVID = [
+  C.vividRed,
+  C.vividOrange,
+  C.vividYellow,
+  C.green,
+  C.blue,
+  C.purple,
+  C.teal,
+  C.paleBlue,
+];
 
 /** Each kind leans towards two colours, so the five towers stay recognisable in the city. */
 const ACCENTS: Record<BuildingKind, [number, number]> = {
-  wohnhaus: [0xe5534b, 0xf6c945],
-  buero: [0x3f8fd9, 0xc9d3e6],
-  schule: [0xf28c38, 0x7bc950],
-  spital: [0xf4f7fa, 0x2ec4b6],
-  turm: [0x8e6bd1, 0xf15bb5],
+  wohnhaus: [C.vividRed, C.vividYellow],
+  buero: [C.blue, C.paleBlue],
+  schule: [C.vividOrange, C.green],
+  spital: [C.offWhite, C.teal],
+  turm: [C.purple, C.pink],
 };
 
 function paletteFor(kind: BuildingKind): number[] {
@@ -52,15 +63,17 @@ function paletteFor(kind: BuildingKind): number[] {
   return [...VIVID, first, first, second];
 }
 
-const GLASS = 0x7fd3f7;
-const FRAME = 0xffffff;
-const CRANE = 0xf6c026;
-const SKIN = [0xf1c27d, 0xc68642, 0xe0ac69, 0x8d5524];
+const GLASS = C.glass;
+const FRAME = C.white;
+const CRANE = C.crane;
+const SKIN = [C.skinA, C.skinB, C.skinC, C.skinD];
 
 export interface ThreeViewOptions {
   logger: Logger;
   /** N-304: no wobble, no falling floors, no gliding camera. */
   reducedMotion: boolean;
+  /** Pins the quality step and switches the automatic step-down off; for measurements only. */
+  fixedQuality?: 0 | 1 | 2;
 }
 
 type ChunkKind = 'fixed' | 'module' | 'top' | 'hang' | 'bubble';
@@ -107,12 +120,13 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
 
   const renderer = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   // N-205: more than 2 costs fill rate on phones without a visible gain.
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, TUNING.quality.maxPixelRatio));
   const canvas = renderer.domElement;
   host.append(canvas);
 
   const scene = new Scene();
-  scene.background = new Color(0x8fd16a);
+  // Seen from above, the background is ground, not sky; it continues the grass beyond the city.
+  scene.background = new Color(C.grass);
 
   // Orthographic and from a fixed diagonal: this is what gives the blocky, isometric look.
   const camera = new OrthographicCamera(-10, 10, 10, -10, 1, 600);
@@ -121,7 +135,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   const elevationCos = Math.sqrt(1 - elevationSin * elevationSin);
 
   const unitBox = new BoxGeometry(1, 1, 1);
-  const material = new MeshLambertMaterial({ color: 0xffffff });
+  const material = new MeshLambertMaterial({ color: C.white });
   const meshes = new Set<InstancedMesh>();
   const tint = new Color();
 
@@ -146,9 +160,14 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     mesh.dispose();
   }
 
-  const hemisphere = new HemisphereLight(0xffffff, 0x9fb7c9, 1.7);
-  const sun = new DirectionalLight(0xfff4dc, 2.1);
-  sun.shadow.mapSize.set(2048, 2048);
+  const light = LIGHTING.mittag;
+  const hemisphere = new HemisphereLight(
+    light.ambientSky,
+    light.ambientGround,
+    light.ambientIntensity,
+  );
+  const sun = new DirectionalLight(light.sun, light.sunIntensity);
+  sun.shadow.mapSize.set(TUNING.quality.shadowMapSize, TUNING.quality.shadowMapSize);
   sun.shadow.camera.left = -55;
   sun.shadow.camera.right = 55;
   sun.shadow.camera.top = 55;
@@ -177,8 +196,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     scene.add(cityMesh);
     const carParts: Part[] = [];
     for (let i = 0; i < CAR_COUNT; i++) {
-      const color = [0xe63946, 0xffd23f, 0x4ea5d9, 0x7bc950, 0xffffff, 0xf7b267][i % 6] ?? 0xffffff;
-      carParts.push(box(color, 1.9, 0.55, 1, 0, 0, 0), box(0xd7ecf7, 1, 0.42, 0.86, 0, 0, 0));
+      const color = [C.red, C.yellow, C.carBlue, C.green, C.white, C.carOrange][i % 6] ?? C.white;
+      carParts.push(box(color, 1.9, 0.55, 1, 0, 0, 0), box(C.carGlass, 1, 0.42, 0.86, 0, 0, 0));
     }
     carsMesh = buildMesh(carParts);
     carsMesh.castShadow = false;
@@ -230,10 +249,10 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       const door = ground && s === 0;
       const height = door ? 0.98 : 0.74;
       const y = door ? -0.38 : -0.08;
-      const glass = door ? 0x7a4a2b : GLASS;
+      const glass = door ? C.door : GLASS;
       if (mx === 1) {
         if (s === broken) {
-          push(box(0x4a2c1a, 0.1, 0.56, 0.7, face, y, slot));
+          push(box(C.hole, 0.1, 0.56, 0.7, face, y, slot));
         } else {
           push(box(FRAME, 0.08, height + 0.14, 0.62, face, y, slot));
           push(box(glass, 0.12, height, 0.46, face + 0.01, y, slot));
@@ -241,7 +260,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       }
       if (mz === 1) {
         if (s === broken) {
-          push(box(0x4a2c1a, 0.7, 0.56, 0.1, slot, y, face));
+          push(box(C.hole, 0.7, 0.56, 0.1, slot, y, face));
         } else {
           push(box(FRAME, 0.62, height + 0.14, 0.08, slot, y, face));
           push(box(glass, 0.46, height, 0.12, slot, y, face + 0.01));
@@ -253,46 +272,46 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   function addCrane(parts: TowerPart[], chunk: number, x: number, z: number, flip: number): void {
     const push = (part: Part) => parts.push({ ...part, chunk });
     push(box(CRANE, 0.22, 2.2, 0.22, x, 1.1, z));
-    push(box(0xe63946, 0.42, 0.34, 0.42, x, 1.9, z));
+    push(box(C.red, 0.42, 0.34, 0.42, x, 1.9, z));
     push(box(CRANE, 2.6, 0.16, 0.16, x + flip * 0.7, 2.25, z));
-    push(box(0x5b6470, 0.36, 0.3, 0.3, x - flip * 0.5, 2.1, z));
-    push(box(0x2b2f36, 0.05, 0.9, 0.05, x + flip * 1.8, 1.75, z));
-    push(box(0xf6c026, 0.18, 0.14, 0.18, x + flip * 1.8, 1.25, z));
+    push(box(C.slate, 0.36, 0.3, 0.3, x - flip * 0.5, 2.1, z));
+    push(box(C.cable, 0.05, 0.9, 0.05, x + flip * 1.8, 1.75, z));
+    push(box(C.crane, 0.18, 0.14, 0.18, x + flip * 1.8, 1.25, z));
   }
 
   function addRoof(parts: TowerPart[], chunk: number, kind: BuildingKind): void {
     const push = (part: Part) => parts.push({ ...part, chunk });
     const accent = ACCENTS[kind][0];
-    push(box(0xdde3ea, MODULE * 2 + 0.1, 0.16, MODULE * 2 + 0.1, 0, 0.08, 0));
+    push(box(C.roofSlab, MODULE * 2 + 0.1, 0.16, MODULE * 2 + 0.1, 0, 0.08, 0));
     switch (kind) {
       case 'wohnhaus':
-        push(box(0xb5443a, MODULE * 2 + 0.3, 0.4, MODULE * 2 + 0.3, 0, 0.36, 0));
-        push(box(0xb5443a, MODULE * 2 + 0.3, 0.4, MODULE * 1.3, 0, 0.76, 0));
-        push(box(0xb5443a, MODULE * 2 + 0.3, 0.4, MODULE * 0.6, 0, 1.16, 0));
-        push(box(0x8a8f98, 0.4, 0.9, 0.4, -1.1, 1.2, -0.6));
+        push(box(C.roofRed, MODULE * 2 + 0.3, 0.4, MODULE * 2 + 0.3, 0, 0.36, 0));
+        push(box(C.roofRed, MODULE * 2 + 0.3, 0.4, MODULE * 1.3, 0, 0.76, 0));
+        push(box(C.roofRed, MODULE * 2 + 0.3, 0.4, MODULE * 0.6, 0, 1.16, 0));
+        push(box(C.chimney, 0.4, 0.9, 0.4, -1.1, 1.2, -0.6));
         break;
       case 'buero':
-        push(box(0xaeb7c2, 1, 0.5, 0.8, 0.9, 0.41, -0.9));
-        push(box(0xaeb7c2, 0.8, 0.4, 0.8, -0.8, 0.36, 0.7));
-        push(box(0x4a5361, 0.1, 2, 0.1, -1.2, 1.16, -1.2));
+        push(box(C.metal, 1, 0.5, 0.8, 0.9, 0.41, -0.9));
+        push(box(C.metal, 0.8, 0.4, 0.8, -0.8, 0.36, 0.7));
+        push(box(C.steel, 0.1, 2, 0.1, -1.2, 1.16, -1.2));
         break;
       case 'schule':
         push(box(shade(accent, 0.9), 1.1, 1.2, 1.1, 0, 0.76, 0));
-        push(box(0x7a4b2a, 1.4, 0.24, 1.4, 0, 1.48, 0));
-        push(box(0x4a5361, 0.08, 1.8, 0.08, 1.5, 1.06, 1.5));
-        push(box(0xe63946, 0.7, 0.42, 0.06, 1.85, 1.7, 1.5));
+        push(box(C.wood, 1.4, 0.24, 1.4, 0, 1.48, 0));
+        push(box(C.steel, 0.08, 1.8, 0.08, 1.5, 1.06, 1.5));
+        push(box(C.red, 0.7, 0.42, 0.06, 1.85, 1.7, 1.5));
         break;
       case 'spital':
-        push(box(0xffffff, 2.4, 0.1, 2.4, 0, 0.21, 0));
+        push(box(C.white, 2.4, 0.1, 2.4, 0, 0.21, 0));
         // A plain plus sign in the building's accent colour; deliberately not a red cross.
-        push(box(0x2ec4b6, 1.6, 0.06, 0.44, 0, 0.29, 0));
-        push(box(0x2ec4b6, 0.44, 0.06, 1.6, 0, 0.29, 0));
+        push(box(C.teal, 1.6, 0.06, 0.44, 0, 0.29, 0));
+        push(box(C.teal, 0.44, 0.06, 1.6, 0, 0.29, 0));
         break;
       case 'turm':
         push(box(shade(accent, 0.8), 2.2, 0.9, 2.2, 0, 0.61, 0));
         push(box(shade(accent, 0.65), 1.2, 0.7, 1.2, 0, 1.41, 0));
-        push(box(0x4a5361, 0.12, 2.4, 0.12, 0, 2.96, 0));
-        push(box(0xe63946, 0.22, 0.22, 0.22, 0, 4.2, 0));
+        push(box(C.steel, 0.12, 2.4, 0.12, 0, 2.96, 0));
+        push(box(C.red, 0.22, 0.22, 0.22, 0, 4.2, 0));
         break;
     }
   }
@@ -300,31 +319,31 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   /** A red plate with a symbol for what is running out: a coin, a clock or a cracked wall. */
   function addWarningSign(parts: TowerPart[], chunk: number, gauge: GaugeKey): void {
     const push = (part: Part) => parts.push({ ...part, chunk });
-    push(box(0xe63946, 1.2, 1.2, 0.16, 0, 0, 0));
-    push(box(0xe63946, 0.3, 0.3, 0.16, -0.36, -0.7, 0));
+    push(box(C.red, 1.2, 1.2, 0.16, 0, 0, 0));
+    push(box(C.red, 0.3, 0.3, 0.16, -0.36, -0.7, 0));
     const front = 0.1;
     if (gauge === 'budget') {
-      push(box(0xffd23f, 0.78, 0.78, 0.1, 0, 0, front));
-      push(box(0xb8860b, 0.16, 0.5, 0.12, 0, 0, front + 0.02));
+      push(box(C.yellow, 0.78, 0.78, 0.1, 0, 0, front));
+      push(box(C.coinDark, 0.16, 0.5, 0.12, 0, 0, front + 0.02));
     } else if (gauge === 'zeit') {
-      push(box(0xffffff, 0.82, 0.82, 0.1, 0, 0, front));
-      push(box(0x26334d, 0.1, 0.34, 0.12, 0, 0.13, front + 0.02));
-      push(box(0x26334d, 0.3, 0.1, 0.12, 0.12, 0, front + 0.02));
+      push(box(C.white, 0.82, 0.82, 0.1, 0, 0, front));
+      push(box(C.ink, 0.1, 0.34, 0.12, 0, 0.13, front + 0.02));
+      push(box(C.ink, 0.3, 0.1, 0.12, 0.12, 0, front + 0.02));
     } else {
-      push(box(0xc9d3e6, 0.82, 0.82, 0.1, 0, 0, front));
-      push(box(0x26334d, 0.12, 0.3, 0.12, 0.14, 0.24, front + 0.02));
-      push(box(0x26334d, 0.3, 0.12, 0.12, 0, 0.06, front + 0.02));
-      push(box(0x26334d, 0.12, 0.34, 0.12, -0.14, -0.2, front + 0.02));
+      push(box(C.paleBlue, 0.82, 0.82, 0.1, 0, 0, front));
+      push(box(C.ink, 0.12, 0.3, 0.12, 0.14, 0.24, front + 0.02));
+      push(box(C.ink, 0.3, 0.12, 0.12, 0, 0.06, front + 0.02));
+      push(box(C.ink, 0.12, 0.34, 0.12, -0.14, -0.2, front + 0.02));
     }
   }
 
   function addWorker(parts: Part[], x: number, z: number, seed: number): void {
-    const vest = seed % 2 === 0 ? 0xf77f00 : 0xfcbf49;
-    const helmet = seed % 2 === 0 ? 0xfcbf49 : 0xf77f00;
-    const skin = SKIN[seed % SKIN.length] ?? 0xf1c27d;
+    const vest = seed % 2 === 0 ? C.orange : C.amber;
+    const helmet = seed % 2 === 0 ? C.amber : C.orange;
+    const skin = SKIN[seed % SKIN.length] ?? C.skinA;
     const y = PLOT_TOP;
     parts.push(
-      box(0x34558b, 0.34, 0.42, 0.24, x, y + 0.21, z),
+      box(C.trousers, 0.34, 0.42, 0.24, x, y + 0.21, z),
       box(vest, 0.42, 0.44, 0.28, x, y + 0.64, z),
       box(skin, 0.3, 0.28, 0.28, x, y + 1, z),
       box(helmet, 0.36, 0.14, 0.34, x, y + 1.2, z),
@@ -347,32 +366,32 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     // Things that stand on the ground and do not lean with the tower.
     const base: Part[] = [];
     const locked = lot.status === 'locked';
-    base.push(box(locked ? 0xaab4bf : 0xe9e4d6, 8.4, 0.14, 8.4, 0, PLOT_TOP - 0.07, 0));
+    base.push(box(locked ? C.plotLocked : C.plot, 8.4, 0.14, 8.4, 0, PLOT_TOP - 0.07, 0));
     if (locked) {
       for (let k = -2; k <= 2; k++) {
         for (const side of [-1, 1]) {
-          base.push(box(0x7d8894, 0.2, 0.9, 0.2, k * 2, PLOT_TOP + 0.45, side * 4));
-          base.push(box(0x7d8894, 0.2, 0.9, 0.2, side * 4, PLOT_TOP + 0.45, k * 2));
+          base.push(box(C.fence, 0.2, 0.9, 0.2, k * 2, PLOT_TOP + 0.45, side * 4));
+          base.push(box(C.fence, 0.2, 0.9, 0.2, side * 4, PLOT_TOP + 0.45, k * 2));
         }
       }
       for (const side of [-1, 1]) {
-        base.push(box(0xffd23f, 8, 0.14, 0.08, 0, PLOT_TOP + 0.7, side * 4));
-        base.push(box(0xffd23f, 0.08, 0.14, 8, side * 4, PLOT_TOP + 0.7, 0));
+        base.push(box(C.yellow, 8, 0.14, 0.08, 0, PLOT_TOP + 0.7, side * 4));
+        base.push(box(C.yellow, 0.08, 0.14, 8, side * 4, PLOT_TOP + 0.7, 0));
       }
     } else if (lot.status !== 'done') {
       addWorker(base, 3.2, 3.4, index);
       addWorker(base, 3.8, 2.6, index + 1);
       addWorker(base, -3.3, 3.5, index + 2);
       addWorker(base, 3.4, -3.2, index + 3);
-      base.push(box(0xb08968, 0.9, 0.5, 0.9, -3.2, PLOT_TOP + 0.25, 2.2));
-      base.push(box(0xddb892, 0.7, 0.4, 0.7, -3.1, PLOT_TOP + 0.7, 2.3));
+      base.push(box(C.crate, 0.9, 0.5, 0.9, -3.2, PLOT_TOP + 0.25, 2.2));
+      base.push(box(C.crateLight, 0.7, 0.4, 0.7, -3.1, PLOT_TOP + 0.7, 2.3));
       for (const [cx, cz] of [
         [-3.9, -3.9],
         [3.9, -3.9],
         [-3.9, 3.9],
         [3.9, 3.9],
       ] as const) {
-        base.push(box(0xf77f00, 0.3, 0.5, 0.3, cx, PLOT_TOP + 0.25, cz));
+        base.push(box(C.orange, 0.3, 0.5, 0.3, cx, PLOT_TOP + 0.25, cz));
       }
     }
     if (lot.status === 'done') {
@@ -381,7 +400,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
         [3.5, 3.4],
         [3.4, -3.5],
       ] as const) {
-        base.push(box(0x4f9d5d, 0.9, 0.7, 0.9, cx, PLOT_TOP + 0.35, cz));
+        base.push(box(C.bush, 0.9, 0.7, 0.9, cx, PLOT_TOP + 0.35, cz));
       }
     }
     const baseMesh = buildMesh(base);
@@ -452,7 +471,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
             (hash(seed + 5) - 0.5) * 0.14 * jitter,
           ),
         });
-        const color = palette[Math.floor(hash(seed) * palette.length)] ?? 0xffffff;
+        const color = palette[Math.floor(hash(seed) * palette.length)] ?? C.white;
         addModule(parts, chunk, color, mx, mz, f === 0, jitter, seed);
       }
     });
@@ -486,13 +505,13 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
         home: new Vector3(topX, topY + HANG_HEIGHT, topZ),
         rotation: new Euler(0, 0.3, 0),
       });
-      const color = palette[(building.floors.length + index) % palette.length] ?? 0xffffff;
+      const color = palette[(building.floors.length + index) % palette.length] ?? C.white;
       addModule(parts, hang, color, 1, 1, false, 0, 99);
       parts.push({
-        ...box(0x2b2f36, 0.07, 60, 0.07, 0, 30 + FLOOR_HEIGHT / 2 + 0.3, 0),
+        ...box(C.cable, 0.07, 60, 0.07, 0, 30 + FLOOR_HEIGHT / 2 + 0.3, 0),
         chunk: hang,
       });
-      parts.push({ ...box(0xfcbf49, 0.5, 0.3, 0.5, 0, FLOOR_HEIGHT / 2 + 0.15, 0), chunk: hang });
+      parts.push({ ...box(C.amber, 0.5, 0.3, 0.5, 0, FLOOR_HEIGHT / 2 + 0.15, 0), chunk: hang });
     }
 
     // One sign per gauge that core reports as critical, each with its own symbol (A6).
@@ -523,7 +542,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
           home: new Vector3((hash(d + 40) - 0.5) * 6.4, 0.14, (hash(d + 50) - 0.5) * 6.4 + 1),
           rotation: new Euler(0, hash(d + 60) * 3, 0),
         });
-        parts.push({ ...box(0x9c7a5b, 0.36, 0.28, 0.36, 0, 0, 0), chunk: fixed });
+        parts.push({ ...box(C.debris, 0.36, 0.28, 0.36, 0, 0, 0), chunk: fixed });
       }
     }
 
@@ -570,10 +589,12 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     if (!tower) return;
 
     const collapsing = visual.collapseStart !== null;
-    const fallTime = collapsing ? Math.min(time - (visual.collapseStart as number), 12) : 0;
+    const fallTime = collapsing
+      ? Math.min(time - (visual.collapseStart as number), TUNING.tower.collapseMaxSeconds)
+      : 0;
     let drop = 0;
     if (visual.dropStart !== null) {
-      const progress = Math.min(1, (time - visual.dropStart) / 0.45);
+      const progress = Math.min(1, (time - visual.dropStart) / TUNING.tower.dropSeconds);
       drop = (1 - progress) * (1 - progress) * HANG_HEIGHT;
       if (progress >= 1) visual.dropStart = null;
     }
@@ -586,7 +607,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       if (chunk.kind === 'module') {
         if (collapsing) {
           const s = chunk.seed;
-          const gravity = 15;
+          const gravity = TUNING.tower.collapseGravity;
           const vx = visual.dirX * (1.4 + 0.45 * chunk.floor) + (hash(s + 600) - 0.5) * 3.2;
           const vz = visual.dirZ * (1.4 + 0.45 * chunk.floor) + (hash(s + 610) - 0.5) * 3.2;
           const vy = 1 + hash(s + 620) * 2.4;
@@ -626,7 +647,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     tower.instanceMatrix.needsUpdate = true;
 
     if (visual.wobble > 0 && !reducedMotion && !collapsing) {
-      const amplitude = visual.wobble * 0.02;
+      const amplitude = visual.wobble * TUNING.tower.wobbleAmplitude;
       visual.pivot.rotation.z = visual.baseRotZ + Math.sin(time * 9) * amplitude;
       visual.pivot.rotation.x = visual.baseRotX + Math.cos(time * 7.3) * amplitude * 0.6;
     }
@@ -691,7 +712,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   }
 
   // --- Quality steps (N-203): 2 = shadows, 1 = no shadows, 0 = also half the resolution ---
-  let quality = window.matchMedia('(pointer: coarse)').matches ? 1 : 2;
+  let quality: number =
+    options.fixedQuality ?? (window.matchMedia('(pointer: coarse)').matches ? 1 : 2);
 
   function applyQuality(): void {
     const shadows = quality >= 2;
@@ -728,7 +750,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       }
     }
 
-    const ease = reducedMotion || !cameraSnapped ? 1 : 1 - Math.exp(-dt * 4);
+    const ease = reducedMotion || !cameraSnapped ? 1 : 1 - Math.exp(-dt * TUNING.camera.easeRate);
     target.lerp(targetGoal, ease);
     view.unit += (viewGoal.unit - view.unit) * ease;
     view.cx += (viewGoal.cx - view.cx) * ease;
@@ -740,9 +762,9 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
 
     sampleFrames += 1;
     frameStats.frame(seconds);
-    if (seconds - sampleStart >= 3) {
+    if (seconds - sampleStart >= TUNING.quality.sampleSeconds) {
       const fps = sampleFrames / (seconds - sampleStart);
-      if (fps < 28 && quality > 0) {
+      if (fps < TUNING.quality.minFps && quality > 0 && options.fixedQuality === undefined) {
         quality -= 1;
         applyQuality();
         logger.warn('render.fps.low', { fps: Math.round(fps), quality });
