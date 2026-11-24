@@ -4,6 +4,7 @@ import { BALANCE } from './balance.ts';
 import type { ChoiceRecord, LevelRun } from './game.ts';
 import type { Gauges } from './gauges.ts';
 import { lowestValue } from './gauges.ts';
+import { TOUR_MAX_POINTS } from './tour.ts';
 
 export type Stars = 0 | 1 | 2 | 3;
 export type GoalStatus = 'erreicht' | 'nicht-erreicht' | 'nicht-geprueft';
@@ -27,20 +28,34 @@ export interface Acceptance {
   required: number;
 }
 
-/** Points reached and needed for a run over `steps` decisions. */
-export function acceptance(history: readonly ChoiceRecord[], steps: number): Acceptance {
-  const max = steps * BALANCE.ratingPoints.gut;
+/** What of a run counts for the final inspection. */
+export type Scored = Pick<LevelRun, 'history' | 'situationIds' | 'tour'>;
+
+/**
+ * Points reached so far and needed at the end. The decisions count by their rating, the
+ * site tour by how well it went (M-13); a level without a tour has fewer points to give.
+ */
+export function acceptance(run: Scored): Acceptance {
+  const ratings = run.history.reduce((sum, c) => sum + BALANCE.ratingPoints[c.rating], 0);
+  const max = run.situationIds.length * BALANCE.ratingPoints.gut + (run.tour ? TOUR_MAX_POINTS : 0);
   return {
-    points: history.reduce((sum, c) => sum + BALANCE.ratingPoints[c.rating], 0),
+    points: ratings + (run.tour?.result?.points ?? 0),
     max,
     required: Math.ceil(max * BALANCE.acceptance.minScoreRatio),
   };
 }
 
+/** F-211: whether a building that still stands passes its final inspection. */
+export function isAccepted(run: Scored): boolean {
+  const score = acceptance(run);
+  return score.points >= score.required;
+}
+
 /** F-603: stars from ratings and final gauges. A collapsed or rejected building earns none. */
-export function starsFor(run: Pick<LevelRun, 'outcome' | 'history' | 'gauges'>): Stars {
+export function starsFor(run: Scored & Pick<LevelRun, 'outcome' | 'gauges'>): Stars {
   if (run.outcome !== 'completed') return 0;
-  const ratio = scoreRatio(run.history);
+  const score = acceptance(run);
+  const ratio = score.max === 0 ? 0 : score.points / score.max;
   const lowest = lowestValue(run.gauges);
   const { three, two } = BALANCE.stars;
   if (ratio >= three.minScoreRatio && lowest >= three.minGauge) return 3;

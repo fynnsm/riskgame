@@ -8,6 +8,7 @@ import { criticalGauges } from '../../src/core/gauges.ts';
 import { starsFor } from '../../src/core/scoring.ts';
 import type { LastStep } from './support/progress.ts';
 import {
+  LEVELS,
   longestSituation,
   oneBefore,
   openWith,
@@ -19,9 +20,7 @@ import {
 
 type Rating = 'gut' | 'vertretbar' | 'riskant';
 
-const level1 = JSON.parse(
-  readFileSync(join(import.meta.dirname, '..', '..', 'content', 'levels', 'level-1.json'), 'utf8'),
-) as Level;
+const level1: Level = LEVELS[0] as Level;
 const STEPS = level1.situationenProDurchgang;
 
 /** The simple mode is the basis of these tests (CLAUDE.md, rule 8). */
@@ -670,42 +669,88 @@ test('shows «Baustopp» after a collapse and tapes off a building that was not 
   await expect(screen(page, 'error')).toHaveCount(0);
 });
 
+/** What the page itself saw of a celebration, with its own clock. */
+interface CelebrationRecord {
+  clickAt: number;
+  bannerAt: number;
+  background: string;
+  row: { x: number; width: number; height: number } | null;
+  starsAt: number;
+}
+
 test('celebrates in the picture: banner at once, large stars within two seconds, no text panel (N2)', async ({
   page,
 }) => {
   test.slow();
   const size = page.viewportSize();
   if (!size) throw new Error('No viewport');
-  await playLastDecision(
-    page,
-    '/?quality=0',
-    oneBefore((run) => run.outcome === 'completed' && starsFor(run) === 3),
+  const last = oneBefore((run) => run.outcome === 'completed' && starsFor(run) === 3);
+  await openWith(page, '/?quality=0', last.progress);
+  await expect(screen(page, 'situation')).toBeVisible();
+  await page.locator('.option', { hasText: last.option }).click();
+  await expect(screen(page, 'feedback')).toBeVisible();
+
+  // The sequence lasts four seconds. Asking the page question by question from outside loses
+  // that race on a machine that draws 3D in software: every answer waits for a slow frame.
+  // So the page watches itself, and the test reads what it saw once the stars are there.
+  await page.evaluate(() => {
+    const record: CelebrationRecord = {
+      clickAt: 0,
+      bannerAt: 0,
+      background: '',
+      row: null,
+      starsAt: 0,
+    };
+    (window as unknown as { celebration: CelebrationRecord }).celebration = record;
+    document.addEventListener(
+      'click',
+      (event) => {
+        const target = event.target as HTMLElement | null;
+        if (target?.closest('[data-testid="next"]')) record.clickAt = performance.now();
+      },
+      true,
+    );
+    const timer = window.setInterval(() => {
+      const banner = document.querySelector('[data-testid="banner"]');
+      const panel = document.querySelector('.panel');
+      if (record.bannerAt === 0 && banner && panel && banner.getBoundingClientRect().height > 0) {
+        record.bannerAt = performance.now();
+        record.background = getComputedStyle(panel).backgroundColor;
+        const row = document.querySelector('[data-testid="banner-stars"]')?.getBoundingClientRect();
+        record.row = row ? { x: row.x, width: row.width, height: row.height } : null;
+      }
+      const stars = [...document.querySelectorAll('.banner-star-on')];
+      const arrived =
+        stars.length === 3 && stars.every((star) => Number(getComputedStyle(star).opacity) > 0.9);
+      if (record.bannerAt > 0 && arrived) {
+        record.starsAt = performance.now();
+        window.clearInterval(timer);
+      }
+    }, 30);
+  });
+  await page.getByTestId('next').click();
+  const handle = await page.waitForFunction(
+    () => {
+      const record = (window as unknown as { celebration: CelebrationRecord }).celebration;
+      return record.starsAt > 0 ? record : null;
+    },
+    undefined,
+    { timeout: 20_000 },
   );
-  const banner = page.getByTestId('banner');
-  await expect(banner).toBeVisible({ timeout: 1500 });
-  // The text panel is out of the way: nothing of it covers the picture. Checked first,
-  // because the sequence is over after a few seconds.
-  const background = await page
-    .locator('.panel')
-    .evaluate((n) => getComputedStyle(n).backgroundColor);
-  expect(background).toBe('rgba(0, 0, 0, 0)');
+  const seen = (await handle.jsonValue()) as CelebrationRecord;
+
+  // The banner is there at once.
+  expect(seen.bannerAt - seen.clickAt).toBeLessThanOrEqual(1500);
+  // The text panel is out of the way: nothing of it covers the picture.
+  expect(seen.background).toBe('rgba(0, 0, 0, 0)');
   // Large and in the middle of the picture, not small inside a text field.
-  const row = await page.getByTestId('banner-stars').boundingBox();
-  if (!row) throw new Error('Stars not rendered');
-  expect(row.height).toBeGreaterThan(56);
-  expect(Math.abs(row.x + row.width / 2 - size.width / 2)).toBeLessThan(size.width * 0.12);
+  if (!seen.row) throw new Error('Stars not rendered');
+  expect(seen.row.height).toBeGreaterThan(56);
+  expect(Math.abs(seen.row.x + seen.row.width / 2 - size.width / 2)).toBeLessThan(
+    size.width * 0.12,
+  );
   // All three stars have arrived two seconds in; a little room for a slow machine.
-  const stars = page.locator('.banner-star-on');
-  await expect
-    .poll(
-      () =>
-        stars.evaluateAll(
-          (nodes) =>
-            nodes.length === 3 && nodes.every((n) => Number(getComputedStyle(n).opacity) > 0.9),
-        ),
-      { timeout: 3200 },
-    )
-    .toBe(true);
+  expect(seen.starsAt - seen.bannerAt).toBeLessThanOrEqual(3200);
 });
 
 test('rains confetti across the whole width for two stars and none for three (N2)', async ({
@@ -885,10 +930,12 @@ for (const nummer of [1, 2, 3, 4, 5]) {
     await openWith(page, '/?quality=0', progressAtSituation(nummer, longestSituation(nummer)));
     await expect(screen(page, 'situation')).toBeVisible();
 
+    // The sheet glides to its height in a fifth of a second; measured once it has arrived.
+    // A slow machine otherwise catches the height it starts from.
     const panel = page.locator('.panel');
-    const share = ((await panel.boundingBox())?.height ?? 0) / 844;
-    expect(share).toBeGreaterThan(0.6);
-    expect(share).toBeLessThanOrEqual(0.66);
+    const share = async (): Promise<number> => ((await panel.boundingBox())?.height ?? 0) / 844;
+    await expect.poll(share).toBeGreaterThan(0.6);
+    expect(await share()).toBeLessThanOrEqual(0.66);
 
     const inView = () =>
       page.getByTestId('option-1').evaluate((option) => {

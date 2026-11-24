@@ -7,7 +7,9 @@ import { computeLean } from './lean.ts';
 import type { Rng } from './rng.ts';
 import { createRng, shuffle } from './rng.ts';
 import type { Stars } from './scoring.ts';
-import { scoreRatio, starsFor } from './scoring.ts';
+import { isAccepted, starsFor } from './scoring.ts';
+import type { TourGrade, TourState } from './tour.ts';
+import { tourEffect, tourGrade, tourPoints } from './tour.ts';
 
 export interface StrategyResult {
   outcome: Exclude<Outcome, 'running'>;
@@ -54,12 +56,32 @@ export type BalanceProblem =
   | 'random-passes'
   | 'random-range';
 
-/** Plays the given situations in order with the option the chooser returns. */
+/** A finished tour of the given grade, as far as scoring needs it. */
+function tourOf(grade: TourGrade, gauges: Gauges): { tour: TourState; gauges: Gauges } {
+  const applied = applyEffects(gauges, { budget: '0', zeit: '0', stabilitaet: tourEffect(grade) });
+  return {
+    gauges: applied.gauges,
+    tour: {
+      siteIds: [],
+      judgements: {},
+      result: { correct: 0, grade, points: tourPoints(grade), delta: applied.delta },
+    },
+  };
+}
+
+/**
+ * Plays the given situations in order with the option the chooser returns. A level with a
+ * site tour is played with the given grade of that tour; null means the level has none.
+ */
 export function playRun(
   situations: readonly Situation[],
   choose: (situation: Situation) => Option,
+  grade: TourGrade | null = null,
 ): StrategyResult {
-  let gauges = startGauges();
+  const toured = grade === null ? null : tourOf(grade, startGauges());
+  const tour = toured?.tour ?? null;
+  let gauges = toured?.gauges ?? startGauges();
+  const situationIds = situations.map((s) => s.id);
   const history: ChoiceRecord[] = [];
   for (const situation of situations) {
     const option = choose(situation);
@@ -76,15 +98,14 @@ export function playRun(
       return { outcome: 'collapsed', steps: history.length, gauges, lowest: 0, tilt: 1, stars: 0 };
     }
   }
-  const accepted = scoreRatio(history) >= BALANCE.acceptance.minScoreRatio;
-  const outcome = accepted ? 'completed' : 'rejected';
+  const outcome = isAccepted({ history, situationIds, tour }) ? 'completed' : 'rejected';
   return {
     outcome,
     steps: history.length,
     gauges,
     lowest: lowestValue(gauges),
     tilt: computeLean(gauges).tilt,
-    stars: starsFor({ outcome, history, gauges }),
+    stars: starsFor({ outcome, history, gauges, situationIds, tour }),
   };
 }
 
@@ -92,15 +113,38 @@ export function playRun(
  * Always takes the first option with the given rating. A situation need not have a
  * "vertretbar" option; the cautious player then takes the good one.
  */
-export function playStrategy(situations: readonly Situation[], rating: Rating): StrategyResult {
-  return playRun(situations, (situation) => {
-    const wanted = situation.optionen.find((o) => o.einstufung === rating);
-    const fallback =
-      rating === 'vertretbar' ? situation.optionen.find((o) => o.einstufung === 'gut') : undefined;
-    const option = wanted ?? fallback;
-    if (!option) throw new Error(`${situation.id} has no option rated ${rating}`);
-    return option;
-  });
+export function playStrategy(
+  situations: readonly Situation[],
+  rating: Rating,
+  grade: TourGrade | null = null,
+): StrategyResult {
+  return playRun(
+    situations,
+    (situation) => {
+      const wanted = situation.optionen.find((o) => o.einstufung === rating);
+      const fallback =
+        rating === 'vertretbar'
+          ? situation.optionen.find((o) => o.einstufung === 'gut')
+          : undefined;
+      const option = wanted ?? fallback;
+      if (!option) throw new Error(`${situation.id} has no option rated ${rating}`);
+      return option;
+    },
+    grade,
+  );
+}
+
+/**
+ * How each fixed player does on the tour: who reads carefully judges nearly every place
+ * right, who clicks through carelessly gets most of them wrong.
+ */
+const TOUR_OF: Record<Rating, TourGrade> = { gut: 'good', vertretbar: 'fair', riskant: 'poor' };
+
+/** A player who does not read judges every place by the toss of a coin. */
+function randomTourGrade(places: number, rng: Rng): TourGrade {
+  let correct = 0;
+  for (let i = 0; i < places; i++) if (rng() < 0.5) correct += 1;
+  return tourGrade(correct);
 }
 
 /** Every way to pick `size` items, keeping their order. */
@@ -115,10 +159,15 @@ export function combinations<T>(items: readonly T[], size: number): T[][] {
 /** A player who does not read: random draw, random option each time. */
 export function playRandom(level: Level, rng: Rng): StrategyResult {
   const drawn = shuffle(level.situationen, rng).slice(0, level.situationenProDurchgang);
-  return playRun(drawn, (situation) => {
-    const index = Math.floor(rng() * situation.optionen.length);
-    return situation.optionen[index] as Option;
-  });
+  const grade = level.rundgang ? randomTourGrade(level.rundgang.stellenProDurchgang, rng) : null;
+  return playRun(
+    drawn,
+    (situation) => {
+      const index = Math.floor(rng() * situation.optionen.length);
+      return situation.optionen[index] as Option;
+    },
+    grade,
+  );
 }
 
 /**
@@ -134,21 +183,22 @@ export function simulateLevel(level: Level): BalanceReport {
     risky: { passes: 0, latestCollapse: 0 },
     random: { passRate: 0, collapseRate: 0, failRate: 0 },
   };
+  const tourFor = (rating: Rating): TourGrade | null => (level.rundgang ? TOUR_OF[rating] : null);
   for (const draw of combinations(level.situationen, level.situationenProDurchgang)) {
     for (const order of [draw, [...draw].reverse()]) {
       report.runs += 1;
 
-      const good = playStrategy(order, 'gut');
+      const good = playStrategy(order, 'gut', tourFor('gut'));
       if (good.outcome !== 'completed') report.good.failures += 1;
       report.good.lowest = Math.min(report.good.lowest, good.lowest);
       report.good.maxTilt = Math.max(report.good.maxTilt, good.tilt);
       if (good.stars < report.good.minStars) report.good.minStars = good.stars;
 
-      const okay = playStrategy(order, 'vertretbar');
+      const okay = playStrategy(order, 'vertretbar', tourFor('vertretbar'));
       if (okay.outcome === 'collapsed') report.okay.collapses += 1;
       if (okay.outcome === 'completed') report.okay.passes += 1;
 
-      const risky = playStrategy(order, 'riskant');
+      const risky = playStrategy(order, 'riskant', tourFor('riskant'));
       if (risky.outcome === 'completed') report.risky.passes += 1;
       if (risky.outcome !== 'collapsed') report.risky.latestCollapse = null;
       else if (report.risky.latestCollapse !== null) {

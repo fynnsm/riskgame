@@ -51,6 +51,144 @@
       "grafik": "register"
     }
   ],
+  "rundgang": {
+    "einleitung": "Bevor du planst, gehst du durch den Betrieb. Die AI-Drohne hat schon Stellen markiert. Prüfe jede: Manche Markierung ist ein Fehlalarm, und manches Risiko kennt nur der Betrieb.",
+    "stellenProDurchgang": 8,
+    "stellen": [
+      {
+        "id": "L1-R01",
+        "ort": "technik",
+        "beobachtung": "Die Drohne markiert den Serverraum: In den Altdaten stehen viele Kunden doppelt. Der IT-Leiter bestätigt das.",
+        "istRisiko": true,
+        "drohne": "markiert",
+        "erklaerung": "Ein echtes Risiko: Weil die Altdaten Dubletten enthalten, können beim Import Fehler entstehen, und der Start verzögert sich. Die AI lag richtig, und der IT-Leiter hat es bestätigt.",
+        "lernziel": "L1-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L1-R02",
+        "ort": "team",
+        "beobachtung": "Die Drohne markiert das Grossraumbüro: Niemand hier kennt das neue System, und Schulungen sind bisher keine geplant.",
+        "istRisiko": true,
+        "drohne": "markiert",
+        "erklaerung": "Fehlende Schulung ist bei fast jeder Systemeinführung ein Risiko, und hier ist wirklich nichts geplant. Die AI lag richtig: Allgemeines Wissen trifft manchmal genau zu. Geprüft hast du es trotzdem.",
+        "lernziel": "L1-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L1-R03",
+        "ort": "baubuero",
+        "beobachtung": "Die Drohne markiert den Terminplan im Projektbüro: Er hat keine Reserve. Jede Verzögerung verschiebt den Start des Systems.",
+        "istRisiko": true,
+        "drohne": "markiert",
+        "erklaerung": "Ein Plan ohne Reserve macht aus jeder kleinen Verzögerung ein Terminproblem. Die AI lag richtig. Ins Register gehört das Risiko mit Ursache, Ereignis und Auswirkung, nicht nur als Stichwort.",
+        "lernziel": "L1-Z3",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L1-R04",
+        "ort": "material",
+        "beobachtung": "Die Drohne markiert die Lieferantenliste: Das neue System und die Anpassungen kommen von einem einzigen Anbieter.",
+        "istRisiko": true,
+        "drohne": "markiert",
+        "erklaerung": "Die Abhängigkeit von einem einzigen Anbieter ist ein echtes Risiko: Liefert er spät oder fällt er aus, steht das Projekt. Die AI lag richtig.",
+        "lernziel": "L1-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L1-R05",
+        "ort": "kran",
+        "beobachtung": "Die Drohne markiert «Verspätete Hardware». Du fragst nach: Die neuen Server stehen seit letzter Woche geprüft im Haus.",
+        "istRisiko": false,
+        "drohne": "markiert",
+        "erklaerung": "Klingt plausibel, trifft hier aber nicht zu: Die Hardware ist schon da und geprüft. Die AI kennt den Stand im Betrieb nicht. Solche Einträge blähen das Register nur auf.",
+        "lernziel": "L1-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L1-R06",
+        "ort": "zufahrt",
+        "beobachtung": "Die Drohne markiert «Wechselkursrisiko». Du schaust nach: Der Vertrag mit dem Anbieter läuft in CHF und hat einen festen Preis.",
+        "istRisiko": false,
+        "drohne": "markiert",
+        "erklaerung": "Wechselkurse stehen in vielen allgemeinen Risikolisten. Bei einem festen Preis in CHF trifft das hier nicht zu. Ein Fehlalarm: Die AI hat geliefert, was oft stimmt, nicht was bei euch stimmt.",
+        "lernziel": "L1-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L1-R07",
+        "ort": "team",
+        "beobachtung": "Die Drohne markiert «Fehlende Mehrsprachigkeit». Der Betrieb hat einen einzigen Standort, und alle arbeiten auf Deutsch.",
+        "istRisiko": false,
+        "drohne": "markiert",
+        "erklaerung": "Für einen Betrieb mit Standorten in mehreren Sprachregionen wäre das ein Risiko. Hier nicht. Ein Fehlalarm: Die AI kennt euren Betrieb nicht und schlägt vor, was allgemein vorkommt.",
+        "lernziel": "L1-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L1-R08",
+        "ort": "lager",
+        "beobachtung": "Im Lager läuft im November die Hochsaison. Genau dann ist der Start des neuen Systems geplant.",
+        "istRisiko": true,
+        "drohne": "nicht_markiert",
+        "erklaerung": "Das weiss nur der Betrieb. Die AI kennt euren Kalender nicht, darum fehlt dieses Risiko in ihrer Liste.",
+        "lernziel": "L1-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L1-R09",
+        "ort": "nachbarn",
+        "beobachtung": "Der wichtigste Kunde bestellt über eine eigene Schnittstelle zum alten System. Über die Umstellung weiss er noch nichts.",
+        "istRisiko": true,
+        "drohne": "nicht_markiert",
+        "erklaerung": "Diese Schnittstelle kennt nur der Betrieb. Fällt sie beim Wechsel aus, kann der Kunde nicht mehr bestellen. In der Liste der AI fehlt das, weil sie eure Kunden nicht kennt.",
+        "lernziel": "L1-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L1-R10",
+        "ort": "geruest",
+        "beobachtung": "Die Buchhalterin erwähnt nebenbei: Nur sie weiss, wie die Sonderrabatte im alten System hinterlegt sind. Aufgeschrieben ist das nirgends.",
+        "istRisiko": true,
+        "drohne": "nicht_markiert",
+        "erklaerung": "Wissen, das nur in einem Kopf steckt, ist eine Altlast, die keine AI sieht. Fehlt es bei der Umstellung, stimmen die Preise nicht mehr. Solche Risiken ergänzen die Menschen im Projekt.",
+        "lernziel": "L1-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L1-R11",
+        "ort": "container",
+        "beobachtung": "Im Pausenraum steht eine neue Kaffeemaschine. Zwei Mitarbeitende finden den Kaffee schlechter als früher.",
+        "istRisiko": false,
+        "drohne": "nicht_markiert",
+        "erklaerung": "Kein Risiko für das Projekt: Der Kaffee beeinflusst keines seiner Ziele. Die Drohne hat die Stelle zu Recht nicht markiert. Nicht alles, was auffällt, gehört ins Register.",
+        "lernziel": "L1-Z3",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L1-R12",
+        "ort": "zufahrt",
+        "beobachtung": "Der Parkplatz vor dem Haus wird diese Woche neu markiert. Am Freitag sind die Arbeiten fertig.",
+        "istRisiko": false,
+        "drohne": "nicht_markiert",
+        "erklaerung": "Kein Risiko für das Projekt: Die Arbeiten sind vor dem Start vorbei und berühren das neue System nicht. Die Drohne hat die Stelle zu Recht nicht markiert.",
+        "lernziel": "L1-Z3",
+        "autor": "CC",
+        "status": "entwurf"
+      }
+    ]
+  },
   "situationenProDurchgang": 8,
   "situationen": [
     {
@@ -69,7 +207,7 @@
           "wirkung": {
             "budget": "0",
             "zeit": "+klein",
-            "stabilitaet": "-gross"
+            "stabilitaet": "-mittel"
           },
           "einstufung": "riskant",
           "erklaerung": "Du sparst Zeit, aber die Liste kennt dein Projekt nicht. Spezifische Risiken wie eure Altdaten oder die Hochsaison im Lager fehlen, und niemand im Team steht hinter dem Register."

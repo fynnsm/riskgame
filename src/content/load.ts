@@ -1,4 +1,5 @@
 import type { ContentRules } from './effects.ts';
+import { canDrawTour } from './mechanics-rules.ts';
 import type { Level } from './schema.ts';
 import { validateLevel } from './validate.ts';
 
@@ -15,15 +16,35 @@ export interface LoadResult {
   warnings: string[];
 }
 
-/** F-906: the published build shows released situations only, unless drafts are switched on. */
-export function selectPlayable(level: Level, showDrafts: boolean): PlayableLevel {
-  const situationen = showDrafts
-    ? level.situationen
-    : level.situationen.filter((s) => s.status === 'freigegeben');
-  return {
-    level: { ...level, situationen },
-    available: situationen.length >= level.situationenProDurchgang,
-  };
+/** The level without its site tour. */
+export function withoutTour(level: Level): Level {
+  const rest = { ...level };
+  delete rest.rundgang;
+  return rest;
+}
+
+/**
+ * F-906: the published build shows released content only, unless drafts are switched on.
+ * A level with too few released situations is locked. A tour with too few released places
+ * is left out instead: the level is complete without it (M-01).
+ */
+export function selectPlayable(
+  level: Level,
+  showDrafts: boolean,
+  rules: Pick<ContentRules, 'tourDraw'>,
+): PlayableLevel {
+  if (showDrafts) {
+    return { level, available: level.situationen.length >= level.situationenProDurchgang };
+  }
+  const situationen = level.situationen.filter((s) => s.status === 'freigegeben');
+  const available = situationen.length >= level.situationenProDurchgang;
+  const tour = level.rundgang;
+  if (!tour) return { level: { ...level, situationen }, available };
+  const stellen = tour.stellen.filter((s) => s.status === 'freigegeben');
+  if (!canDrawTour(stellen, rules.tourDraw)) {
+    return { level: { ...withoutTour(level), situationen }, available };
+  }
+  return { level: { ...level, situationen, rundgang: { ...tour, stellen } }, available };
 }
 
 /**
@@ -52,7 +73,7 @@ export function loadLevels(
       );
       continue;
     }
-    byNumber.set(result.level.nummer, selectPlayable(result.level, showDrafts));
+    byNumber.set(result.level.nummer, selectPlayable(result.level, showDrafts, rules));
   }
 
   const levels = [...byNumber.values()].sort((a, b) => a.level.nummer - b.level.nummer);

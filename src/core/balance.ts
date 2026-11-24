@@ -63,6 +63,8 @@ export const BALANCE = {
     fairFrom: 5,
     /** Points for the final inspection: good, fair, poor. */
     points: { good: 2, fair: 1, poor: 0 },
+    /** M-13: what the tour does to the stability the building starts with. */
+    stability: { good: '+klein', fair: '0', poor: '-klein' },
   },
 
   /** M-20 to M-28: events and the four strategies. */
