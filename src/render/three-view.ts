@@ -26,7 +26,9 @@ import { decorationFor, momentFor, timeOfDay } from './director.ts';
 import type { Lighting, TimeOfDay } from './palette.ts';
 import { C, LIGHTING } from './palette.ts';
 import { TUNING } from './tuning.ts';
-import { buildCity, CAR_COUNT, carPlacement, lotPosition } from './city.ts';
+import { buildCity, gridShift, lotPosition, PITCH } from './city.ts';
+import type { Life } from './life.ts';
+import { createLife } from './life.ts';
 import { createFrameStats } from './frame-stats.ts';
 
 /**
@@ -216,24 +218,19 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   // --- City (F-410): built once, never touched again ---
   let lotCount = 5;
   let cityMesh: InstancedMesh | null = null;
-  let carsMesh: InstancedMesh | null = null;
+  let life: Life | null = null;
   let lightsMesh: InstancedMesh | null = null;
   let blobsMesh: InstancedMesh | null = null;
   // Unlit, so lamps and windows glow however dark the night is.
   const glow = new MeshBasicMaterial({ color: C.white });
-  const carMatrix = new Matrix4();
-  const carBody = new Matrix4();
-  const carCabin = new Matrix4();
-  const carQuaternion = new Quaternion();
-  const carEuler = new Euler();
-  const carPosition = new Vector3();
-  const one = new Vector3(1, 1, 1);
-
   function rebuildCity(): void {
     if (cityMesh) dropMesh(cityMesh);
-    if (carsMesh) dropMesh(carsMesh);
     if (lightsMesh) dropMesh(lightsMesh);
     if (blobsMesh) dropMesh(blobsMesh);
+    if (life) {
+      for (const mesh of life.meshes) mesh.removeFromParent();
+      life.dispose();
+    }
     const city = buildCity(lotCount);
     cityMesh = buildMesh(city.parts);
     lightsMesh = buildMesh(city.lights, glow);
@@ -241,30 +238,19 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     lightsMesh.receiveShadow = false;
     blobsMesh = buildMesh(city.blobs);
     blobsMesh.castShadow = false;
-    scene.add(cityMesh, lightsMesh, blobsMesh);
+    life = createLife({
+      unitBox,
+      lit: material,
+      glow,
+      grid: { pitch: PITCH, reach: TUNING.city.reach, shift: gridShift(lotCount) },
+      swayTrees: city.swayTrees,
+      ponds: city.ponds,
+      chimneys: city.chimneys,
+      viewDirection,
+      seed: 20261124,
+    });
+    scene.add(cityMesh, lightsMesh, blobsMesh, ...life.meshes);
     applyDecoration();
-    const carParts: Part[] = [];
-    for (let i = 0; i < CAR_COUNT; i++) {
-      const color = [C.red, C.yellow, C.carBlue, C.green, C.white, C.carOrange][i % 6] ?? C.white;
-      carParts.push(box(color, 1.9, 0.55, 1, 0, 0, 0), box(C.carGlass, 1, 0.42, 0.86, 0, 0, 0));
-    }
-    carsMesh = buildMesh(carParts);
-    carsMesh.castShadow = false;
-    scene.add(carsMesh);
-    carBody.makeScale(1.9, 0.55, 1).setPosition(0, 0.5, 0);
-    carCabin.makeScale(1, 0.42, 0.86).setPosition(-0.1, 0.95, 0);
-  }
-
-  function moveCars(time: number): void {
-    if (!carsMesh) return;
-    for (let i = 0; i < CAR_COUNT; i++) {
-      const placement = carPlacement(i, time, lotCount);
-      carQuaternion.setFromEuler(carEuler.set(0, placement.rotation, 0));
-      carMatrix.compose(carPosition.set(placement.x, 0, placement.z), carQuaternion, one);
-      carsMesh.setMatrixAt(i * 2, new Matrix4().multiplyMatrices(carMatrix, carBody));
-      carsMesh.setMatrixAt(i * 2 + 1, new Matrix4().multiplyMatrices(carMatrix, carCabin));
-    }
-    carsMesh.instanceMatrix.needsUpdate = true;
   }
 
   // --- Lots and towers ---
@@ -778,6 +764,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     if (lightsMesh) lightsMesh.visible = light.lightsOn && decoration.nightLights;
     // Simple dark patches stand in for shadows wherever the real ones are switched off.
     if (blobsMesh) blobsMesh.visible = !decoration.softShadows;
+    life?.setQuality(quality as Quality);
   }
 
   function applyQuality(): void {
@@ -807,7 +794,18 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     lastTime = seconds;
     clock += dt;
 
-    moveCars(reducedMotion ? 0 : clock);
+    const focusLot = model && model.focus !== null ? lotPosition(model.focus, lotCount) : null;
+    // With reduced motion the decoration stands still instead of drifting (B0.6).
+    life?.update({
+      time: reducedMotion ? 0 : clock,
+      dt: reducedMotion ? 0 : dt,
+      night,
+      deciding: model?.deciding ?? false,
+      focus: focusLot,
+      keepClear: focusLot
+        ? [focusLot]
+        : Array.from({ length: lotCount }, (_, i) => lotPosition(i, lotCount)),
+    });
     for (const visual of visuals) {
       const moving = visual.animated || visual.dropStart !== null || visual.collapseStart !== null;
       if (visual.dirty || moving) {
@@ -947,6 +945,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       canvas.removeEventListener('webglcontextlost', onContextLost);
       canvas.removeEventListener('webglcontextrestored', onContextRestored);
       for (const mesh of meshes) mesh.dispose();
+      life?.dispose();
       unitBox.dispose();
       material.dispose();
       glow.dispose();

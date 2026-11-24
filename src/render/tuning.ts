@@ -42,6 +42,20 @@ export const TUNING = {
     shadowMapSize: 2048,
   },
 
+  /** B3: one shared signal for all crossings keeps vehicles from driving into each other. */
+  traffic: {
+    greenSeconds: 7,
+    allRedSeconds: 1,
+    laneOffset: 0.95,
+    /** Distance of the stop line from the centre of a crossing. */
+    stopBefore: 2.4,
+    minGap: 1.2,
+    braking: 7,
+    acceleration: 4,
+    perLane: 2,
+    cruise: { auto: 5, lieferwagen: 4.2, bus: 3.6, tram: 3.8 },
+  },
+
   /** B0.5: no animation holds up the player longer than this, and each can be skipped. */
   sequence: {
     maxSeconds: 4,
@@ -53,6 +67,10 @@ export const TUNING = {
   /** B3: purely decorative life, per quality step 0, 1, 2. */
   decoration: {
     clouds: [6, 8, 10],
+    /** Clouds fade out near the building in focus, so they never cover it. */
+    cloud: { hideWithin: 13, fullBeyond: 22, heights: [17, 23], speed: 0.55, range: 150 },
+    plane: { clearance: 24, spread: 22, height: 27, seconds: 16, range: 190 },
+    shadowOpacity: 0.14,
     planeEverySeconds: { min: 20, max: 40 },
     birds: 7,
     pedestrians: 24,

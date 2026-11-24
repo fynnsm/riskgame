@@ -242,7 +242,9 @@ describe('sceneModel (F-408, F-409)', () => {
   it('follows the active level and grows one floor per decision', () => {
     const run = replay(level, 1, [], ['A', 'A']);
     const model = sceneModel(levels, withRun(emptyProgress(), run), run);
-    expect(model).toMatchObject({ mode: 'level', focus: 0 });
+    expect(model).toMatchObject({ mode: 'level', focus: 0, deciding: true });
+    const answered = step(run, level, { type: 'choose', optionId: 'A' });
+    expect(sceneModel(levels, emptyProgress(), answered).deciding).toBe(false);
     expect(model.lots[0]).toMatchObject({
       status: 'active',
       collapsed: false,

@@ -146,6 +146,27 @@ export function planeMayCrossCentre(phase: string | null): boolean {
   return phase !== 'situation';
 }
 
+/**
+ * How far to the side of the building a plane flies, in world units. While a level is
+ * played it always keeps clear, so it can never be over the middle when a decision starts.
+ */
+export function planeLateralOffset(random: number, mayCrossCentre: boolean): number {
+  const r = Math.min(Math.max(random, 0), 0.999999);
+  const { clearance, spread } = TUNING.decoration.plane;
+  if (mayCrossCentre) return (r - 0.5) * 2 * (clearance + spread);
+  const side = r < 0.5 ? -1 : 1;
+  const within = r < 0.5 ? r * 2 : (r - 0.5) * 2;
+  return side * (clearance + within * spread);
+}
+
+/** How visible a cloud is, 0 to 1, by its distance on screen from the building in focus. */
+export function cloudVisibility(distance: number | null): number {
+  if (distance === null) return 1;
+  const { hideWithin, fullBeyond } = TUNING.decoration.cloud;
+  const t = Math.min(Math.max((distance - hideWithin) / (fullBeyond - hideWithin), 0), 1);
+  return t * t * (3 - 2 * t);
+}
+
 /** Seconds until the next plane, from a decoration random number in [0, 1). */
 export function nextPlaneDelay(random: number): number {
   const { min, max } = TUNING.decoration.planeEverySeconds;

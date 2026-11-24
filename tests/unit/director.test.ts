@@ -3,11 +3,13 @@ import { startRun } from '../../src/core/game.ts';
 import type { Quality } from '../../src/render/director.ts';
 import {
   celebrationFor,
+  cloudVisibility,
   cityTitle,
   createDecorRandom,
   decorationFor,
   momentFor,
   nextPlaneDelay,
+  planeLateralOffset,
   planeMayCrossCentre,
   resultSequence,
   timeOfDay,
@@ -194,6 +196,38 @@ describe('planes (B3)', () => {
     expect(nextPlaneDelay(1)).toBe(40);
     expect(nextPlaneDelay(-3)).toBe(20);
     expect(nextPlaneDelay(7)).toBe(40);
+  });
+});
+
+describe('keeping the building in view (B3)', () => {
+  it('routes a plane clear of the building while a level is played, on either side', () => {
+    const { clearance, spread } = TUNING.decoration.plane;
+    for (const r of [0, 0.1, 0.49, 0.5, 0.9, 0.999, 1, -2, 5]) {
+      const offset = planeLateralOffset(r, false);
+      expect(Math.abs(offset)).toBeGreaterThanOrEqual(clearance);
+      expect(Math.abs(offset)).toBeLessThanOrEqual(clearance + spread);
+    }
+    expect(planeLateralOffset(0.2, false)).toBeLessThan(0);
+    expect(planeLateralOffset(0.8, false)).toBeGreaterThan(0);
+  });
+
+  it('lets a plane fly anywhere, also straight over the middle, when nobody decides', () => {
+    expect(planeLateralOffset(0.5, true)).toBe(0);
+    expect(planeLateralOffset(0, true)).toBeLessThan(-TUNING.decoration.plane.clearance);
+  });
+
+  it('hides a cloud over the building, shows it fully far away and fades in between', () => {
+    const { hideWithin, fullBeyond } = TUNING.decoration.cloud;
+    expect(cloudVisibility(0)).toBe(0);
+    expect(cloudVisibility(hideWithin)).toBe(0);
+    expect(cloudVisibility(fullBeyond)).toBe(1);
+    expect(cloudVisibility(1000)).toBe(1);
+    const middle = cloudVisibility((hideWithin + fullBeyond) / 2);
+    expect(middle).toBeCloseTo(0.5, 5);
+  });
+
+  it('shows every cloud when there is nothing to keep clear', () => {
+    expect(cloudVisibility(null)).toBe(1);
   });
 });
 
