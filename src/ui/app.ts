@@ -21,6 +21,9 @@ import { buildErrorReport } from '../logging/report.ts';
 import { cityTitle, resultSequence } from '../render/director.ts';
 import { TUNING } from '../render/tuning.ts';
 import type { ProgressStore } from '../storage/progress-store.ts';
+import type { SettingsStore } from '../storage/settings-store.ts';
+import type { Sound } from '../audio/sound.ts';
+import { criticalGauges } from '../core/gauges.ts';
 import { clear, button, el } from './dom.ts';
 import {
   briefingScreen,
@@ -82,6 +85,8 @@ export interface AppOptions {
   debug?: boolean;
   /** A3: the label «Entwurf» is for authors, not for players. */
   showDraftLabels?: boolean;
+  sound: Sound;
+  settings: SettingsStore;
 }
 
 export interface App {
@@ -101,6 +106,12 @@ export function createApp(options: AppOptions): App {
   let notices: string[] = [...(options.startupNotices ?? [])];
   let lastActionAt = env.now();
   let view: SceneView | null = null;
+  const { sound } = options;
+  let soundTimers: number[] = [];
+  /** B6: the text panel can be folded away so the building is seen; 'auto' folds it for a moment. */
+  let sheet: 'open' | 'collapsed' = 'open';
+  let sheetTimer = 0;
+
   /** B5: the short sequence between the last decision and the evaluation, while it plays. */
   let sequence: { timer: number } | null = null;
 
@@ -144,6 +155,8 @@ export function createApp(options: AppOptions): App {
   function endSequence(skipped: boolean): void {
     if (!sequence) return;
     window.clearTimeout(sequence.timer);
+    soundTimers.forEach((timer) => window.clearTimeout(timer));
+    soundTimers = [];
     sequence = null;
     view?.setPresenting(false);
     logger.info('sequence.ended', { skipped });
@@ -156,6 +169,20 @@ export function createApp(options: AppOptions): App {
     logger.info('sequence.started', { outcome: run.outcome, seconds: plan.seconds });
     sequence = { timer: window.setTimeout(() => endSequence(false), plan.seconds * 1000) };
     view?.setPresenting(true);
+    // B7: every sound here goes with something that is also shown.
+    const stars = starsFor(run);
+    const later = (seconds: number, play: () => void): void => {
+      soundTimers.push(window.setTimeout(play, seconds * 1000));
+    };
+    if (run.outcome === 'collapsed') sound.play('collapse');
+    if (run.outcome === 'rejected') later(plan.bannerAt, () => sound.play('stamp'));
+    if (run.outcome === 'completed') {
+      later(plan.bannerAt, () => sound.play('success'));
+      for (let i = 0; i < stars; i++) {
+        later(plan.bannerAt + 0.5 + i * STAR_INTERVAL, () => sound.play('star'));
+      }
+      if (stars === 3) later(1, () => sound.play('firework'));
+    }
   }
 
   const canvasHost = el('div', { class: 'canvas-host', attrs: { 'aria-hidden': 'true' } });
@@ -199,7 +226,72 @@ export function createApp(options: AppOptions): App {
     }
   }
 
-  const topBar = el('div', { class: 'top-bar' }, [menuButton, hudHost]);
+  const muteButton = button('', () => toggleMute(), { class: 'btn-menu btn-mute', testId: 'mute' });
+  const sheetButton = button('', () => setSheet(sheet === 'open' ? 'collapsed' : 'open'), {
+    class: 'btn-sheet',
+    testId: 'sheet-toggle',
+  });
+  const topBar = el('div', { class: 'top-bar' }, [menuButton, muteButton, hudHost]);
+
+  /** F-802: always visible, and the choice is remembered. Says in words what it is, not only by a symbol. */
+  function paintMute(): void {
+    const muted = sound.isMuted();
+    clear(muteButton);
+    muteButton.append(
+      el('span', {
+        class: 'menu-symbol',
+        text: muted ? T.sound.symbolOff : T.sound.symbolOn,
+        attrs: { 'aria-hidden': 'true' },
+      }),
+      el('span', { class: 'menu-word', text: muted ? T.sound.off : T.sound.on }),
+    );
+    muteButton.setAttribute('aria-pressed', String(muted));
+  }
+
+  function toggleMute(): void {
+    const muted = !sound.isMuted();
+    sound.setMuted(muted);
+    if (!options.settings.save({ muted })) addNotice(T.notices.saveFailed);
+    paintMute();
+  }
+
+  function setSheet(next: 'open' | 'collapsed'): void {
+    window.clearTimeout(sheetTimer);
+    sheet = next;
+    root.dataset.sheet = sheet;
+    sheetButton.textContent = sheet === 'open' ? T.sheet.collapse : T.sheet.expand;
+    sheetButton.setAttribute('aria-expanded', String(sheet === 'open'));
+    logger.info('sheet.toggled', { open: sheet === 'open' });
+    // The camera frames the building in what is free; wait for the layout to settle.
+    window.setTimeout(updateInsets, 0);
+    window.setTimeout(updateInsets, 260);
+  }
+
+  /** G-63: on a phone the sheet folds away by itself for a moment when a floor is set. */
+  function glimpseBuilding(): void {
+    const tall = !window.matchMedia('(min-width: 900px) and (min-aspect-ratio: 5/4)').matches;
+    if (!tall || !hasPicture() || env.reducedMotion || sheet === 'collapsed') return;
+    setSheet('collapsed');
+    sheetTimer = window.setTimeout(() => setSheet('open'), TUNING.sequence.floorSetSeconds * 1000);
+  }
+
+  /** G-60: the numbers count from the old value to the new one instead of jumping. */
+  function countGauges(): void {
+    for (const gauge of hudHost.querySelectorAll<HTMLElement>('[data-from]')) {
+      const number = gauge.querySelector<HTMLElement>('.gauge-number');
+      const from = Number(gauge.dataset.from);
+      const to = Number(gauge.dataset.value);
+      if (!number || from === to || env.reducedMotion) continue;
+      const started = env.now();
+      const tick = (): void => {
+        const share = Math.min(1, (env.now() - started) / 450);
+        number.textContent = String(Math.round(from + (to - from) * share));
+        if (share < 1 && number.isConnected) window.requestAnimationFrame(tick);
+      };
+      number.textContent = String(from);
+      window.requestAnimationFrame(tick);
+    }
+  }
 
   /**
    * The canvas fills the window and the HTML floats above it. The view is told which
@@ -324,6 +416,12 @@ export function createApp(options: AppOptions): App {
     const before = active.run;
     const after = step(before, active.level, action);
     if (action.type === 'choose') {
+      sound.play('choice');
+      sound.play('floor');
+      if (criticalGauges(after.gauges).length > criticalGauges(before.gauges).length) {
+        sound.play('warning');
+      }
+      glimpseBuilding();
       const choice = after.history[after.history.length - 1];
       logger.info('choice.made', {
         levelId: after.levelId,
@@ -374,6 +472,7 @@ export function createApp(options: AppOptions): App {
     // G-53: finishing the last building leads to the closing screen instead of the start page.
     if (finished && allCompleted()) {
       logger.info('finale.opened', { from: 'level' });
+      sound.play('plane');
       finale = true;
     }
     save();
@@ -448,6 +547,7 @@ export function createApp(options: AppOptions): App {
         startLevel,
         showFinale: () => {
           logger.info('finale.opened', { from: 'start' });
+          sound.play('plane');
           finale = true;
           render();
         },
@@ -508,7 +608,10 @@ export function createApp(options: AppOptions): App {
 
       clear(hudHost);
       const active = activeRun();
-      if (active && overlay !== 'error') hudHost.append(hud(active.run));
+      if (active && overlay !== 'error') {
+        hudHost.append(hud(active.run));
+        countGauges();
+      }
       root.dataset.mode = active ? 'level' : 'city';
       root.dataset.presenting = sequence ? 'true' : 'false';
       menuButton.hidden = overlay === 'error';
@@ -604,7 +707,20 @@ export function createApp(options: AppOptions): App {
   return {
     start(): void {
       clear(root);
-      root.append(canvasHost, topBar, panel, debugHost);
+      root.append(canvasHost, topBar, panel, sheetButton, debugHost);
+      root.dataset.sheet = sheet;
+      sheetButton.textContent = T.sheet.collapse;
+      sheetButton.setAttribute('aria-expanded', 'true');
+      paintMute();
+      // F-804: the first tap or key press is what allows the browser to make a sound at all.
+      const unlock = (): void => {
+        sound.unlock();
+        sound.setAmbience(true);
+        document.removeEventListener('pointerdown', unlock);
+        document.removeEventListener('keydown', unlock);
+      };
+      document.addEventListener('pointerdown', unlock);
+      document.addEventListener('keydown', unlock);
       restore();
       try {
         view = options.createView(canvasHost);

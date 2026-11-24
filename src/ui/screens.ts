@@ -85,8 +85,9 @@ function stepper(run: LevelRun): HTMLElement {
     run.situationIds.map((_, index) => {
       const choice = run.history[index];
       if (choice) {
+        const fresh = run.phase === 'feedback' && index === run.history.length - 1;
         return el('li', {
-          class: `step step-done step-${choice.rating}`,
+          class: `step step-done step-${choice.rating}${fresh ? ' step-new' : ''}`,
           text: T.ratingSymbols[choice.rating],
           attrs: { title: T.ratings[choice.rating] },
         });
@@ -115,7 +116,7 @@ export function hud(run: LevelRun): HTMLElement {
         const critical = value < CRITICAL_BELOW;
         const fill = el('div', { class: `gauge-fill gauge-${gaugeBand(value)}` });
         fill.style.width = `${value}%`;
-        const change = delta && delta[key] !== 0 ? ` (${signed(delta[key])})` : '';
+        const change = delta ? delta[key] : 0;
         return el(
           'div',
           {
@@ -128,15 +129,31 @@ export function hud(run: LevelRun): HTMLElement {
               'aria-valuenow': String(value),
               'data-testid': `gauge-${key}`,
               'data-value': String(value),
+              // Where the number comes from; the app counts from here to the value (G-60).
+              'data-from': String(value - change),
             },
           },
           [
-            el('span', { class: 'gauge-label', text: T.gauges[key] }),
+            el('span', { class: 'gauge-label' }, [
+              el('span', {
+                class: `gauge-icon gauge-icon-${key}`,
+                attrs: { 'aria-hidden': 'true' },
+              }),
+              T.gauges[key],
+            ]),
             el('div', { class: 'gauge-bar', attrs: { 'aria-hidden': 'true' } }, [fill]),
-            el('span', {
-              class: 'gauge-value',
-              text: `${value}${change}${critical ? ` · ${T.gaugeCritical}` : ''}`,
-            }),
+            el('span', { class: 'gauge-value' }, [
+              el('span', { class: 'gauge-number', text: String(value) }),
+              critical ? ` · ${T.gaugeCritical}` : null,
+            ]),
+            // The change floats beside the gauge for a moment; the feedback text lists it as well.
+            change !== 0
+              ? el('span', {
+                  class: `gauge-delta ${change > 0 ? 'gauge-delta-up' : 'gauge-delta-down'}`,
+                  text: signed(change),
+                  attrs: { 'aria-hidden': 'true' },
+                })
+              : null,
           ],
         );
       }),

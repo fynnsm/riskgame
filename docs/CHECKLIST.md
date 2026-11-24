@@ -40,6 +40,6 @@ Automatische Tests sehen nicht, ob das Spiel gut aussieht und sich gut anfühlt.
 - [ ] Auf einem Mittelklasse-Handy läuft die 3D-Ansicht flüssig
 - [ ] Das Handy wird nach zehn Minuten nicht auffällig warm
 
-## Ton
+## Ton, Licht und Bewegung
 
-Noch nicht umgesetzt (Meilenstein M5).
+Siehe `docs/CHECKLIST-VISUAL.md`: Dort steht, was am Grafik-Update und am Ton auf echten Geräten zu prüfen ist.

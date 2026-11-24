@@ -1,6 +1,6 @@
 # Risk Tower (Arbeitstitel) – Requirements
 
-Version 0.7 · Stand 24.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
+Version 0.8 · Stand 24.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
 
 ## 1. Zweck
 
@@ -322,7 +322,7 @@ Was bis zur Abgabe noch zu tun ist, in der Reihenfolge, in der es sinnvoll ist. 
 ### Jetzt: damit die Gruppe testen kann
 
 - [ ] Pull Request 1 durchsehen und mergen
-- [ ] Spiel auf dem eigenen Handy und Laptop durchspielen, nach `docs/CHECKLIST.md` (Q-09)
+- [ ] Spiel auf dem eigenen Handy und Laptop durchspielen, nach `docs/CHECKLIST.md` und `docs/CHECKLIST-VISUAL.md` (Q-09, G-81)
 - [ ] Repository öffentlich stellen und GitHub Pages einschalten, Schritte im README (B-01)
 - [ ] Variable `SHOW_DRAFTS=1` setzen, solange die Fälle Entwürfe sind (F-906)
 - [ ] Link an die Gruppe schicken
@@ -342,8 +342,8 @@ Was bis zur Abgabe noch zu tun ist, in der Reihenfolge, in der es sinnvoll ist. 
 
 ### Entwicklung: Feinschliff (M5)
 
-- [ ] Ton für Bauen, Wahl, Wackeln, Einsturz und Erfolg, im Browser erzeugt (F-801, F-804, F-805)
-- [ ] Stumm-Schalter, immer sichtbar, Wahl gespeichert (F-802, F-803)
+- [x] Ton für Bauen, Wahl, Wackeln, Einsturz und Erfolg, im Browser erzeugt (F-801, F-804, F-805)
+- [x] Stumm-Schalter, immer sichtbar, Wahl gespeichert (F-802, F-803)
 - [ ] Theorie während der Situationen nachschlagen (F-506)
 - [x] Debug-Overlay mit Bildrate, Anzeigen, Seed und Level-Sprung über `?debug=1` (L-09)
 - [ ] Kontrast nach WCAG AA und Schriftgrössen messen statt schätzen (N-302)
@@ -418,13 +418,13 @@ Stand: **U** = umgesetzt, **O** = offen.
 | G-55 | Startseite: Schriftzug, langsamer Kameraflug, ein Hauptknopf («Spielen» oder «Weiterspielen»), Bauplätze zeigen den Zustand; Einleitungstext nur, solange kein Level abgeschlossen ist | M | U |
 | G-56 | Levelstart: Die Kamera fliegt von der Stadtansicht zum Bauplatz | S | U (die Kamera gleitet von der Stadtansicht zum Bauplatz) |
 | G-57 | Jeder Bildschirm setzt beim Erscheinen den Fokus auf seine Überschrift | M | U |
-| G-60 | Anzeigen mit Symbol (Münze, Uhr, Gebäude); Wertänderung zählt sichtbar, die Differenz schwebt kurz daneben; unter 30 pulsiert der Rahmen ruhig | S | O |
-| G-61 | Fortschrittspunkte zeigen das Symbol der Einstufung mit kurzer Animation | K | O (Symbole sind vorhanden) |
-| G-62 | Karten und Dialoge einheitlich; Übergänge zwischen Bildschirmen 150 bis 250 ms | S | O |
-| G-63 | Handy: Das Textfeld lässt sich auf etwa ein Drittel einklappen und klappt beim Setzen eines Stockwerks kurz von selbst ein | S | O |
-| G-64 | Laptop: Ein Knopf blendet die Spalte aus | S | O |
-| G-65 | Theorie-Grafiken im selben Stil wie das Spiel | K | O |
-| G-70 | Ton: Geräusche für Fertigstellung, Sterne, Feuerwerk, Stempel und Flugzeug, leise Stadt-Atmosphäre; alles über den Stumm-Schalter; keine Information nur über Ton | S | O (auch der Ton aus F-801 fehlt noch) |
-| G-80 | E2E-Tests für die neuen Bildschirme, für reduzierte Bewegung, für `?renderer=none` und für die Zeichenaufrufe; ein Lauf speichert Bildschirmfotos als Artefakt der CI | M | O (Zeichenaufrufe sind getestet, Bildschirmfotos werden gespeichert) |
-| G-81 | `docs/CHECKLIST-VISUAL.md`: was auf echten Geräten zu prüfen ist, inklusive Ton und Bildrate | S | O |
+| G-60 | Anzeigen mit Symbol (Münze, Uhr, Gebäude); Wertänderung zählt sichtbar, die Differenz schwebt kurz daneben; unter 30 pulsiert der Rahmen ruhig | S | U |
+| G-61 | Fortschrittspunkte zeigen das Symbol der Einstufung mit kurzer Animation | K | U |
+| G-62 | Karten und Dialoge einheitlich; Übergänge zwischen Bildschirmen 150 bis 250 ms | S | U (Übergänge 200 ms) |
+| G-63 | Handy: Das Textfeld lässt sich auf etwa ein Drittel einklappen und klappt beim Setzen eines Stockwerks kurz von selbst ein | S | U |
+| G-64 | Laptop: Ein Knopf blendet die Spalte aus | S | U |
+| G-65 | Theorie-Grafiken im selben Stil wie das Spiel | K | U |
+| G-70 | Ton: Geräusche für Fertigstellung, Sterne, Feuerwerk, Stempel und Flugzeug, leise Stadt-Atmosphäre; alles über den Stumm-Schalter; keine Information nur über Ton | S | U (alle Geräusche im Browser erzeugt; mit dem Stumm-Schalter aus F-802) |
+| G-80 | E2E-Tests für die neuen Bildschirme, für reduzierte Bewegung, für `?renderer=none` und für die Zeichenaufrufe; ein Lauf speichert Bildschirmfotos als Artefakt der CI | M | U |
+| G-81 | `docs/CHECKLIST-VISUAL.md`: was auf echten Geräten zu prüfen ist, inklusive Ton und Bildrate | S | U |
 

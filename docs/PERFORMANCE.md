@@ -51,3 +51,4 @@ gibt pro Szene eine Zeile `MEASURE …` mit Zeichenaufrufen und Dreiecken aus. V
 | 24.11.2026 | Gebäudetypen und Baustelle (B4) | 9 | 10 | 14 | 220.2 kB |
 | 24.11.2026 | Bildschirme nach einem Level (B5): Feuerwerk, Konfetti, Prüfer, Absperrband | 9 | 10 | 14 | 222.6 kB |
 | 24.11.2026 | Schlussbildschirm, Startseite, Kameraflug (B5) | 9 | 10 | 14 | 224.8 kB |
+| 24.11.2026 | Oberfläche und Ton (B6, B7) | 9 | 10 | 14 | 227.7 kB |

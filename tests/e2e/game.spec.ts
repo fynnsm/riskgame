@@ -670,6 +670,75 @@ test('shows the final picture at once with reduced motion (B0.6)', async ({ page
   await expect(page.getByTestId('accepted')).toBeVisible();
 });
 
+test('keeps a mute switch in view and remembers the choice (F-802)', async ({ page }) => {
+  await page.goto(SIMPLE);
+  const mute = page.getByTestId('mute');
+  await expect(mute).toBeVisible();
+  await expect(mute).toHaveAttribute('aria-pressed', 'false');
+  await expect(mute).toContainText('Ton an');
+
+  await mute.click();
+  await expect(mute).toHaveAttribute('aria-pressed', 'true');
+  await expect(mute).toContainText('Ton aus');
+  await page.reload();
+  await expect(page.getByTestId('mute')).toHaveAttribute('aria-pressed', 'true');
+
+  // The switch stays in view inside a level as well.
+  await startLevel1(page);
+  await expect(page.getByTestId('mute')).toBeVisible();
+  // Sound must never break the game: playing on with the switch in either position works.
+  await page.getByTestId('mute').click();
+  await throughBriefingAndTheory(page);
+  await choose(page, 'gut');
+  await expect(screen(page, 'error')).toHaveCount(0);
+});
+
+test('shows a symbol per gauge and counts to the new value after a choice (G-60)', async ({
+  page,
+}) => {
+  await page.goto(SIMPLE);
+  await startLevel1(page);
+  await throughBriefingAndTheory(page);
+  await expect(page.locator('.gauge-icon')).toHaveCount(3);
+  await choose(page, 'riskant');
+  const stability = gauge(page, 'stabilitaet');
+  const value = await stability.getAttribute('data-value');
+  // However the number gets there, it ends on the value the game holds.
+  await expect(stability.locator('.gauge-number')).toHaveText(value ?? '');
+  await expect(stability.locator('.gauge-delta')).toHaveCount(1);
+});
+
+test('lets the text panel be folded away and brought back (G-63, G-64)', async ({ page }) => {
+  test.slow();
+  await page.goto('/?quality=1');
+  const toggle = page.getByTestId('sheet-toggle');
+  const panel = page.locator('.panel');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  const before = await panel.boundingBox();
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(toggle).toHaveText('Text ausklappen');
+  await expect
+    .poll(async () => {
+      const box = await panel.boundingBox();
+      const size = page.viewportSize();
+      if (!box || !before || !size) return false;
+      // Phone: clearly lower. Laptop: moved out of the window.
+      return box.height < before.height * 0.6 || box.x >= size.width;
+    })
+    .toBe(true);
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByTestId('play')).toBeVisible();
+});
+
+test('has no fold button where there is no picture to uncover', async ({ page }) => {
+  await page.goto(SIMPLE);
+  await expect(page.getByTestId('sheet-toggle')).toBeHidden();
+});
+
 test('ignores invalid URL parameters', async ({ page }) => {
   await page.goto('/?renderer=<script>&seed=abc');
   await expect(screen(page, 'city')).toBeVisible();

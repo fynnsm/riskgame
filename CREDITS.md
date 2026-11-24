@@ -6,7 +6,7 @@ Risk Tower verwendet nur eigene Inhalte und Open-Source-Bibliotheken (S-10).
 
 - **3D-Modelle:** Alle Gebäude, Fahrzeuge und Bäume werden im Code aus einfachen Klötzen erzeugt. Es gibt keine Modell- oder Texturdateien.
 - **Schrift:** Systemschrift des Geräts. Es werden keine Schriften geladen.
-- **Ton:** Noch nicht umgesetzt (Meilenstein M5). Geplant sind im Browser erzeugte Geräusche (F-805).
+- **Ton:** Alle Geräusche und die Stadt-Atmosphäre werden im Browser erzeugt (`src/audio/sound.ts`). Es gibt keine Audiodateien.
 - **Fälle und Theorie:** Entwürfe von Claude als Platzhalter, in den Dateien mit `autor: "CL"` und `status: "entwurf"` markiert. Die Gruppe prüft, ersetzt und ergänzt sie.
 
 ## Bibliotheken zur Laufzeit
