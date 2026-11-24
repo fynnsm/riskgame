@@ -13,7 +13,13 @@
     <link rel="stylesheet" href="/src/ui/styles.css" />
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <!-- Shown until the game has started; it needs no script and is styled by the stylesheet alone. -->
+      <div class="boot" role="status">
+        <p class="boot-title">Risk Tower</p>
+        <p>Wird geladen …</p>
+      </div>
+    </div>
     <noscript>Risk Tower braucht JavaScript.</noscript>
     <script type="module" src="/src/main.ts"></script>
   </body>

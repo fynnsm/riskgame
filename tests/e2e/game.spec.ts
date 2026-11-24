@@ -5,12 +5,15 @@ import { expect, test } from '@playwright/test';
 import type { Level, OptionId } from '../../src/content/schema.ts';
 import { replay } from '../../src/core/game.ts';
 import type { LevelRun } from '../../src/core/game.ts';
+import { criticalGauges } from '../../src/core/gauges.ts';
 import { step } from '../../src/core/game.ts';
 import type { Progress } from '../../src/core/progress.ts';
 import { starsFor } from '../../src/core/scoring.ts';
 import {
   LEVELS,
+  longestSituation,
   openWith,
+  progressAtSituation,
   progressInLevel,
   progressWhere,
   progressWithCompleted,
@@ -675,11 +678,15 @@ test('keeps a mute switch in view and remembers the choice (F-802)', async ({ pa
   const mute = page.getByTestId('mute');
   await expect(mute).toBeVisible();
   await expect(mute).toHaveAttribute('aria-pressed', 'false');
-  await expect(mute).toContainText('Ton an');
+  await expect(mute).toContainText('Ton: an');
+  await expect(mute).toHaveAttribute('aria-label', 'Ton stumm');
+  // N6: a loudspeaker as embedded SVG, not a letter that could be read as «close».
+  await expect(mute.locator('svg')).toHaveCount(1);
 
   await mute.click();
   await expect(mute).toHaveAttribute('aria-pressed', 'true');
-  await expect(mute).toContainText('Ton aus');
+  await expect(mute).toContainText('Ton: aus');
+  await expect(mute).toHaveAttribute('data-muted', 'true');
   await page.reload();
   await expect(page.getByTestId('mute')).toHaveAttribute('aria-pressed', 'true');
 
@@ -737,6 +744,115 @@ test('lets the text panel be folded away and brought back (G-63, G-64)', async (
 test('has no fold button where there is no picture to uncover', async ({ page }) => {
   await page.goto(SIMPLE);
   await expect(page.getByTestId('sheet-toggle')).toBeHidden();
+});
+
+for (const width of [360, 390, 430]) {
+  test(`shows gauges of equal height without a broken word at ${width}px (N4)`, async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width, height: 844 });
+    // A critical gauge carries the longest text, so that is the state to check.
+    const critical = progressWhere(
+      1,
+      (run) => run.phase === 'situation' && criticalGauges(run.gauges).length > 0,
+    );
+    await openWith(page, '/?quality=0', critical);
+    const gauges = page.locator('[data-testid^="gauge-"]');
+    await expect(gauges).toHaveCount(3);
+
+    const boxes = await gauges.evaluateAll((nodes) =>
+      nodes.map((n) => ({
+        height: Math.round(n.getBoundingClientRect().height),
+        clippedX: n.scrollWidth > n.clientWidth + 1,
+        clippedY: n.scrollHeight > n.clientHeight + 1,
+        label: n.getAttribute('aria-label'),
+        // One line of text only: nothing in the gauge is taller than a line and a half.
+        lines: [...n.querySelectorAll('.gauge-label, .gauge-value')].map((part) =>
+          Math.round(part.getBoundingClientRect().height),
+        ),
+      })),
+    );
+    expect(new Set(boxes.map((b) => b.height)).size).toBe(1);
+    expect(boxes.every((b) => !b.clippedX && !b.clippedY)).toBe(true);
+    expect(boxes.map((b) => b.label)).toEqual(['Budget', 'Zeit', 'Stabilität']);
+    for (const box of boxes) for (const line of box.lines) expect(line).toBeLessThan(30);
+    // Below 430px the name is there for screen readers only; the value stays visible.
+    await expect(gauges.first().locator('.gauge-number')).toBeVisible();
+    const nameWidth = await gauges
+      .first()
+      .locator('.gauge-name')
+      .evaluate((n) => n.getBoundingClientRect().width);
+    expect(nameWidth).toBeLessThanOrEqual(1);
+  });
+}
+
+test('lists the levels of the closing screen in two columns, stars flush right (N5)', async ({
+  page,
+}) => {
+  await openWith(page, SIMPLE, progressWithCompleted(5));
+  await page.getByTestId('play').click();
+  const rows = page.getByTestId('summary-row');
+  await expect(rows).toHaveCount(5);
+  const layout = await rows.evaluateAll((nodes) =>
+    nodes.map((row) => {
+      const name = row.querySelector('.summary-name')?.getBoundingClientRect();
+      const stars = row.querySelector('.stars')?.getBoundingClientRect();
+      return {
+        sameLine: name && stars ? Math.abs(name.top - stars.top) < 8 : false,
+        right: stars ? Math.round(stars.right) : -1,
+        after: name && stars ? stars.left >= name.right - 1 : false,
+      };
+    }),
+  );
+  expect(layout.every((row) => row.sameLine && row.after)).toBe(true);
+  expect(new Set(layout.map((row) => row.right)).size).toBe(1);
+  // The words stay for screen readers.
+  await expect(rows.first().locator('.stars-text')).toHaveText(' 3 von 3 Sternen');
+});
+
+for (const nummer of [1, 2, 3, 4, 5]) {
+  test(`leads to the options with one tap on a phone, level ${nummer} (N7)`, async ({ page }) => {
+    test.slow();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openWith(page, '/?quality=0', progressAtSituation(nummer, longestSituation(nummer)));
+    await expect(screen(page, 'situation')).toBeVisible();
+
+    const panel = page.locator('.panel');
+    const share = ((await panel.boundingBox())?.height ?? 0) / 844;
+    expect(share).toBeGreaterThan(0.6);
+    expect(share).toBeLessThanOrEqual(0.66);
+
+    const inView = () =>
+      page.getByTestId('option-1').evaluate((option) => {
+        const sheet = option.closest('.panel')?.getBoundingClientRect();
+        const box = option.getBoundingClientRect();
+        return sheet !== undefined && box.top >= sheet.top && box.top < sheet.bottom - 20;
+      });
+    if (!(await inView())) {
+      const hint = page.getByTestId('to-options');
+      await expect(hint).toBeVisible();
+      await expect(hint).toHaveText('Was tust du? ↓');
+      await hint.click();
+    }
+    await expect.poll(inView).toBe(true);
+    // Once the options are in view the hint has done its job.
+    await expect(page.getByTestId('to-options')).toBeHidden();
+  });
+}
+
+test('shows a loading state that needs no script and gives way to the game (N8)', async ({
+  page,
+}) => {
+  await page.route('**/*.js', (route) => route.abort());
+  await page.goto(SIMPLE);
+  await expect(page.locator('.boot')).toContainText('Risk Tower');
+  await expect(page.locator('.boot')).toContainText('Wird geladen');
+
+  await page.unroute('**/*.js');
+  await page.reload();
+  await expect(screen(page, 'city')).toBeVisible();
+  await expect(page.locator('.boot')).toHaveCount(0);
 });
 
 test('ignores invalid URL parameters', async ({ page }) => {
