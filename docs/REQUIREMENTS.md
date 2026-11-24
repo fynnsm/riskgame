@@ -1,6 +1,6 @@
 # Risk Tower (Arbeitstitel) – Requirements
 
-Version 0.4 · Stand 23.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
+Version 0.5 · Stand 24.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
 
 ## 1. Zweck
 
@@ -62,6 +62,7 @@ Bewertungsraster und Abgabetermine liegen noch nicht vor (siehe `later/BRAINSTOR
 | F-204 | Fällt eine Anzeige auf 0, scheitert das Projekt und das Gebäude stürzt ein | M | E |
 | F-205 | Das Gebäude neigt sich und wackelt umso stärker, je tiefer die schwächste Anzeige ist und je einseitiger entschieden wurde. Neigung und Wackeln berechnet die Spiellogik, die Grafik stellt sie nur dar | M | E |
 | F-206 | Es gibt keine mechanische Regel der Art «dreimal dasselbe und er fällt» | M | E |
+| F-212 | Eine Anzeige unter 30 gilt als kritisch. Die Anzeige sagt das in Worten, und am Gebäude steht pro kritischer Anzeige ein Warnschild mit eigenem Symbol (Münze, Uhr, Riss). Ohne kritische Anzeige gibt es kein Warnschild. Die Schwelle legt die Spiellogik fest | M | E |
 | F-207 | Die Reihenfolge der Optionen wird gemischt, und die Buttons sind neutral gefärbt (keine Ampelfarben, die die Lösung verraten) | M | V |
 | F-208 | Nach der Wahl zeigt das Spiel die Erklärung zur gewählten Option und die Veränderung der Anzeigen | M | E |
 | F-209 | Nach einem Einsturz zeigt die Auswertung, welche Entscheide das Gebäude gekippt haben und warum; danach startet das Level neu, nicht das Spiel | M | E |
@@ -132,7 +133,7 @@ Regeln zu F-602 und F-603 (Vorschlag von Claude, in `src/core/balance.ts` einste
 | F-701 | Der Fortschritt liegt lokal im Browser (localStorage); kein Server, keine Cookies | M | E |
 | F-702 | Gespeichert wird nach jedem Schritt; nach dem Neuladen geht es an derselben Stelle weiter | M | V |
 | F-703 | Der Zugriff läuft ausschliesslich über eine Schnittstelle `ProgressStore`, damit später ein Backend angeschlossen werden kann | M | E |
-| F-704 | Der Speicherstand ist versioniert und wird beim Laden geprüft; ein ungültiger Stand führt zu einem sauberen Neustart mit Hinweis, nie zu einem Absturz | M | V |
+| F-704 | Der Speicherstand ist versioniert und wird beim Laden geprüft; ein ungültiger Stand führt zu einem sauberen Neustart mit Hinweis, nie zu einem Absturz. Der ungültige Stand wird sofort durch einen leeren ersetzt, damit der Hinweis genau einmal erscheint | M | V |
 | F-705 | «Fortschritt löschen» mit Rückfrage | S | V |
 | F-706 | Das Spiel weist darauf hin, dass der Stand nur auf diesem Gerät und in diesem Browser gilt | S | E |
 
@@ -172,11 +173,11 @@ Ergänzung zu F-504: Erlaubte Video-Hosts sind `www.youtube-nocookie.com` und `p
 | L-02 | Protokolliert werden: Start mit Version, Laden und Prüfen der Inhalte, jeder Zustandswechsel, jede Wahl mit IDs und Anzeigewerten, Speichern und Laden, Ton, Verlust des Grafik-Kontexts, Einbrüche der Bildrate, alle unbehandelten Fehler | M | E |
 | L-03 | Die letzten 300 Einträge bleiben in einem Ringpuffer, der ein Neuladen übersteht | S | V |
 | L-04 | Ein Knopf «Fehlerbericht kopieren» steht im Menü und auf jeder Fehlermeldung; er kopiert in die Zwischenablage, mit Textfeld als Ausweichlösung | M | E |
-| L-05 | Der Bericht enthält Version und Commit, Zeitpunkt, Browser und Gerät, Fenstergrösse, Grafikmodus, Spielstand mit Seed und Wahlfolge sowie die letzten Log-Einträge | M | E |
+| L-05 | Der Bericht enthält Version und Commit, Zeitpunkt, Browser und Gerät, Fenstergrösse, Grafikmodus, Bildrate der letzten 30 Sekunden (Durchschnitt und Minimum) mit Qualitätsstufe, Spielstand mit Seed und Wahlfolge sowie die letzten Log-Einträge | M | E |
 | L-06 | Der Bericht enthält keine Personendaten und wird nie automatisch verschickt; man sieht ihn vor dem Kopieren | M | E |
 | L-07 | Mit Seed und Wahlfolge aus dem Bericht lässt sich der Ablauf als automatischer Test nachstellen | S | V |
 | L-08 | Bei einem Fehler erscheint eine verständliche Fehlerseite mit dem Bericht-Knopf, nie eine weisse Seite | M | V |
-| L-09 | Debug-Modus über `?debug=1`: Overlay mit Bildrate, Anzeigen und Seed, dazu Level-Sprung | S | V |
+| L-09 | Debug-Modus über `?debug=1`: Overlay mit Bildrate, Zeichenaufrufen, Dreiecken, Qualitätsstufe, Anzeigen und Seed, dazu Level-Sprung auch zu gesperrten Leveln | S | V |
 
 ## 5. Nicht-funktionale Anforderungen
 
@@ -341,7 +342,7 @@ Was bis zur Abgabe noch zu tun ist, in der Reihenfolge, in der es sinnvoll ist. 
 - [ ] Ton für Bauen, Wahl, Wackeln, Einsturz und Erfolg, im Browser erzeugt (F-801, F-804, F-805)
 - [ ] Stumm-Schalter, immer sichtbar, Wahl gespeichert (F-802, F-803)
 - [ ] Theorie während der Situationen nachschlagen (F-506)
-- [ ] Debug-Overlay mit Bildrate, Anzeigen, Seed und Level-Sprung über `?debug=1` (L-09)
+- [x] Debug-Overlay mit Bildrate, Anzeigen, Seed und Level-Sprung über `?debug=1` (L-09)
 - [ ] Kontrast nach WCAG AA und Schriftgrössen messen statt schätzen (N-302)
 - [ ] Bildrate auf einem Mittelklasse-Handy messen (N-202)
 - [ ] Safari auf iOS und macOS sowie Firefox von Hand prüfen (N-103)
