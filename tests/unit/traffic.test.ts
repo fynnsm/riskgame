@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createDecorRandom } from '../../src/render/director.ts';
 import type { TrafficGrid, Vehicle } from '../../src/render/traffic.ts';
 import {
+  advanceTraffic,
   createTraffic,
   signalFor,
   stepTraffic,
@@ -80,6 +81,23 @@ describe('traffic layout (B3)', () => {
     expect(firstOverlap(a, grid)).toBeNull();
   });
 
+  it('starts every vehicle clear of the crossings and of each other, whatever the seed', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      for (const shift of [0, 8]) {
+        const g = { ...grid, shift };
+        const vehicles = createTraffic(createDecorRandom(seed), g, true);
+        expect(firstOverlap(vehicles, g), `seed ${seed}`).toBeNull();
+        for (const v of vehicles) {
+          // Distance of the vehicle's centre from the nearest crossing along its road.
+          const offset = g.pitch / 2 + (v.axis === 'x' ? shift : 0);
+          const cell = (((v.s - offset) % g.pitch) + g.pitch) % g.pitch;
+          const distance = Math.min(cell, g.pitch - cell);
+          expect(distance, `seed ${seed}`).toBeGreaterThan(TUNING.traffic.stopBefore);
+        }
+      }
+    }
+  });
+
   it('keeps vehicles to the right of the centre line', () => {
     const east: Vehicle = { kind: 'auto', axis: 'x', line: 8, dir: 1, s: 3, speed: 0, cruise: 5 };
     expect(vehiclePosition(east, grid)).toEqual({ x: 3, z: 8.95 });
@@ -120,6 +138,31 @@ describe('traffic rules (B3): vehicles do not drive into each other', () => {
       time += dt;
       expect(firstOverlap(vehicles, grid)).toBeNull();
     }
+  });
+
+  it('stays safe with half-second frames, the longest step the scene ever takes', () => {
+    const vehicles = createTraffic(createDecorRandom(21), grid, true);
+    for (let frame = 0; frame < 1200; frame++) {
+      advanceTraffic(vehicles, frame * 0.5, 0.5, grid);
+      expect(firstOverlap(vehicles, grid)).toBeNull();
+    }
+  });
+
+  it('walks a long frame in small steps and a short one in a single step', () => {
+    const run = (dt: number, frames: number): Vehicle[] => {
+      const vehicles = createTraffic(createDecorRandom(4), grid, false);
+      for (let frame = 0; frame < frames; frame++) advanceTraffic(vehicles, frame * dt, dt, grid);
+      return vehicles;
+    };
+    // Ten frames of 0.05 s and one frame of 0.5 s cover the same time in the same small steps.
+    const fine = run(0.05, 10);
+    const coarse = run(0.5, 1);
+    coarse.forEach((vehicle, i) => expect(vehicle.s).toBeCloseTo(fine[i]?.s ?? NaN, 6));
+    // A frame of no length changes nothing.
+    const still = createTraffic(createDecorRandom(4), grid, false);
+    const before = still.map((v) => v.s);
+    advanceTraffic(still, 0, 0, grid);
+    expect(still.map((v) => v.s)).toEqual(before);
   });
 
   it('stops at a red signal and drives on when it turns green', () => {
