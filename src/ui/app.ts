@@ -12,7 +12,7 @@ import {
   levelProgress,
   withRun,
 } from '../core/progress.ts';
-import type { RenderStats, SceneView } from '../core/scene.ts';
+import type { MarkerSpot, RenderStats, SceneView } from '../core/scene.ts';
 import { sceneModel } from '../core/scene.ts';
 import { starsFor } from '../core/scoring.ts';
 import { judgedCount, registeredRisks } from '../core/tour.ts';
@@ -193,6 +193,11 @@ export function createApp(options: AppOptions): App {
     el('span', { class: 'menu-word', text: T.menu }),
   );
   const debugHost = el('div', { class: 'debug-host' });
+  /**
+   * M-15: one button per place of the tour, laid over its pin in the picture. Pointer only:
+   * the list «Orte» is what keyboard and screen reader use, so these stay out of their way.
+   */
+  const markerHost = el('div', { class: 'tour-markers', attrs: { 'aria-hidden': 'true' } });
   const noStats: RenderStats = {
     fps: null,
     fpsAverage: null,
@@ -450,6 +455,40 @@ export function createApp(options: AppOptions): App {
   function openPlace(siteId: string | null): void {
     openSite = siteId;
     render();
+  }
+
+  /** Puts the buttons where the view says the pins are; called by the view when they move. */
+  function placeMarkers(spots: readonly MarkerSpot[]): void {
+    const run = activeRun()?.run;
+    const level = activeRun()?.level;
+    const wanted = new Set(spots.map((spot) => spot.siteId));
+    for (const marker of [...markerHost.children]) {
+      if (!wanted.has((marker as HTMLElement).dataset.marker ?? '')) marker.remove();
+    }
+    for (const spot of spots) {
+      let marker = [...markerHost.children].find(
+        (node): node is HTMLButtonElement =>
+          node instanceof HTMLButtonElement && node.dataset.marker === spot.siteId,
+      );
+      if (!marker) {
+        const site = level?.rundgang?.stellen.find((s) => s.id === spot.siteId);
+        marker = el('button', {
+          class: 'tour-marker',
+          attrs: { type: 'button', tabindex: '-1', 'data-marker': spot.siteId },
+        });
+        if (site) marker.title = T.tour.place[site.ort];
+        marker.addEventListener('click', () => {
+          logger.info('tour.place.picked', { levelId: run?.levelId, siteId: spot.siteId });
+          // On a phone the sheet may be folded away; the card must be seen.
+          if (sheet === 'collapsed') setSheet('open');
+          openPlace(spot.siteId);
+        });
+        markerHost.append(marker);
+      }
+      marker.dataset.selected = String(spot.siteId === openSite);
+      marker.style.left = `${spot.x}px`;
+      marker.style.top = `${spot.y}px`;
+    }
   }
 
   /** The next place still to judge after the given one, so the tour reads like a walk. */
@@ -715,7 +754,11 @@ export function createApp(options: AppOptions): App {
       watchOptions();
       menuButton.hidden = overlay === 'error';
 
-      view?.render(sceneModel(levels, progress, active?.run ?? null, { finale }));
+      view?.render(sceneModel(levels, progress, active?.run ?? null, { finale, openSite }));
+      markerHost.hidden = !(active && overlay === 'none' && active.run.phase === 'tour');
+      for (const marker of markerHost.querySelectorAll<HTMLElement>('[data-marker]')) {
+        marker.dataset.selected = String(marker.dataset.marker === openSite);
+      }
       root.dataset.looking = looking ? 'true' : 'false';
       updateInsets();
       renderDebug();
@@ -813,7 +856,7 @@ export function createApp(options: AppOptions): App {
   return {
     start(): void {
       clear(root);
-      root.append(canvasHost, topBar, panel, sheetButton, debugHost);
+      root.append(canvasHost, markerHost, topBar, panel, sheetButton, debugHost);
       root.dataset.sheet = sheet;
       sheetButton.textContent = T.sheet.collapse;
       sheetButton.setAttribute('aria-expanded', 'true');
@@ -830,6 +873,7 @@ export function createApp(options: AppOptions): App {
       restore();
       try {
         view = options.createView(canvasHost);
+        view.onMarkers(placeMarkers);
       } catch (cause) {
         // The game must stay playable without graphics (N-207).
         logger.error('render.init.failed', errorData(cause));

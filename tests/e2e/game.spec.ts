@@ -1122,3 +1122,76 @@ test('keeps the open place in view when the list is longer than the sheet (M-12)
     await page.getByTestId('no-risk').click();
   }
 });
+
+test('shows the tour in the picture: a button on every pin opens its place (M-15)', async ({
+  page,
+}, testInfo) => {
+  test.slow();
+  await openWith(page, '/?quality=0', progressInTour(0));
+  await expect(screen(page, 'tour')).toBeVisible();
+  const ids = await placeIds(page);
+  const markers = page.locator('.tour-marker');
+  await expect(markers).toHaveCount(8);
+
+  // Every pin lies in the part of the picture no panel covers; the camera has settled there.
+  const size = page.viewportSize();
+  if (!size) throw new Error('No viewport');
+  const panel = await page.locator('.panel').boundingBox();
+  if (!panel) throw new Error('No panel');
+  const wide = testInfo.project.name === 'laptop';
+  const free = wide
+    ? { right: panel.x, bottom: size.height }
+    : { right: size.width, bottom: panel.y };
+  const centres = () =>
+    markers.evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const box = node.getBoundingClientRect();
+        return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+      }),
+    );
+  await expect
+    .poll(async () =>
+      (await centres()).every((c) => c.x > 0 && c.x < free.right && c.y > 0 && c.y < free.bottom),
+    )
+    .toBe(true);
+  // No two pins share a spot.
+  const spots = await centres();
+  expect(new Set(spots.map((c) => `${Math.round(c.x / 8)}:${Math.round(c.y / 8)}`)).size).toBe(8);
+
+  // A tap on a pin opens the card of its place, wherever it is in the list.
+  const wanted = ids[6] as string;
+  await page.locator(`[data-marker="${wanted}"]`).click();
+  await expect(page.getByTestId(`place-${wanted}`)).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator(`[data-marker="${wanted}"]`)).toHaveAttribute('data-selected', 'true');
+  await expect(page.getByTestId('observation')).toHaveText(
+    SITES.find((s) => s.id === wanted)?.beobachtung ?? '',
+  );
+  await page.getByTestId('register').click();
+  await expect(place(page, wanted)).toHaveAttribute('data-state', 'judged');
+  await expect(markers).toHaveCount(8);
+
+  // The buttons are for the pointer; keyboard and screen reader use the list.
+  await expect(page.locator('.tour-markers')).toHaveAttribute('aria-hidden', 'true');
+  expect(await markers.evaluateAll((nodes) => nodes.every((n) => n.tabIndex === -1))).toBe(true);
+
+  // Under the menu and after the tour there is nothing to tap in the picture.
+  await page.getByTestId('menu').click();
+  await expect(page.locator('.tour-markers')).toBeHidden();
+  await page.getByTestId('menu-back').click();
+  await page.getByTestId('finish-tour').click();
+  await expect(screen(page, 'tour-result')).toBeVisible();
+  await expect(page.locator('.tour-markers')).toBeHidden();
+  await page.getByTestId('next').click();
+  await expect(screen(page, 'situation')).toBeVisible();
+  await expect(markers).toHaveCount(0);
+  await expect(screen(page, 'error')).toHaveCount(0);
+});
+
+test('has no buttons in the picture without 3D; the list is the whole tour (M-04)', async ({
+  page,
+}) => {
+  await openWith(page, SIMPLE, progressInTour(0));
+  await expect(screen(page, 'tour')).toBeVisible();
+  await expect(page.locator('.tour-marker')).toHaveCount(0);
+  await expect(page.getByTestId('tour-places').locator('li')).toHaveCount(8);
+});

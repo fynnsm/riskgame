@@ -6,6 +6,7 @@ export function createNullView(): SceneView {
     render: () => undefined,
     setInsets: () => undefined,
     setPresenting: () => undefined,
+    onMarkers: () => undefined,
     setFreeCamera: () => undefined,
     orbit: () => undefined,
     capture: () => null,

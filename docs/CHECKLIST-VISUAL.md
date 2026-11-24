@@ -109,3 +109,16 @@ In den Systemeinstellungen «Bewegung reduzieren» einschalten.
 Mit `?renderer=none` öffnen.
 
 - [ ] Ein ganzes Level, «bestanden», «nicht bestanden», Einsturz und der Schlussbildschirm sind als Text vorhanden
+
+## Rundgang in 3D (M-15)
+
+Automatisch geprüft ist nur: Acht Knöpfe liegen im freien Bildbereich, keiner deckt einen anderen, ein Tipp öffnet den Ort. Von Hand zu prüfen:
+
+- [ ] Beim Start des Rundgangs fliegt die Drohne eine Runde über die Baustelle; die Pins erscheinen, wenn sie vorbeikommt
+- [ ] Orange Pins mit «!» (von der Drohne markiert) und weisse Pins (nicht markiert) sind auf dem Handy klar zu unterscheiden
+- [ ] Ein beurteilter Pin wird dunkel mit Balken und verrät nicht, wie geurteilt wurde
+- [ ] Die Pins sind mit dem Daumen zu treffen, auch wo zwei nahe beieinander liegen
+- [ ] Die Drohne schwebt zum geöffneten Ort; mit «Bewegung reduzieren» steht sie still, und die Pins sind sofort da
+- [ ] In der Auflösung sind richtige Pins grün, falsche rot
+- [ ] Die Requisiten (Container, Gerüst, Schranke, Baubüro …) sind als das erkennbar, was sie meinen
+

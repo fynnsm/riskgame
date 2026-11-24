@@ -18,7 +18,15 @@ import {
   WebGLRenderer,
 } from 'three';
 import type { BuildingKind, GaugeKey } from '../content/schema.ts';
-import type { LotModel, RenderStats, SceneInsets, SceneModel, SceneView } from '../core/scene.ts';
+import type {
+  LotModel,
+  MarkerSpot,
+  RenderStats,
+  SceneInsets,
+  SceneModel,
+  SceneView,
+  TourMarker,
+} from '../core/scene.ts';
 import type { Logger } from '../logging/logger.ts';
 import type { Part } from './boxes.ts';
 import { box, hash, shade } from './boxes.ts';
@@ -148,7 +156,11 @@ type ChunkKind =
   /** B5: paper raining on a building passed with two stars. */
   | 'confetti'
   /** B5: the inspector who walks round a building that was not accepted. */
-  | 'inspector';
+  | 'inspector'
+  /** M-15: the pin over a place of the site tour. */
+  | 'pin'
+  /** M-15: the AI drone that flies its round over the site. */
+  | 'drone';
 
 /** A group of boxes that moves as one: a module of the tower, a crane, a warning sign. */
 interface Chunk {
@@ -193,6 +205,12 @@ interface LotVisual {
   /** True while matrices must be recomputed every frame. */
   animated: boolean;
   dirty: boolean;
+  /** Time the drone started its round; -Infinity if the round is over. Null without a tour. */
+  tourStart: number | null;
+  /** The pins of the tour in the lot's own coordinates; for the buttons of the interface. */
+  pins: { siteId: string; position: Vector3; selected: boolean }[];
+  /** Where the drone hovers; it glides after the place that is open. */
+  drone: Vector3;
 }
 
 export function createThreeView(host: HTMLElement, options: ThreeViewOptions): SceneView {
@@ -521,6 +539,130 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     );
   }
 
+  /** A small prop that tells the places of the tour apart; plain boxes, like everything else. */
+  function addPlaceProp(parts: TowerPart[], chunk: number, marker: TourMarker): void {
+    const add = (color: number, w: number, h: number, d: number, x: number, y: number, z = 0) =>
+      parts.push({ ...box(color, w, h, d, x, y, z), chunk });
+    switch (marker.ort) {
+      case 'lager':
+        add(C.crate, 0.8, 0.5, 0.8, 0.5, 0.25);
+        add(C.crateLight, 0.6, 0.4, 0.6, 0.45, 0.7);
+        break;
+      case 'kran':
+        add(C.crane, 0.5, 1.5, 0.5, 0, 0.75);
+        add(C.crane, 1.5, 0.16, 0.2, 0.5, 1.5);
+        break;
+      case 'container':
+        add(C.blue, 1.5, 0.8, 0.7, 0, 0.4);
+        add(C.offWhite, 0.4, 0.5, 0.04, 0.2, 0.42, 0.37);
+        break;
+      case 'geruest':
+        for (const side of [-0.6, 0.6]) add(C.steel, 0.1, 1.6, 0.1, side, 0.8);
+        add(C.crateLight, 1.4, 0.08, 0.5, 0, 0.8);
+        add(C.crateLight, 1.4, 0.08, 0.5, 0, 1.5);
+        break;
+      case 'zufahrt':
+        add(C.steel, 0.16, 0.9, 0.16, -0.8, 0.45);
+        add(C.red, 1.7, 0.12, 0.12, 0, 0.85);
+        add(C.white, 0.5, 0.13, 0.13, 0, 0.85);
+        break;
+      case 'baubuero':
+        add(C.offWhite, 1.2, 0.9, 0.9, 0, 0.45);
+        add(GLASS, 0.5, 0.36, 0.04, -0.1, 0.55, 0.46);
+        add(C.slate, 1.3, 0.1, 1, 0, 0.95);
+        break;
+      case 'team':
+        add(C.crate, 0.9, 0.34, 0.5, 0, 0.17);
+        add(C.offWhite, 0.4, 0.04, 0.3, 0, 0.36);
+        break;
+      case 'material':
+        for (let k = 0; k < 3; k++)
+          add(C.crateLight, 1.3, 0.14, 0.34, 0, 0.07 + k * 0.15, k * 0.04);
+        add(C.steel, 0.14, 0.14, 1.2, 0.5, 0.52);
+        break;
+      case 'nachbarn':
+        add(C.wallCream, 0.8, 0.6, 0.7, 0, 0.3);
+        add(C.roofRed, 0.9, 0.2, 0.8, 0, 0.7);
+        break;
+      case 'technik':
+        add(C.slate, 0.6, 1, 0.5, 0, 0.5);
+        add(C.amber, 0.16, 0.12, 0.04, 0, 0.8, 0.26);
+        break;
+    }
+  }
+
+  /**
+   * M-15: the tour in the picture. Every place gets a small prop and a pin; the drone hovers
+   * over the site. What a pin shows follows the model alone: orange where the drone raised
+   * the alarm, dark once judged, green or red in the resolution.
+   */
+  function addTour(
+    parts: TowerPart[],
+    chunks: Chunk[],
+    visual: LotVisual,
+    markers: readonly TourMarker[],
+  ): void {
+    const T = TUNING.tour;
+    markers.forEach((marker, index) => {
+      const spot = T.spots[marker.ort];
+      const prop = chunks.length;
+      chunks.push({
+        kind: 'fixed',
+        floor: 0,
+        seed: index,
+        home: new Vector3(spot.x, 0, spot.z),
+        rotation: new Euler(0, hash(index + 900) * 0.6 - 0.3, 0),
+      });
+      addPlaceProp(parts, prop, marker);
+
+      const pin = chunks.length;
+      const home = new Vector3(spot.x, T.pinHeight, spot.z);
+      // `floor` carries whether the place is selected, `seed` its turn in the drone's round.
+      chunks.push({
+        kind: 'pin',
+        floor: marker.selected ? 1 : 0,
+        seed: index,
+        home,
+        rotation: new Euler(0, Math.PI / 4, 0),
+      });
+      let head: number = marker.marked ? C.vividOrange : C.offWhite;
+      if (marker.judged) head = C.slate;
+      if (marker.verdict === 'right') head = C.green;
+      if (marker.verdict === 'wrong') head = C.vividRed;
+      parts.push({ ...box(C.ink, 0.1, 0.9, 0.1, 0, -0.55, 0), chunk: pin });
+      parts.push({ ...box(head, 0.62, 0.62, 0.62, 0, 0.2, 0), chunk: pin });
+      // A mark on the head, so colour is never the only signal: «!» for the drone's alarm,
+      // a bar once judged.
+      if (marker.verdict === null && marker.judged) {
+        parts.push({ ...box(C.white, 0.36, 0.12, 0.66, 0, 0.2, 0), chunk: pin });
+      } else if (marker.verdict === null && marker.marked) {
+        parts.push({ ...box(C.white, 0.12, 0.3, 0.66, 0, 0.28, 0), chunk: pin });
+        parts.push({ ...box(C.white, 0.12, 0.1, 0.66, 0, 0.02, 0), chunk: pin });
+      }
+      visual.pins.push({ siteId: marker.siteId, position: home, selected: marker.selected });
+    });
+
+    const drone = chunks.length;
+    chunks.push({
+      kind: 'drone',
+      floor: 0,
+      seed: 0,
+      home: new Vector3(0, T.droneHeight, 0),
+      rotation: new Euler(),
+    });
+    parts.push({ ...box(C.ink, 0.6, 0.18, 0.6, 0, 0, 0), chunk: drone });
+    parts.push({ ...box(C.amber, 0.2, 0.12, 0.2, 0, -0.14, 0), chunk: drone });
+    for (const [ax, az] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ] as const) {
+      parts.push({ ...box(C.steel, 0.5, 0.06, 0.1, ax * 0.42, 0.06, az * 0.42), chunk: drone });
+      parts.push({ ...box(C.offWhite, 0.44, 0.04, 0.44, ax * 0.6, 0.12, az * 0.6), chunk: drone });
+    }
+  }
+
   function lotKey(lot: LotModel): string {
     return `${night ? 'n' : 'd'}${JSON.stringify(lot)}`;
   }
@@ -650,6 +792,11 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       rotZ: previous?.rotZ ?? 0,
       animated: false,
       dirty: true,
+      tourStart: null,
+      pins: [],
+      drone:
+        previous?.drone ??
+        new Vector3(TUNING.tour.rest.x, TUNING.tour.droneHeight, TUNING.tour.rest.z),
     };
 
     const building = lot.building;
@@ -902,6 +1049,16 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       }
     }
 
+    if (lot.tour) {
+      addTour(parts, chunks, visual, lot.tour);
+      // The drone flies its round once, when the tour begins; not again after every judgement
+      // and not after a reload in the middle of the tour.
+      const fresh = previous === undefined || previous.tourStart === null;
+      const untouched = lot.tour.every((marker) => !marker.judged && marker.verdict === null);
+      visual.tourStart = previous?.tourStart ?? -Infinity;
+      if (fresh && untouched && previous !== undefined && !reducedMotion) visual.tourStart = clock;
+    }
+
     const tower = buildMesh(parts);
     pivot.add(tower);
     visual.tower = tower;
@@ -1084,6 +1241,40 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
           chunkPosition.y += Math.abs(Math.sin(presentTime * 10)) * 0.06;
           chunkEuler.y = angle + Math.PI / 2;
         }
+      } else if (chunk.kind === 'pin') {
+        const T2 = TUNING.tour;
+        // During the drone's round a pin appears as the drone passes its place.
+        const lap = visual.tourStart === null ? 1 : (time - visual.tourStart) / T2.lapSeconds;
+        const turn = (chunk.seed + 1) / (visual.pins.length + 1);
+        const shown = lap >= turn ? Math.min(1, (lap - turn) * 8) : 0;
+        const size = shown * (chunk.floor === 1 ? 1.35 : 1);
+        chunkScale.set(size, size, size);
+        if (!reducedMotion) {
+          chunkPosition.y += Math.sin(time * (chunk.floor === 1 ? 5 : 2.2) + chunk.seed) * 0.1;
+        }
+      } else if (chunk.kind === 'drone') {
+        const T2 = TUNING.tour;
+        const lap = visual.tourStart === null ? 1 : (time - visual.tourStart) / T2.lapSeconds;
+        const selected = visual.pins.find((pin) => pin.selected);
+        if (lap < 1) {
+          const angle = lap * Math.PI * 2;
+          visual.drone.set(
+            Math.sin(angle) * T2.lapRadius,
+            T2.droneHeight,
+            Math.cos(angle) * T2.lapRadius,
+          );
+          chunkEuler.y = angle + Math.PI / 2;
+        } else {
+          // Afterwards it hovers over the place that is open, or waits at its resting spot.
+          const goalX = selected?.position.x ?? T2.rest.x;
+          const goalZ = selected?.position.z ?? T2.rest.z;
+          const follow = reducedMotion ? 1 : 1 - Math.exp(-dt * T2.followRate);
+          visual.drone.x += (goalX - visual.drone.x) * follow;
+          visual.drone.z += (goalZ - visual.drone.z) * follow;
+          visual.drone.y = T2.droneHeight;
+        }
+        chunkPosition.copy(visual.drone);
+        if (!reducedMotion) chunkPosition.y += Math.sin(time * 3) * 0.08;
       } else if (chunk.kind === 'collapseDust') {
         // Billows up as the floors hit the ground, then settles and is gone.
         const life = Math.min(1, fallTime / 2.4);
@@ -1326,6 +1517,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     view.cy += (viewGoal.cy - view.cy) * ease;
     cameraSnapped = true;
     applyCamera();
+    reportMarkers();
 
     renderer.render(scene, camera);
 
@@ -1431,6 +1623,35 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     if (night !== wasNight) syncLots(model);
   }
 
+  // --- Places of the tour, for the buttons the interface lays over the picture (M-15) ---
+  let markerListener: ((spots: readonly MarkerSpot[]) => void) | null = null;
+  let reported = '';
+  const projected = new Vector3();
+
+  /** Tells the interface where the pins are, but only when that has changed. */
+  function reportMarkers(): void {
+    if (!markerListener) return;
+    const visual = model && model.focus !== null ? visuals[model.focus] : undefined;
+    const spots: MarkerSpot[] = [];
+    if (visual && visual.pins.length > 0) {
+      camera.updateMatrixWorld();
+      for (const pin of visual.pins) {
+        projected.copy(pin.position);
+        projected.y += PLOT_TOP;
+        projected.add(visual.group.position).project(camera);
+        spots.push({
+          siteId: pin.siteId,
+          x: Math.round(((projected.x + 1) / 2) * width),
+          y: Math.round(((1 - projected.y) / 2) * height),
+        });
+      }
+    }
+    const signature = spots.map((spot) => `${spot.siteId}:${spot.x}:${spot.y}`).join('|');
+    if (signature === reported) return;
+    reported = signature;
+    markerListener(spots);
+  }
+
   function onPointerDown(event: PointerEvent): void {
     if (!freeCamera) return;
     dragFrom = event.clientX;
@@ -1498,6 +1719,11 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       }
     },
 
+    onMarkers(listener): void {
+      markerListener = listener;
+      // The next frame reports afresh, whatever was reported to an earlier listener.
+      reported = '';
+    },
     setPresenting(presenting: boolean): void {
       presentStart = presenting ? clock : null;
       for (const visual of visuals) visual.dirty = true;
