@@ -148,6 +148,19 @@ export const TUNING = {
     followRate: 2.2,
   },
 
+  /** M-28: an event in the picture. */
+  event: {
+    /** The scene of an event that happens: at most two seconds, and it never blocks a click. */
+    strikeSeconds: 1.8,
+    /** An event that passes by takes this long to leave the picture. */
+    leaveSeconds: 1.4,
+    /** Where the thing that announces the event stands on the plot. */
+    spot: { x: 4.5, z: -0.7 },
+    /** Storm clouds hang this far above the top floor. */
+    cloudHeight: 5.2,
+    rainDrops: 14,
+  },
+
   /** B5: the start page drifts slowly along the row of lots. */
   start: { driftSeconds: 46, driftDistance: 10 },
 

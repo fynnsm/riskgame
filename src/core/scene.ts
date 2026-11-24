@@ -7,6 +7,8 @@ import { floorRecords, isUnlocked, levelProgress } from './progress.ts';
 import type { Stars } from './scoring.ts';
 import { starsFor } from './scoring.ts';
 import { tourReview } from './tour.ts';
+import type { MeasureMark, ThreatMark } from './events.ts';
+import { measuresOf, threatOf } from './events.ts';
 
 export type LotStatus = 'locked' | 'open' | 'active' | 'done';
 
@@ -49,6 +51,10 @@ export interface LotModel {
   stars: Stars;
   /** The places of the site tour while it is walked or resolved; null at any other time. */
   tour: TourMarker[] | null;
+  /** M-28: the event that hangs over the site or has just been resolved; null otherwise. */
+  threat: ThreatMark | null;
+  /** M-28: the measures taken against events; they stay on the finished building. */
+  measures: MeasureMark[];
 }
 
 /** What the 3D view should show. Declarative, so the renderer holds no game state. */
@@ -153,6 +159,9 @@ export function sceneModel(
         rejected: ended && run.outcome === 'rejected',
         stars: ended ? starsFor(run) : 0,
         tour,
+        threat: threatOf(run.events, level, run.phase, run.history.length),
+        // A measure belongs to a floor; once the building has fallen there is nothing to hold it.
+        measures: ended && run.outcome === 'collapsed' ? [] : measuresOf(run.events),
       };
     }
     const lp = levelProgress(progress, level.id);
@@ -169,6 +178,8 @@ export function sceneModel(
         rejected: false,
         stars: lp.best.stars,
         tour: null,
+        threat: null,
+        measures: lp.best.measures,
       };
     }
     const open = available && isUnlocked(progress, order, level.id);
@@ -184,6 +195,8 @@ export function sceneModel(
       rejected: false,
       stars: 0,
       tour: null,
+      threat: null,
+      measures: [],
     };
   });
   const allCompleted = lots.length > 0 && lots.every((lot) => lot.status === 'done');

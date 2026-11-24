@@ -60,6 +60,13 @@ const STATES: [string, () => Progress][] = [
   ['level-1-rundgang-aufloesung', () => progressInTour(5, true)],
   ['level-3-ereignis', () => progressAtEvent(3, 'L3-E01', true)],
   ['level-3-ereignis-aufloesung', () => progressAtEventResult(3, 'L3-E01', true, 'akzeptieren')],
+  // M-28: one picture per look of an event, and one of an event that passed by.
+  ['level-3-ereignis-lieferverzug', () => progressAtEvent(3, 'L3-E02', true)],
+  ['level-3-ereignis-defekt', () => progressAtEvent(3, 'L3-E03', true)],
+  ['level-3-ereignis-generisch', () => progressAtEvent(3, 'L3-E04', true)],
+  ['level-3-ereignis-ausfall', () => progressAtEvent(3, 'L3-E05', true)],
+  ['level-4-ereignis-behoerde', () => progressAtEvent(4, 'L4-E02', true)],
+  ['level-3-ereignis-ausgeblieben', () => progressAtEventResult(3, 'L3-E01', false, 'vermindern')],
   ...levelStates(1).map(([name, build]): [string, () => Progress] => [`level-1-${name}`, build]),
   ...levelStates(5).map(([name, build]): [string, () => Progress] => [`level-5-${name}`, build]),
   ['schlussansicht', () => progressWithCompleted(5)],

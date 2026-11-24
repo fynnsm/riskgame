@@ -5,6 +5,8 @@ import type { EventRound } from '../../src/core/events.ts';
 import {
   eventCauses,
   eventRounds,
+  measuresOf,
+  threatOf,
   eventVerdict,
   findEvent,
   forecastOf,
@@ -20,7 +22,14 @@ import {
   startRun,
   step,
 } from '../../src/core/game.ts';
-import { emptyProgress, floorRecords, withRun } from '../../src/core/progress.ts';
+import {
+  clearRun,
+  emptyProgress,
+  finishRun,
+  floorRecords,
+  withRun,
+} from '../../src/core/progress.ts';
+import { sceneModel } from '../../src/core/scene.ts';
 import { acceptance, starsFor } from '../../src/core/scoring.ts';
 import { createLogger } from '../../src/logging/logger.ts';
 import { buildErrorReport, extractReplay } from '../../src/logging/report.ts';
@@ -658,5 +667,104 @@ describe('stored run with events (F-704, M-06)', () => {
 describe('start value', () => {
   it('starts every gauge of an event level where every level starts', () => {
     expect(startRun(level, 7).gauges).toEqual({ budget: START, zeit: START, stabilitaet: START });
+  });
+});
+
+describe('events in the picture (M-28)', () => {
+  const levels = [{ level, available: true }];
+  const lotOf = (run: LevelRun) => sceneModel(levels, withRun(emptyProgress(), run), run).lots[0];
+
+  it('shows the event from its announcement until the floor after it, then how it ended', () => {
+    const before = runWith([[E(1), true]]);
+    expect(lotOf(before)?.threat).toBeNull();
+
+    const announced = decide(before, 2);
+    // E1 has no look of its own in the fixture; every event there is «generisch».
+    expect(lotOf(announced)?.threat).toEqual({ look: 'generisch', state: 'announced' });
+    const chosen = choose(announced, 'vermindern');
+    expect(lotOf(chosen)?.threat).toEqual({ look: 'generisch', state: 'announced' });
+    const floor = step(chosen, level, { type: 'choose', optionId: 'A' });
+    expect(lotOf(floor)?.threat?.state).toBe('announced');
+
+    const struck = step(floor, level, { type: 'continue' });
+    expect(lotOf(struck)?.threat).toEqual({ look: 'generisch', state: 'struck' });
+    expect(lotOf(step(struck, level, { type: 'continue' }))?.threat).toBeNull();
+
+    const passed = resolved(E(1), false, 'vermindern');
+    expect(lotOf(passed)?.threat?.state).toBe('passed');
+    expect(threatOf(null, level, 'event', 2)).toBeNull();
+  });
+
+  it('takes the look from the content of the event', () => {
+    const storm = clone(level);
+    const event = storm.ereignisse?.pool.find((e) => e.id === E(3));
+    if (event) event.darstellung = 'sturm';
+    const run = decide(runWith([[E(3), true]], storm), 2, 'A', storm);
+    const model = sceneModel([{ level: storm, available: true }], emptyProgress(), run);
+    expect(model.lots[0]?.threat).toEqual({ look: 'sturm', state: 'announced' });
+    // An event is weighed in peace: nothing in the picture may distract (M-04).
+    expect(model.deciding).toBe(true);
+  });
+
+  it('puts each measure on the floor that stood when it was taken; accepting builds nothing', () => {
+    let run = runWith([
+      [E(1), false],
+      [E(2), false],
+      [E(4), false],
+    ]);
+    run = choose(decide(run, 2), 'vermeiden');
+    expect(measuresOf(run.events)).toEqual([{ floor: 1, strategy: 'vermeiden' }]);
+    run = decide(run, 1);
+    run = decide(step(run, level, { type: 'continue' }), 1);
+    run = choose(run, 'uebertragen');
+    run = decide(run, 1);
+    run = decide(step(run, level, { type: 'continue' }), 1);
+    run = choose(run, 'akzeptieren');
+    const measures = [
+      { floor: 1, strategy: 'vermeiden' },
+      { floor: 3, strategy: 'uebertragen' },
+    ];
+    expect(measuresOf(run.events)).toEqual(measures);
+    expect(lotOf(run)?.measures).toEqual(measures);
+    expect(measuresOf(null)).toEqual([]);
+  });
+
+  it('keeps the measures on the finished building and drops them with a collapsed one', () => {
+    const choices: OptionId[] = ['A', 'A', 'A', 'A', 'A', 'A', 'A', 'A'];
+    const inputs = [1, 2, 3].map(() => ({ verified: false, strategy: 'vermindern' as const }));
+    const done = replay(level, 11, [], choices, null, inputs);
+    expect(done.outcome).toBe('completed');
+    const progress = clearRun(finishRun(emptyProgress(), done, level));
+    const best = progress.levels[level.id]?.best;
+    expect(best?.measures).toHaveLength(3);
+    expect(best?.measures.every((m) => m.strategy === 'vermindern')).toBe(true);
+    // The city shows the building as it was finished, measures included.
+    expect(sceneModel(levels, progress, null).lots[0]?.measures).toEqual(best?.measures);
+
+    const fallen = choose(
+      {
+        ...decide(runWith([[E(1), true]]), 2),
+        gauges: { budget: 50, zeit: GROSS, stabilitaet: 50 },
+      },
+      'vermeiden',
+    );
+    expect(fallen.outcome).toBe('collapsed');
+    expect(lotOf(fallen)?.measures).toEqual([]);
+    expect(lotOf(fallen)?.threat).toBeNull();
+  });
+
+  it('loads a building finished before the events existed, without measures', () => {
+    const storage = memoryStorage();
+    const store = createLocalStorageStore(() => storage, createLogger({ now: () => 0 }));
+    const plain = makeLevel(1);
+    const done = replay(plain, 5, [], ['A', 'A', 'A', 'A', 'A', 'A']);
+    store.save(clearRun(finishRun(emptyProgress(), done, plain)));
+    const key = storage.key(0) ?? '';
+    const raw = JSON.parse(storage.getItem(key) ?? '{}');
+    delete raw.levels[plain.id].best.measures;
+    storage.setItem(key, JSON.stringify(raw));
+    const outcome = store.load();
+    expect(outcome.status).toBe('ok');
+    expect(outcome.progress.levels[plain.id]?.best?.measures).toEqual([]);
   });
 });

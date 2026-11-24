@@ -51,6 +51,54 @@ export type EventVerdict =
   /** More protection than the risk was worth. */
   | 'teuer';
 
+/** A measure that shows on the building: the strategy chosen, on the floor that stood then (M-28). */
+export interface MeasureMark {
+  /** Index of the floor, 0 for the ground floor. */
+  floor: number;
+  strategy: Exclude<StrategyId, 'akzeptieren'>;
+}
+
+/** What an event looks like in the picture while it is in play (M-28). */
+export interface ThreatMark {
+  look: RiskEvent['darstellung'];
+  /** Looming since it was announced, or just resolved: it struck, or it passed by. */
+  state: 'announced' | 'struck' | 'passed';
+}
+
+/** The measures of a run, in the order they were taken. Accepting a risk builds nothing. */
+export function measuresOf(rounds: readonly EventRound[] | null): MeasureMark[] {
+  return (rounds ?? []).flatMap((round, index): MeasureMark[] => {
+    const decisions = BALANCE.events.afterDecisions[index];
+    if (round.strategy === null || round.strategy === 'akzeptieren' || decisions === undefined) {
+      return [];
+    }
+    return [{ floor: decisions - 1, strategy: round.strategy }];
+  });
+}
+
+/** The event the picture shows right now, or null (M-28). */
+export function threatOf(
+  rounds: readonly EventRound[] | null,
+  level: Level,
+  phase: string,
+  decisions: number,
+): ThreatMark | null {
+  if (!rounds) return null;
+  if (phase === 'eventResult') {
+    const resolved = [...rounds].reverse().find((round) => round.resolution !== null);
+    if (!resolved?.resolution) return null;
+    return {
+      look: findEvent(level, resolved.eventId).darstellung,
+      state: resolved.resolution.occurred ? 'struck' : 'passed',
+    };
+  }
+  // From the announcement until the floor after it: the event hangs over the site.
+  const open = phase === 'event' ? dueRound(rounds, decisions) : pendingRound(rounds);
+  const round = open === null ? undefined : rounds[open];
+  if (!round || phase === 'result') return null;
+  return { look: findEvent(level, round.eventId).darstellung, state: 'announced' };
+}
+
 /** How many rounds of events a run of this level has (M-20). */
 export function eventRounds(level: Level): number {
   if (!level.ereignisse) return 0;

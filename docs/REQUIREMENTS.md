@@ -490,7 +490,7 @@ Balance mit Rundgang: In der Simulation beurteilt die sorgfältige Spielweise de
 | M-25 | Punkte: Eine empfohlene Strategie gibt 1 Punkt, unabhängig vom Ausgang. Die Empfehlung bezieht sich auf die tatsächliche Wahrscheinlichkeit | M | U |
 | M-26 | Bauabnahme: Die Schwelle ist ein Anteil von 0.69 der möglichen Punkte, gerundet auf die nächste ganze Zahl (ohne neue Mechaniken 11 von 16). Briefing und Sterne folgen derselben Logik. Ersetzt die Rundung von F-211 | M | U |
 | M-27 | Auswertung pro Ereignis: «Gut entschieden», «Gut entschieden, trotzdem Pech», «Glück gehabt» oder «Hier hat die Vorsorge gefehlt». Nach einem Einsturz erscheinen Ereignisse, die dazu beigetragen haben, in der Liste der Ursachen | M | U (fünfte Aussage «Sicher, aber teuer» zu bestätigen) |
-| M-28 | Darstellung: Das Ereignis kündigt sich in der Szene an (Wolken, stehender Lastwagen, leere Arbeitsplätze, Funken am Kran, Figur mit Aktenkoffer). Die gewählte Massnahme wird als Bauteil sichtbar und bleibt am fertigen Gebäude. Tritt das Ereignis ein, spielt eine Szene von höchstens 2 Sekunden, überspringbar | S | O |
+| M-28 | Darstellung: Das Ereignis kündigt sich in der Szene an (Wolken, stehender Lastwagen, leere Arbeitsplätze, Funken am Kran, Figur mit Aktenkoffer). Die gewählte Massnahme wird als Bauteil sichtbar und bleibt am fertigen Gebäude. Tritt das Ereignis ein, spielt eine Szene von höchstens 2 Sekunden, überspringbar | S | U (Bewegung und Erkennbarkeit auf echten Geräten zu prüfen) |
 | M-29 | Balance: Die Simulation prüft pro Level mit Ereignissen die sechs Kombinationen aus dem Auftrag, Abschnitt 5; keine einzelne Strategie ist immer richtig | M | O (Simulation U; drei Bedingungen offen, siehe 13.4) |
 
 

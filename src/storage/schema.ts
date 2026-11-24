@@ -86,6 +86,16 @@ const bestSchema = z.strictObject({
   gauges: gaugesSchema,
   floors: z.array(z.strictObject({ gauges: gaugesSchema, rating: z.enum(RATINGS) })).max(MAX_LIST),
   goalsReached: z.array(id).max(MAX_LIST),
+  // Buildings finished before the events existed have no measures; they load as they are.
+  measures: z
+    .array(
+      z.strictObject({
+        floor: z.number().int().min(0).max(MAX_LIST),
+        strategy: z.enum(['vermeiden', 'vermindern', 'uebertragen']),
+      }),
+    )
+    .max(MAX_LIST)
+    .default([]),
 });
 
 const levelProgressSchema = z.strictObject({

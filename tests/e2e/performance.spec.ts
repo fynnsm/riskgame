@@ -3,6 +3,7 @@ import { TUNING } from '../../src/render/tuning.ts';
 import { BASELINE } from './support/performance-baseline.ts';
 import {
   openWith,
+  progressAtEvent,
   progressInLevel,
   progressInTour,
   progressWithCompleted,
@@ -19,6 +20,8 @@ const SCENES = {
   finale: () => progressWithCompleted(5),
   // M-15: the site tour with its props, pins and drone; it must cost no more than a level.
   tour: () => progressInTour(0),
+  // M-28: an event that hangs over the site; drawn with the lot, like the tour.
+  event: () => progressAtEvent(3, 'L3-E01', true),
 } as const;
 
 /** Which baseline each scene is held against. */
@@ -27,6 +30,7 @@ const BASELINE_OF: Record<keyof typeof SCENES, keyof typeof BASELINE> = {
   level: 'level',
   finale: 'finale',
   tour: 'level',
+  event: 'level',
 };
 
 for (const quality of [0, 1, 2] as const) {

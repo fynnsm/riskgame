@@ -27,6 +27,7 @@ import type {
   SceneView,
   TourMarker,
 } from '../core/scene.ts';
+import type { MeasureMark } from '../core/events.ts';
 import type { Logger } from '../logging/logger.ts';
 import type { Part } from './boxes.ts';
 import { box, hash, shade } from './boxes.ts';
@@ -160,7 +161,13 @@ type ChunkKind =
   /** M-15: the pin over a place of the site tour. */
   | 'pin'
   /** M-15: the AI drone that flies its round over the site. */
-  | 'drone';
+  | 'drone'
+  /** M-28: the thing that announces an event; it leaves when the event has passed. */
+  | 'threat'
+  /** M-28: the sign over it; it pulses when the event strikes. */
+  | 'threatSign'
+  /** M-28: rain of a storm that breaks. */
+  | 'rain';
 
 /** A group of boxes that moves as one: a module of the tower, a crane, a warning sign. */
 interface Chunk {
@@ -211,6 +218,8 @@ interface LotVisual {
   pins: { siteId: string; position: Vector3; selected: boolean }[];
   /** Where the drone hovers; it glides after the place that is open. */
   drone: Vector3;
+  /** What the event in the picture is doing, and since when (M-28). Null without an event. */
+  threat: { key: string; state: 'announced' | 'struck' | 'passed'; since: number } | null;
 }
 
 export function createThreeView(host: HTMLElement, options: ThreeViewOptions): SceneView {
@@ -539,6 +548,163 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     );
   }
 
+  /**
+   * M-28: what was done about an event, as a part of the building. Avoiding puts up a green
+   * hoarding, mitigating a scaffold with a net, transferring a blue shield. Each has its own
+   * shape, so colour is not the only way to tell them apart.
+   */
+  function addMeasure(parts: TowerPart[], chunk: number, measure: MeasureMark, n: number): void {
+    const add = (color: number, w: number, h: number, d: number, x: number, y: number, z: number) =>
+      parts.push({ ...box(color, w, h, d, x, y, z), chunk });
+    // Alternate between the two faces towards the camera, so two measures on one floor both show.
+    const onX = n % 2 === 1;
+    const face = MODULE / 2 + 0.07;
+    const at = (
+      along: number,
+      y: number,
+      out: number,
+      w: number,
+      h: number,
+      d: number,
+      c: number,
+    ) => (onX ? add(c, d, h, w, face + out, y, along) : add(c, w, h, d, along, y, face + out));
+    switch (measure.strategy) {
+      case 'vermeiden':
+        at(0, -0.1, 0, 1.5, 0.8, 0.08, C.green);
+        at(0, -0.1, 0.05, 1.5, 0.14, 0.04, C.white);
+        break;
+      case 'vermindern':
+        at(-0.6, 0, 0.12, 0.1, 1.3, 0.1, C.steel);
+        at(0.6, 0, 0.12, 0.1, 1.3, 0.1, C.steel);
+        at(0, -0.45, 0.14, 1.4, 0.08, 0.3, C.crateLight);
+        at(0, 0.15, 0.06, 1.2, 0.6, 0.04, C.vividOrange);
+        break;
+      case 'uebertragen':
+        at(0, 0, 0, 0.9, 0.9, 0.08, C.blue);
+        at(0, 0.05, 0.05, 0.5, 0.5, 0.04, C.white);
+        at(0, -0.45, 0, 0.5, 0.2, 0.08, C.blue);
+        break;
+    }
+  }
+
+  /**
+   * M-28: the event in the picture. Each look has its own prop: clouds, a lorry that stands,
+   * an empty workplace, sparks at a switch box, a figure with a briefcase. A sign above says
+   * what state it is in, by shape as well as colour: «!» while it looms, a bar once it struck.
+   */
+  function addThreat(
+    parts: TowerPart[],
+    chunks: Chunk[],
+    threat: NonNullable<LotModel['threat']>,
+    top: number,
+  ): void {
+    const E = TUNING.event;
+    const prop = chunks.length;
+    const high = threat.look === 'sturm';
+    const home = high ? new Vector3(0, top + E.cloudHeight, 0) : new Vector3(E.spot.x, 0, E.spot.z);
+    // On the ground the prop stands along the free edge of the plot, clear of crates and workers.
+    chunks.push({
+      kind: 'threat',
+      floor: 0,
+      seed: 0,
+      home,
+      rotation: new Euler(0, high ? 0 : Math.PI / 2, 0),
+    });
+    const add = (color: number, w: number, h: number, d: number, x: number, y: number, z = 0) =>
+      parts.push({ ...box(color, w, h, d, x, y, z), chunk: prop });
+    switch (threat.look) {
+      case 'sturm':
+        for (const [cx, cz, size] of [
+          [-1.6, 0.4, 1],
+          [0.4, -0.6, 1.25],
+          [1.9, 0.7, 0.9],
+        ] as const) {
+          add(C.slate, 2.2 * size, 0.7 * size, 1.5 * size, cx, 0, cz);
+          add(C.steel, 1.4 * size, 0.5 * size, 1.1 * size, cx + 0.3, 0.5 * size, cz);
+        }
+        break;
+      case 'lieferverzug':
+        add(C.van, 1.7, 0.9, 0.9, 0.3, 0.75);
+        add(C.carOrange, 0.7, 0.7, 0.9, -0.95, 0.65);
+        add(C.carGlass, 0.3, 0.3, 0.8, -1.18, 0.8);
+        for (const wheel of [-0.9, 0.7]) add(C.ink, 0.36, 0.36, 1, wheel, 0.18);
+        add(C.amber, 0.14, 0.14, 0.14, -0.95, 1.08);
+        break;
+      case 'ausfall':
+        add(C.crate, 1.2, 0.1, 0.5, 0, 0.45);
+        for (const leg of [-0.5, 0.5]) add(C.steel, 0.1, 0.45, 0.4, leg, 0.22);
+        add(C.yellow, 0.34, 0.2, 0.34, -0.25, 0.6);
+        add(C.steel, 0.4, 0.16, 0.2, 0.3, 0.58);
+        break;
+      case 'defekt':
+        add(C.slate, 0.7, 1.1, 0.5, 0, 0.55);
+        add(C.ink, 0.5, 0.3, 0.04, 0, 0.75, 0.27);
+        for (let k = 0; k < 4; k++) {
+          add(
+            C.vividYellow,
+            0.12,
+            0.12,
+            0.12,
+            (hash(k + 970) - 0.5) * 0.9,
+            1.2 + hash(k + 980) * 0.5,
+            0.2,
+          );
+        }
+        break;
+      case 'behoerde':
+        add(C.trousers, 0.26, 0.5, 0.2, 0, 0.25);
+        add(C.slate, 0.34, 0.5, 0.24, 0, 0.75);
+        add(C.skinB, 0.28, 0.28, 0.26, 0, 1.14);
+        add(C.crate, 0.34, 0.26, 0.1, 0.32, 0.42);
+        break;
+      case 'generisch':
+        add(C.steel, 0.12, 1.1, 0.12, 0, 0.55);
+        add(C.amber, 0.7, 0.5, 0.1, 0, 1.2);
+        break;
+    }
+
+    const sign = chunks.length;
+    chunks.push({
+      kind: 'threatSign',
+      floor: 0,
+      seed: 0,
+      home: high
+        ? new Vector3(0, top + E.cloudHeight - 1.5, 2.6)
+        : new Vector3(E.spot.x, 2.5, E.spot.z),
+      rotation: new Euler(0, Math.PI / 4, 0),
+    });
+    const struck = threat.state === 'struck';
+    const plate = struck ? C.vividRed : threat.state === 'passed' ? C.green : C.amber;
+    parts.push({ ...box(plate, 0.9, 0.9, 0.14, 0, 0, 0), chunk: sign });
+    if (struck) {
+      parts.push({ ...box(C.white, 0.6, 0.16, 0.18, 0, 0, 0), chunk: sign });
+    } else if (threat.state === 'announced') {
+      parts.push({ ...box(C.ink, 0.14, 0.36, 0.18, 0, 0.1, 0), chunk: sign });
+      parts.push({ ...box(C.ink, 0.14, 0.12, 0.18, 0, -0.26, 0), chunk: sign });
+    } else {
+      parts.push({ ...box(C.white, 0.16, 0.5, 0.18, 0.12, 0.02, 0), chunk: sign });
+      parts.push({ ...box(C.white, 0.3, 0.16, 0.18, -0.12, -0.16, 0), chunk: sign });
+    }
+
+    if (threat.look === 'sturm' && struck) {
+      for (let k = 0; k < E.rainDrops; k++) {
+        const drop = chunks.length;
+        chunks.push({
+          kind: 'rain',
+          floor: 0,
+          seed: k,
+          home: new Vector3(
+            (hash(k + 930) - 0.5) * 6,
+            top + E.cloudHeight,
+            (hash(k + 940) - 0.5) * 4,
+          ),
+          rotation: new Euler(),
+        });
+        parts.push({ ...box(C.paleBlue, 0.06, 0.7, 0.06, 0, 0, 0), chunk: drop });
+      }
+    }
+  }
+
   /** A small prop that tells the places of the tour apart; plain boxes, like everything else. */
   function addPlaceProp(parts: TowerPart[], chunk: number, marker: TourMarker): void {
     const add = (color: number, w: number, h: number, d: number, x: number, y: number, z = 0) =>
@@ -797,6 +963,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       drone:
         previous?.drone ??
         new Vector3(TUNING.tour.rest.x, TUNING.tour.droneHeight, TUNING.tour.rest.z),
+      threat: null,
     };
 
     const building = lot.building;
@@ -822,6 +989,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     const chunks = visual.chunks;
     const footprint = MODULE * 2;
 
+    /** Per floor the module at the corner that faces the camera; measures are fixed to it. */
+    const corner: number[] = [];
     building.floors.forEach((floor, f) => {
       for (let m = 0; m < 4; m++) {
         const mx = m % 2;
@@ -850,7 +1019,13 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
         });
         const color = palette[Math.floor(hash(seed) * palette.length)] ?? C.white;
         addModule(parts, chunk, building.kind, color, mx, mz, f === 0, jitter, seed);
+        if (m === 3) corner[f] = chunk;
       }
+    });
+    // M-28: a measure is part of the floor it was taken on, so it leans and stays with it.
+    lot.measures.forEach((measure, n) => {
+      const chunk = corner[measure.floor];
+      if (chunk !== undefined) addMeasure(parts, chunk, measure, n);
     });
 
     const top = building.floors[building.floors.length - 1];
@@ -1049,6 +1224,15 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       }
     }
 
+    if (lot.threat) {
+      const key = `${lot.threat.look}:${lot.threat.state}`;
+      const same = previous?.threat?.key === key;
+      // What has only just happened is played; what a reload finds is simply there.
+      const since = same ? (previous?.threat?.since ?? clock) : previous ? clock : -Infinity;
+      visual.threat = { key, state: lot.threat.state, since: reducedMotion ? -Infinity : since };
+      addThreat(parts, chunks, lot.threat, building.floors.length * FLOOR_HEIGHT);
+    }
+
     if (lot.tour) {
       addTour(parts, chunks, visual, lot.tour);
       // The drone flies its round once, when the tour begins; not again after every judgement
@@ -1240,6 +1424,31 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
           chunkPosition.z = Math.cos(angle) * 5.2;
           chunkPosition.y += Math.abs(Math.sin(presentTime * 10)) * 0.06;
           chunkEuler.y = angle + Math.PI / 2;
+        }
+      } else if (chunk.kind === 'threat' || chunk.kind === 'threatSign') {
+        const E = TUNING.event;
+        const threat = visual.threat;
+        const age = threat ? time - threat.since : Infinity;
+        if (threat?.state === 'passed') {
+          // What did not happen leaves the picture and is gone.
+          const left = Math.max(0, 1 - age / E.leaveSeconds);
+          chunkScale.set(left, left, left);
+          if (chunk.kind === 'threat') chunkPosition.z -= (1 - left) * 3;
+        } else if (threat?.state === 'struck' && age < E.strikeSeconds) {
+          // The scene of an event that happens: a short shake and a sign that beats.
+          const beat = 1 + Math.abs(Math.sin(age * 9)) * (chunk.kind === 'threatSign' ? 0.5 : 0.08);
+          chunkScale.set(beat, beat, beat);
+          if (chunk.kind === 'threat') chunkPosition.x += Math.sin(age * 40) * 0.05;
+        } else if (!reducedMotion) {
+          chunkPosition.y += Math.sin(time * (chunk.kind === 'threatSign' ? 3 : 0.8)) * 0.1;
+        }
+      } else if (chunk.kind === 'rain') {
+        const E = TUNING.event;
+        const age = visual.threat ? time - visual.threat.since : Infinity;
+        if (age >= E.strikeSeconds) chunkScale.set(0, 0, 0);
+        else {
+          const fall = (age * 9 + hash(chunk.seed + 950) * 6) % 6;
+          chunkPosition.y -= fall;
         }
       } else if (chunk.kind === 'pin') {
         const T2 = TUNING.tour;

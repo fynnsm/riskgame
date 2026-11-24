@@ -122,3 +122,16 @@ Automatisch geprüft ist nur: Acht Knöpfe liegen im freien Bildbereich, keiner 
 - [ ] In der Auflösung sind richtige Pins grün, falsche rot
 - [ ] Die Requisiten (Container, Gerüst, Schranke, Baubüro …) sind als das erkennbar, was sie meinen
 
+## Ereignisse in 3D (M-28)
+
+Automatisch geprüft ist nur: Das Szenenmodell sagt, was zu sehen ist; die Ansicht läuft mit einem Ereignis ohne Fehler und innerhalb des Budgets. Von Hand zu prüfen:
+
+- [ ] Jedes Ereignis kündigt sich an und ist als das erkennbar, was es meint: Gewitterwolken über dem Gebäude, stehender Lastwagen, leerer Arbeitsplatz, Schaltkasten mit Funken, Figur mit Aktenkoffer, Warntafel
+- [ ] Das Schild darüber zeigt «!», solange das Ereignis droht; es bleibt bis nach dem nächsten Stockwerk stehen
+- [ ] Tritt das Ereignis ein, wird das Schild rot und schlägt kurz aus (höchstens 2 Sekunden); beim Gewitter fällt Regen. «Weiter» lässt sich jederzeit drücken
+- [ ] Bleibt das Ereignis aus, wird das Schild grün, und das Ganze verschwindet aus dem Bild
+- [ ] Die gewählte Massnahme erscheint am Stockwerk, das gerade stand: grüne Bauwand (Vermeiden), Gerüst mit orangem Netz (Vermindern), blaues Schild (Übertragen). «Akzeptieren» baut nichts
+- [ ] Die Massnahmen bleiben am fertigen Gebäude in der Stadt sichtbar und neigen sich mit ihm
+- [ ] Mit «Bewegung reduzieren» steht alles still
+- [ ] Die Wolken verdecken weder das hängende Modul noch die Warnschilder so, dass etwas unlesbar wird
+

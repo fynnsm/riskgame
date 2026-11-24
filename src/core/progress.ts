@@ -1,5 +1,7 @@
 import type { Level } from '../content/schema.ts';
 import type { LevelRun } from './game.ts';
+import type { MeasureMark } from './events.ts';
+import { measuresOf } from './events.ts';
 import type { Gauges } from './gauges.ts';
 import { lowestValue } from './gauges.ts';
 import type { FloorRecord } from './lean.ts';
@@ -15,6 +17,8 @@ export interface LevelBest {
   floors: FloorRecord[];
   /** IDs of the learning goals reached in that run (F-604). */
   goalsReached: string[];
+  /** The measures taken against events; they stay visible on the building (M-28). */
+  measures: MeasureMark[];
 }
 
 export interface LevelProgress {
@@ -109,6 +113,7 @@ export function finishRun(progress: Progress, run: LevelRun, level: Level): Prog
       goalsReached: goalResults(level, run.history)
         .filter((g) => g.status === 'erreicht')
         .map((g) => g.id),
+      measures: measuresOf(run.events),
     };
     if (isBetter(candidate, best)) best = candidate;
   }
