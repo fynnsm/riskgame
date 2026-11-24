@@ -3,13 +3,14 @@ import { join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 import type { Level, OptionId } from '../../src/content/schema.ts';
-import { replay } from '../../src/core/game.ts';
 import { criticalGauges } from '../../src/core/gauges.ts';
 import { starsFor } from '../../src/core/scoring.ts';
 import type { LastStep } from './support/progress.ts';
 import {
   LEVELS,
   longestSituation,
+  played,
+  TOUR_CORRECT,
   oneBefore,
   openWith,
   progressAtSituation,
@@ -40,7 +41,45 @@ async function throughBriefingAndTheory(page: Page): Promise<void> {
     await expect(screen(page, 'theory')).toBeVisible();
     await page.getByTestId('next').click();
   }
+  await throughTour(page);
   await expect(screen(page, 'situation')).toBeVisible();
+}
+
+const SITES = level1.rundgang?.stellen ?? [];
+const place = (page: Page, id: string) => page.locator(`li[data-site="${id}"]`);
+
+async function placeIds(page: Page): Promise<string[]> {
+  return page
+    .getByTestId('tour-places')
+    .locator('li')
+    .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('data-site') ?? ''));
+}
+
+/** Judges one place by pointer; opens its card first unless the game already did. */
+async function judge(page: Page, id: string, risk: boolean): Promise<void> {
+  if ((await place(page, id).getByTestId('place-card').count()) === 0) {
+    await page.getByTestId(`place-${id}`).click();
+  }
+  await place(page, id)
+    .getByTestId(risk ? 'register' : 'no-risk')
+    .click();
+  await expect(place(page, id)).toHaveAttribute('data-state', 'judged');
+}
+
+/**
+ * Walks the site tour of level 1: the first `correct` places in the order shown are judged
+ * rightly, the rest wrongly, exactly as the helper for stored runs does.
+ */
+async function throughTour(page: Page, correct = TOUR_CORRECT): Promise<void> {
+  await expect(screen(page, 'tour')).toBeVisible();
+  const ids = await placeIds(page);
+  for (const [i, id] of ids.entries()) {
+    const truth = SITES.find((s) => s.id === id)?.istRisiko ?? false;
+    await judge(page, id, i < correct ? truth : !truth);
+  }
+  await page.getByTestId('finish-tour').click();
+  await expect(screen(page, 'tour-result')).toBeVisible();
+  await page.getByTestId('next').click();
 }
 
 /** Picks the option with the wanted rating by its text; position and order are shuffled. */
@@ -104,7 +143,8 @@ test('plays a whole level and keeps the finished building', async ({ page }) => 
   // F-505: on a repeat the theory may be skipped.
   await page.getByTestId('start-level-1').click();
   await page.getByTestId('skip-theory').click();
-  await expect(screen(page, 'situation')).toBeVisible();
+  // The tour is part of every run, also when the theory is skipped (M-10).
+  await expect(screen(page, 'tour')).toBeVisible();
 });
 
 test('collapses, explains why and restarts the level, not the game', async ({ page }) => {
@@ -146,18 +186,18 @@ test('fails the final inspection if the building stands on too many poor decisio
   const search = (prefix: OptionId[]): void => {
     if (plan) return;
     if (prefix.length === STEPS) {
-      if (replay(level1, seed, [], prefix).outcome === 'rejected') plan = prefix;
+      if (played(level1, seed, prefix).outcome === 'rejected') plan = prefix;
       return;
     }
     for (const id of ids) search([...prefix, id]);
   };
   search([]);
   if (!plan) throw new Error('No rejected path found for this seed');
-  const expected = replay(level1, seed, [], plan);
+  const expected = played(level1, seed, plan);
 
   await page.goto(`${SIMPLE}&seed=${seed}`);
   await startLevel1(page);
-  await expect(page.getByTestId('rules')).toContainText('11 von 16 Punkten');
+  await expect(page.getByTestId('rules')).toContainText('12 von 18 Punkten');
   await throughBriefingAndTheory(page);
   for (let i = 0; i < STEPS; i++) {
     const id = await screen(page, 'situation').getAttribute('data-situation');
@@ -173,7 +213,7 @@ test('fails the final inspection if the building stands on too many poor decisio
   await expect(page.getByTestId('not-accepted')).toHaveText('Nicht abgenommen');
 
   await expect(screen(page, 'result')).toHaveAttribute('data-outcome', 'rejected');
-  await expect(page.getByTestId('rejected-reason')).toContainText('nötig sind 11');
+  await expect(page.getByTestId('rejected-reason')).toContainText('nötig sind 12');
   await expect(gauge(page, 'budget')).toHaveAttribute('data-value', String(expected.gauges.budget));
   await page.getByTestId('to-city').click();
   await expect(page.getByTestId('level-1')).toContainText('Offen');
@@ -344,6 +384,27 @@ test('is playable with the keyboard alone', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(screen(page, 'briefing')).toBeVisible();
   for (let i = 0; i <= level1.theorie.length; i++) await page.keyboard.press('Enter');
+
+  // The tour by keyboard alone: Tab to the first place, Enter opens it, 1 and 2 judge.
+  await expect(screen(page, 'tour')).toBeVisible();
+  const ids = await placeIds(page);
+  // Enter must not end the tour while places are open.
+  await page.keyboard.press('Enter');
+  await expect(screen(page, 'tour')).toBeVisible();
+  await page.keyboard.press('Tab');
+  await expect(page.getByTestId(`place-${ids[0]}`)).toBeFocused();
+  await page.keyboard.press('Enter');
+  for (const [i, id] of ids.entries()) {
+    // After each judgement the game opens the next open place and puts the focus there.
+    await expect(page.getByTestId(`place-${id}`)).toBeFocused();
+    await expect(page.getByTestId(`place-${id}`)).toHaveAttribute('aria-expanded', 'true');
+    const risk = SITES.find((site) => site.id === id)?.istRisiko ?? false;
+    await page.keyboard.press(risk ? '1' : '2');
+    await expect(page.getByTestId('tour-count')).toHaveAttribute('data-judged', String(i + 1));
+  }
+  await page.keyboard.press('Enter');
+  await expect(screen(page, 'tour-result')).toHaveAttribute('data-correct', '8');
+  await page.keyboard.press('Enter');
   await expect(screen(page, 'situation')).toBeVisible();
 
   const second = await page.getByTestId('option-2').locator('.option-text').textContent();
@@ -538,7 +599,8 @@ for (const [stars, title, ratings] of [
   ],
 ] as const) {
   test(`shows the closing screen as text without 3D: «${title}» (G-06)`, async ({ page }) => {
-    const progress = progressWithCompleted(5, ratings);
+    // A full tour in level 1, so its points do not decide the stars this test is about.
+    const progress = progressWithCompleted(5, ratings, 8);
     const total = Object.values(progress.levels).reduce((sum, l) => sum + (l.best?.stars ?? 0), 0);
     expect(total).toBe(stars);
     await openWith(page, SIMPLE, progress);
@@ -925,4 +987,109 @@ test('ignores invalid URL parameters', async ({ page }) => {
   await page.goto('/?renderer=<script>&seed=abc');
   await expect(screen(page, 'city')).toBeVisible();
   await expect(screen(page, 'error')).toHaveCount(0);
+});
+
+test('walks the site tour, changes a judgement and sees the resolution (M-10 to M-14)', async ({
+  page,
+}) => {
+  await page.goto(SIMPLE);
+  await startLevel1(page);
+  await expect(page.getByTestId('rules-tour')).toContainText('Rundgang gibt bis zu 2 Punkte');
+  await page.getByTestId('next').click();
+  for (let i = 0; i < level1.theorie.length; i++) await page.getByTestId('next').click();
+
+  await expect(screen(page, 'tour')).toBeVisible();
+  await expect(page.getByTestId('tour-count')).toHaveText('0 von 8 beurteilt');
+  const ids = await placeIds(page);
+  expect(ids).toHaveLength(8);
+  const truth = (id: string): boolean => SITES.find((s) => s.id === id)?.istRisiko ?? false;
+  const first = ids[0] as string;
+
+  // A place shows its observation, and nothing of the answer.
+  await page.getByTestId(`place-${first}`).click();
+  const site = SITES.find((s) => s.id === first);
+  await expect(page.getByTestId('observation')).toHaveText(site?.beobachtung ?? '');
+  await expect(screen(page, 'tour')).not.toContainText(site?.erklaerung ?? '');
+
+  // Judged wrongly at first, then changed: only the last choice counts.
+  await judge(page, first, !truth(first));
+  await expect(page.getByTestId('tour-count')).toHaveText('1 von 8 beurteilt');
+  await expect(place(page, first)).toContainText('beurteilt');
+  await page.getByTestId(`place-${first}`).click();
+  await expect(
+    place(page, first).getByTestId(truth(first) ? 'no-risk' : 'register'),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await judge(page, first, truth(first));
+  await expect(page.getByTestId('tour-count')).toHaveText('1 von 8 beurteilt');
+
+  for (const id of ids.slice(1, 4)) await judge(page, id, truth(id));
+
+  // M-03, F-702: a reload in the middle of the tour keeps places and judgements.
+  await page.reload();
+  await expect(screen(page, 'tour')).toBeVisible();
+  expect(await placeIds(page)).toEqual(ids);
+  await expect(page.getByTestId('tour-count')).toHaveText('4 von 8 beurteilt');
+
+  for (const id of ids.slice(4)) await judge(page, id, truth(id));
+  await expect(page.getByTestId('tour-count')).toHaveText('8 von 8 beurteilt');
+  await page.getByTestId('finish-tour').click();
+
+  const result = screen(page, 'tour-result');
+  await expect(result).toHaveAttribute('data-grade', 'good');
+  await expect(result).toHaveAttribute('data-correct', '8');
+  await expect(page.getByTestId('tour-lead')).toContainText('8 von 8');
+  await expect(page.getByTestId('tour-effect')).toContainText('2 Punkte');
+  await expect(page.getByTestId('tour-effect')).toContainText('Stabilität +6');
+  await expect(gauge(page, 'stabilitaet')).toHaveAttribute('data-value', '82');
+  await expect(gauge(page, 'budget')).toHaveAttribute('data-value', '76');
+  const review = page.getByTestId('tour-review').locator('li');
+  await expect(review).toHaveCount(8);
+  await expect(page.getByTestId('tour-review').locator('li[data-correct="true"]')).toHaveCount(8);
+  await expect(review.first()).toContainText(site?.erklaerung ?? '');
+  // Four of the eight are places where the drone was wrong: two alarms, two missed risks.
+  await expect(review.filter({ hasText: 'Die Drohne lag falsch' })).toHaveCount(4);
+
+  await page.getByTestId('next').click();
+  await expect(screen(page, 'situation')).toContainText(`Situation 1 von ${STEPS}`);
+  await expect(gauge(page, 'stabilitaet')).toHaveAttribute('data-value', '82');
+
+  // The error report holds the events of the tour and the register for a replay (M-08).
+  await page.getByTestId('menu').click();
+  const report = await page.getByTestId('report').inputValue();
+  expect(report).toContain('tour.start');
+  expect(report).toContain('tour.classify');
+  expect(report).toContain('tour.finish');
+  expect(report).toMatch(/REPLAY: .*"tour":\["L1-R/);
+});
+
+test('ends the site tour at once: open places count as no risk (M-12, M-13)', async ({ page }) => {
+  await page.goto(SIMPLE);
+  await startLevel1(page);
+  await page.getByTestId('next').click();
+  for (let i = 0; i < level1.theorie.length; i++) await page.getByTestId('next').click();
+  await expect(screen(page, 'tour')).toContainText('Noch 8 Orte offen');
+  await page.getByTestId('finish-tour').click();
+
+  // Three of the eight places are no risk; only those are right.
+  const result = screen(page, 'tour-result');
+  await expect(result).toHaveAttribute('data-grade', 'poor');
+  await expect(result).toHaveAttribute('data-correct', '3');
+  await expect(page.getByTestId('tour-effect')).toContainText('Stabilität −6');
+  await expect(gauge(page, 'stabilitaet')).toHaveAttribute('data-value', '70');
+  await expect(
+    page.getByTestId('tour-review').locator('li', { hasText: 'Nicht beurteilt' }),
+  ).toHaveCount(8);
+  await page.getByTestId('next').click();
+  await expect(screen(page, 'situation')).toBeVisible();
+});
+
+test('names the tour in the evaluation of the level (M-14)', async ({ page }) => {
+  const last = oneBefore((run) => run.outcome === 'completed');
+  await openWith(page, SIMPLE, last.progress);
+  await page.locator('.option', { hasText: last.option }).click();
+  await page.getByTestId('next').click();
+  await skipSequence(page);
+  await expect(page.getByTestId('tour-summary')).toContainText(
+    `${TOUR_CORRECT} von 8 Orten richtig beurteilt, 1 Punkt`,
+  );
 });

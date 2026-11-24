@@ -457,24 +457,24 @@ Stand: **U** = umgesetzt, **O** = offen.
 | ID | Anforderung | Prio | Stand |
 |---|---|---|---|
 | M-01 | Datengetrieben: Ein Level hat Rundgang oder Ereignisse genau dann, wenn seine Datei den Block `rundgang` oder `ereignisse` enthält. Kein Level-spezifischer Code | M | U (Schema) |
-| M-02 | Alle Regeln liegen in `src/core`, alle Zahlen in `src/core/balance.ts`. Jede Regel hat Unit-Tests, bevor Oberfläche oder 3D entstehen | M | O |
-| M-03 | Sämtlicher Zufall (Ziehung, Eintreten von Ereignissen) wird beim Start des Durchgangs aus dem Seed bestimmt und im Spielstand gespeichert. Ein Durchgang ist aus Seed und Eingaben vollständig wiederholbar | M | O |
-| M-04 | Kein Zeitdruck, keine Geschicklichkeit. Alles ist mit Tastatur bedienbar und läuft mit `?renderer=none` als Text | M | O |
+| M-02 | Alle Regeln liegen in `src/core`, alle Zahlen in `src/core/balance.ts`. Jede Regel hat Unit-Tests, bevor Oberfläche oder 3D entstehen | M | O (Rundgang U; Ereignisse O) |
+| M-03 | Sämtlicher Zufall (Ziehung, Eintreten von Ereignissen) wird beim Start des Durchgangs aus dem Seed bestimmt und im Spielstand gespeichert. Ein Durchgang ist aus Seed und Eingaben vollständig wiederholbar | M | O (Rundgang U; Ereignisse O) |
+| M-04 | Kein Zeitdruck, keine Geschicklichkeit. Alles ist mit Tastatur bedienbar und läuft mit `?renderer=none` als Text | M | O (Rundgang U; Ereignisse O) |
 | M-05 | Schema der Inhalte Version 2; Level-Dateien ohne die neuen Blöcke bleiben gültig | M | U |
 | M-06 | Spielstand Version 3: abgeschlossene Level und Sterne bleiben erhalten, ein laufender Durchgang wird mit einmaligem Hinweis verworfen. Ist nur der laufende Durchgang unlesbar, gilt dasselbe | M | U |
 | M-07 | `docs/IMPORT.md` beschreibt beide Formate; `content:report` zeigt Rundgang-Stellen und Ereignisse mit Status und führt von Claude erstellte Inhalte in einer eigenen Liste | M | U |
-| M-08 | Log-Ereignisse `tour.start`, `tour.classify`, `tour.finish`, `event.forecast`, `event.verify`, `event.strategy`, `event.resolve`, je mit IDs und Anzeigewerten; der Fehlerbericht enthält sie | M | O |
+| M-08 | Log-Ereignisse `tour.start`, `tour.classify`, `tour.finish`, `event.forecast`, `event.verify`, `event.strategy`, `event.resolve`, je mit IDs und Anzeigewerten; der Fehlerbericht enthält sie | M | O (`tour.*` U; `event.*` O) |
 
 ### 13.2 Baustellen-Rundgang
 
 | ID | Anforderung | Prio | Stand |
 |---|---|---|---|
-| M-10 | Nach der Theorie und vor Situation 1 geht die Spielerin oder der Spieler über die Baustelle. Eine AI-Drohne hat vorab Stellen markiert | M | O (Regeln U; bis zur Oberfläche lädt die App Level ohne Rundgang) |
-| M-11 | Pro Durchgang 8 Stellen: 3 echte Risiken, von der AI gefunden; 2 Fehlalarme; 2 echte Risiken, von der AI übersehen; 1 Stelle ohne Risiko und ohne Markierung. Jeder Ort kommt höchstens einmal vor | M | U (Regeln und Inhalte Level 1; Oberfläche O) |
-| M-12 | Jede Stelle öffnet eine Karte mit der Beobachtung und den Knöpfen «Ins Risikoregister» und «Kein Risiko». Die Wahl ist bis zum Abschluss änderbar; ein Zähler zeigt «x von 8 beurteilt»; «Rundgang beenden» ist jederzeit möglich, nicht beurteilte Stellen zählen als «Kein Risiko» | M | O |
-| M-13 | Wirkung: 7 oder 8 richtig geben + klein auf die Start-Stabilität und 2 Punkte für die Bauabnahme; 5 oder 6 lassen die Stabilität unverändert und geben 1 Punkt; 0 bis 4 kosten − klein und geben 0 Punkte | M | U (Regeln; Oberfläche O) |
-| M-14 | Die Auflösung zeigt alle 8 Stellen mit richtig oder falsch, der Erklärung und einem Hinweis, ob die Drohne richtig lag. Briefing und Auswertung nennen den Rundgang und die Punkte | M | O |
-| M-15 | Darstellung: Kamera über der ganzen Baustelle, die Drohne fliegt eine Runde und setzt Markierungen; jede Stelle ist zusätzlich ein HTML-Knopf in einer Liste «Orte»; beurteilte Stellen zeigen vor der Auflösung nur «beurteilt» | S | O |
+| M-10 | Nach der Theorie und vor Situation 1 geht die Spielerin oder der Spieler über die Baustelle. Eine AI-Drohne hat vorab Stellen markiert | M | U |
+| M-11 | Pro Durchgang 8 Stellen: 3 echte Risiken, von der AI gefunden; 2 Fehlalarme; 2 echte Risiken, von der AI übersehen; 1 Stelle ohne Risiko und ohne Markierung. Jeder Ort kommt höchstens einmal vor | M | U |
+| M-12 | Jede Stelle öffnet eine Karte mit der Beobachtung und den Knöpfen «Ins Risikoregister» und «Kein Risiko». Die Wahl ist bis zum Abschluss änderbar; ein Zähler zeigt «x von 8 beurteilt»; «Rundgang beenden» ist jederzeit möglich, nicht beurteilte Stellen zählen als «Kein Risiko» | M | U |
+| M-13 | Wirkung: 7 oder 8 richtig geben + klein auf die Start-Stabilität und 2 Punkte für die Bauabnahme; 5 oder 6 lassen die Stabilität unverändert und geben 1 Punkt; 0 bis 4 kosten − klein und geben 0 Punkte | M | U |
+| M-14 | Die Auflösung zeigt alle 8 Stellen mit richtig oder falsch, der Erklärung und einem Hinweis, ob die Drohne richtig lag. Briefing und Auswertung nennen den Rundgang und die Punkte | M | U |
+| M-15 | Darstellung: Kamera über der ganzen Baustelle, die Drohne fliegt eine Runde und setzt Markierungen; jede Stelle ist zusätzlich ein HTML-Knopf in einer Liste «Orte»; beurteilte Stellen zeigen vor der Auflösung nur «beurteilt» | S | O (Liste «Orte» U; Kamera, Drohne und Markierungen in 3D O) |
 
 Balance mit Rundgang: In der Simulation beurteilt die sorgfältige Spielweise den Rundgang gut, die vertretbare mittel, die riskante schlecht; wer zufällig wählt, wirft für jede Stelle eine Münze. Weil zufälliges Spielen dadurch häufiger scheitert, wurde in Level 1 eine Wirkung angepasst (L1-S01, riskante Option: Stabilität «-gross» zu «-mittel»). Der Wert liegt mit 89 % knapp unter der Grenze von 90 %.
 

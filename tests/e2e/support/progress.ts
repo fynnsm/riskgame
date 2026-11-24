@@ -1,10 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from '@playwright/test';
-import { withoutTour } from '../../../src/content/load.ts';
 import type { Level, OptionId, Rating } from '../../../src/content/schema.ts';
 import type { LevelRun } from '../../../src/core/game.ts';
-import { replay, startRun, step } from '../../../src/core/game.ts';
+import { startRun, step } from '../../../src/core/game.ts';
 import type { Progress } from '../../../src/core/progress.ts';
 import { clearRun, emptyProgress, finishRun, withRun } from '../../../src/core/progress.ts';
 
@@ -25,8 +24,7 @@ export function readLevel(nummer: number): Level {
     'levels',
     `level-${nummer}.json`,
   );
-  // The app holds the site tour back until it has a screen; the tests play what the app plays.
-  return withoutTour(JSON.parse(readFileSync(file, 'utf8')) as Level);
+  return JSON.parse(readFileSync(file, 'utf8')) as Level;
 }
 
 export const LEVELS: Level[] = [1, 2, 3, 4, 5].map(readLevel);
@@ -42,20 +40,84 @@ export function choicesFor(level: Level, seed: number, ratings: readonly Rating[
   });
 }
 
-export function runWith(level: Level, seed: number, ratings: readonly Rating[]): LevelRun {
-  return replay(level, seed, [], choicesFor(level, seed, ratings));
+/** How many places the tests judge rightly unless they say otherwise: a tour that changes nothing. */
+export const TOUR_CORRECT = 6;
+
+/**
+ * Takes a run through its site tour, if the level has one: the first `correct` places in
+ * the order shown are judged rightly, the rest wrongly. The page helper does the same.
+ */
+export function throughTour(run: LevelRun, level: Level, correct = TOUR_CORRECT): LevelRun {
+  if (run.phase !== 'tour' || !run.tour) return run;
+  let next = run;
+  run.tour.siteIds.forEach((siteId, i) => {
+    const truth = level.rundgang?.stellen.find((s) => s.id === siteId)?.istRisiko ?? false;
+    next = step(next, level, { type: 'classify', siteId, risk: i < correct ? truth : !truth });
+  });
+  next = step(next, level, { type: 'finishTour' });
+  return step(next, level, { type: 'continue' });
+}
+
+/** A run that stands in front of its first situation: theory skipped, tour done. */
+export function started(level: Level, seed: number, correct = TOUR_CORRECT): LevelRun {
+  const run = step(startRun(level, seed, { canSkipTheory: true }), level, { type: 'skipTheory' });
+  return throughTour(run, level, correct);
+}
+
+/**
+ * A run of level 1 in its site tour with the first `judged` places judged rightly; with
+ * `finished` it stands on the resolution.
+ */
+export function progressInTour(judged: number, finished = false, seed = 77): Progress {
+  const level = LEVELS[0] as Level;
+  let run = step(startRun(level, seed, { canSkipTheory: true }), level, { type: 'skipTheory' });
+  for (const siteId of (run.tour?.siteIds ?? []).slice(0, judged)) {
+    const risk = level.rundgang?.stellen.find((s) => s.id === siteId)?.istRisiko ?? false;
+    run = step(run, level, { type: 'classify', siteId, risk });
+  }
+  if (finished) run = step(run, level, { type: 'finishTour' });
+  return withRun(emptyProgress(), run);
+}
+
+/** Plays the given options from the first situation on; stops when the level ends. */
+export function played(
+  level: Level,
+  seed: number,
+  choices: readonly OptionId[],
+  correct = TOUR_CORRECT,
+): LevelRun {
+  let run = started(level, seed, correct);
+  for (const optionId of choices) {
+    if (run.phase !== 'situation') break;
+    run = step(run, level, { type: 'choose', optionId });
+    run = step(run, level, { type: 'continue' });
+  }
+  return run;
+}
+
+export function runWith(
+  level: Level,
+  seed: number,
+  ratings: readonly Rating[],
+  correct = TOUR_CORRECT,
+): LevelRun {
+  return played(level, seed, choicesFor(level, seed, ratings), correct);
 }
 
 const ALL_GOOD: Rating[] = Array.from({ length: 8 }, () => 'gut');
 
-/** Levels 1 to `count` completed, each with the given ratings (default: all good, three stars). */
+/**
+ * Levels 1 to `count` completed, each with the given ratings (default: all good, three stars)
+ * and, where a level has a site tour, that many places judged rightly.
+ */
 export function progressWithCompleted(
   count: number,
   ratings: readonly Rating[] = ALL_GOOD,
+  correct = TOUR_CORRECT,
 ): Progress {
   let progress = emptyProgress();
   for (const level of LEVELS.slice(0, count)) {
-    const run = runWith(level, 1000 + level.nummer, ratings);
+    const run = runWith(level, 1000 + level.nummer, ratings, correct);
     if (run.outcome !== 'completed')
       throw new Error(`${level.id} did not complete with these ratings`);
     progress = clearRun(finishRun(progress, run, level));
@@ -66,8 +128,7 @@ export function progressWithCompleted(
 /** A run of the given level that stands in front of situation `decisions + 1`. */
 export function progressInLevel(nummer: number, ratings: readonly Rating[], seed = 77): Progress {
   const level = LEVELS[nummer - 1] as Level;
-  let run = startRun(level, seed, { canSkipTheory: true });
-  run = step(run, level, { type: 'skipTheory' });
+  let run = started(level, seed);
   const choices = choicesFor(level, seed, ratings);
   choices.forEach((optionId, i) => {
     run = step(run, level, { type: 'choose', optionId });
@@ -104,7 +165,7 @@ export function progressWhere(
   seed = 77,
 ): Progress {
   const level = LEVELS[nummer - 1] as Level;
-  const base = step(startRun(level, seed, { canSkipTheory: true }), level, { type: 'skipTheory' });
+  const base = started(level, seed);
   let frontier: { run: LevelRun; ratings: Rating[] }[] = [{ run: base, ratings: [] }];
   while (frontier.length > 0) {
     const next: typeof frontier = [];
@@ -129,9 +190,9 @@ export function progressWhere(
 export function progressAtSituation(nummer: number, situationId: string): Progress {
   const level = LEVELS[nummer - 1] as Level;
   for (let seed = 1; seed < 2000; seed++) {
-    const run = startRun(level, seed, { canSkipTheory: true });
+    const run = started(level, seed);
     if (run.situationIds[0] !== situationId) continue;
-    return withRun(progressWithCompleted(nummer - 1), step(run, level, { type: 'skipTheory' }));
+    return withRun(progressWithCompleted(nummer - 1), run);
   }
   throw new Error(`No seed puts ${situationId} first`);
 }

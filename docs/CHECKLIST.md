@@ -35,6 +35,14 @@ Automatische Tests sehen nicht, ob das Spiel gut aussieht und sich gut anfühlt.
 - [ ] Systemeinstellung «Bewegung reduzieren» ein: kein Wackeln, kein Fallen
 - [ ] Schrift im Browser auf 200 % vergrössern: nichts wird abgeschnitten
 
+## Rundgang (Level 1)
+
+- [ ] Die Liste «Orte» ist auf dem Handy mit dem Daumen gut zu treffen; die offene Karte ist ohne Suchen sichtbar
+- [ ] Nach einer Beurteilung öffnet sich der nächste offene Ort; das fühlt sich wie ein Rundgang an, nicht wie ein Formular
+- [ ] Die Beobachtungen verraten die Lösung nicht; die Auflösung ist verständlich
+- [ ] Mit Tastatur: Tab zum ersten Ort, Enter öffnet, 1 und 2 beurteilen, Enter beendet erst, wenn alles beurteilt ist
+- [ ] Aktive Spielzeit für Level 1 von Hand messen und in `docs/later/BRAINSTORMING.md` unter O-1 eintragen
+
 ## Leistung
 
 - [ ] Auf einem Mittelklasse-Handy läuft die 3D-Ansicht flüssig

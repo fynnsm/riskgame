@@ -15,7 +15,7 @@ import {
 import type { RenderStats, SceneView } from '../core/scene.ts';
 import { sceneModel } from '../core/scene.ts';
 import { starsFor } from '../core/scoring.ts';
-import { registeredRisks } from '../core/tour.ts';
+import { judgedCount, registeredRisks } from '../core/tour.ts';
 import type { Logger } from '../logging/logger.ts';
 import { errorData } from '../logging/logger.ts';
 import { buildErrorReport } from '../logging/report.ts';
@@ -42,6 +42,8 @@ import {
   menuScreen,
   resultScreen,
   sequenceScreen,
+  tourResultScreen,
+  tourScreen,
   situationScreen,
   theoryScreen,
 } from './screens.ts';
@@ -442,6 +444,22 @@ export function createApp(options: AppOptions): App {
     render();
   }
 
+  /** Which place of the tour shows its card; not part of the game state, so a reload closes it. */
+  let openSite: string | null = null;
+
+  function openPlace(siteId: string | null): void {
+    openSite = siteId;
+    render();
+  }
+
+  /** The next place still to judge after the given one, so the tour reads like a walk. */
+  function nextOpenPlace(run: LevelRun, after: string): string | null {
+    const ids = run.tour?.siteIds ?? [];
+    const from = ids.indexOf(after);
+    const ahead = [...ids.slice(from + 1), ...ids.slice(0, from)];
+    return ahead.find((id) => !Object.hasOwn(run.tour?.judgements ?? {}, id)) ?? null;
+  }
+
   function dispatch(action: Action): void {
     const active = activeRun();
     if (!active) return;
@@ -466,6 +484,27 @@ export function createApp(options: AppOptions): App {
         stabilitaet: after.gauges.stabilitaet,
         outcome: after.outcome,
       });
+    } else if (action.type === 'classify') {
+      sound.play('choice');
+      openSite = nextOpenPlace(after, action.siteId);
+      logger.info('tour.classify', {
+        levelId: after.levelId,
+        siteId: action.siteId,
+        risk: action.risk,
+        judged: after.tour ? judgedCount(after.tour) : 0,
+      });
+    } else if (action.type === 'finishTour') {
+      openSite = null;
+      logger.info('tour.finish', {
+        levelId: after.levelId,
+        correct: after.tour?.result?.correct,
+        grade: after.tour?.result?.grade,
+        points: after.tour?.result?.points,
+        judged: after.tour ? judgedCount(after.tour) : 0,
+        budget: after.gauges.budget,
+        zeit: after.gauges.zeit,
+        stabilitaet: after.gauges.stabilitaet,
+      });
     } else {
       logger.info(action.type === 'skipTheory' ? 'theory.skipped' : 'phase.changed', {
         levelId: after.levelId,
@@ -473,6 +512,14 @@ export function createApp(options: AppOptions): App {
         to: after.phase,
         step: after.step,
         theoryIndex: after.theoryIndex,
+      });
+    }
+    if (after.phase === 'tour' && before.phase !== 'tour') {
+      openSite = null;
+      logger.info('tour.start', {
+        levelId: after.levelId,
+        seed: after.seed,
+        siteIds: after.tour?.siteIds.join(','),
       });
     }
     if (after.phase === 'result' && before.phase !== 'result') {
@@ -601,9 +648,20 @@ export function createApp(options: AppOptions): App {
       case 'theory':
         return theoryScreen(level, run, handlers);
       case 'tour':
+        return tourScreen(
+          level,
+          run,
+          openSite,
+          {
+            open: openPlace,
+            classify: (siteId, risk) => dispatch({ type: 'classify', siteId, risk }),
+            finish: () => dispatch({ type: 'finishTour' }),
+            next: handlers.next,
+          },
+          options.showDraftLabels ?? false,
+        );
       case 'tourResult':
-        // Unreachable while the tour is held back at loading; a stored run in this phase is reported.
-        throw new Error(`No screen for phase ${run.phase}`);
+        return tourResultScreen(level, run, handlers);
       case 'situation':
         return situationScreen(
           level,

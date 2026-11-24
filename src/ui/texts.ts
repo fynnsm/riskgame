@@ -1,5 +1,7 @@
-import type { GaugeKey, Rating } from '../content/schema.ts';
+import type { TourType } from '../content/mechanics-rules.ts';
+import type { GaugeKey, Rating, TourPlace } from '../content/schema.ts';
 import type { GoalStatus } from '../core/scoring.ts';
+import type { TourGrade } from '../core/tour.ts';
 
 /** Every string the player sees that does not come from a level file (CLAUDE.md, rule 6). */
 export const T = {
@@ -96,6 +98,70 @@ export const T = {
     rulesHeading: 'So bestehst du',
     rules: (steps: number, required: number, max: number) =>
       `Du triffst ${steps} Entscheide. Fällt eine Anzeige auf null, stürzt das Gebäude ein. Bleibt es stehen, folgt die Bauabnahme: Du brauchst mindestens ${required} von ${max} Punkten. Ein guter Entscheid gibt 2 Punkte, ein vertretbarer 1, ein riskanter 0.`,
+    /** M-14: added to the rules in a level with a site tour. */
+    tour: (points: number) =>
+      `Vor dem ersten Entscheid gehst du über die Baustelle. Der Rundgang gibt bis zu ${points} Punkte und entscheidet, wie stabil dein Gebäude startet.`,
+  },
+
+  /** M-10 to M-15: the site tour with the AI drone. */
+  tour: {
+    eyebrow: 'Rundgang',
+    heading: 'Baustellen-Rundgang',
+    places: 'Orte',
+    place: {
+      lager: 'Lager',
+      kran: 'Kran',
+      container: 'Container',
+      geruest: 'Gerüst',
+      zufahrt: 'Zufahrt',
+      baubuero: 'Baubüro',
+      team: 'Team',
+      material: 'Material',
+      nachbarn: 'Nachbarn',
+      technik: 'Technik',
+    } satisfies Record<TourPlace, string>,
+    count: (judged: number, total: number) => `${judged} von ${total} beurteilt`,
+    marked: 'Von der AI-Drohne markiert',
+    notMarked: 'Von der Drohne nicht markiert',
+    judged: 'beurteilt',
+    open: 'offen',
+    question: 'Gehört das ins Risikoregister?',
+    register: 'Ins Risikoregister',
+    noRisk: 'Kein Risiko',
+    finish: 'Rundgang beenden',
+    finishHint: (open: number) =>
+      open > 0
+        ? `Noch ${open} ${open === 1 ? 'Ort' : 'Orte'} offen. Was du nicht beurteilst, zählt als «Kein Risiko».`
+        : 'Alle Orte beurteilt. Du kannst deine Wahl noch ändern.',
+    resultHeading: 'Auflösung des Rundgangs',
+    resultLead: (correct: number, total: number) =>
+      `Du hast ${correct} von ${total} Orten richtig beurteilt.`,
+    effect: {
+      good: (points: number) =>
+        `Gut hingeschaut: Dein Gebäude startet stabiler, und du erhältst ${points} Punkte für die Bauabnahme.`,
+      fair: (points: number) =>
+        `Solide: Die Stabilität bleibt, wie sie war, und du erhältst ${points} Punkt für die Bauabnahme.`,
+      poor: () =>
+        'Zu viel übersehen oder zu viel geglaubt: Dein Gebäude startet wackliger, und der Rundgang gibt keinen Punkt für die Bauabnahme.',
+    } satisfies Record<TourGrade, (points: number) => string>,
+    stability: (change: string) => `Stabilität ${change}`,
+    yours: {
+      risk: 'Deine Wahl: Ins Risikoregister',
+      none: 'Deine Wahl: Kein Risiko',
+      open: 'Nicht beurteilt, zählt als «Kein Risiko»',
+    },
+    truth: { risk: 'Das ist ein Risiko.', none: 'Das ist kein Risiko.' },
+    verdict: { right: '✓ Richtig', wrong: '✗ Falsch' },
+    drone: {
+      gefunden: 'Die Drohne lag richtig: Sie hat dieses Risiko gefunden.',
+      fehlalarm: 'Die Drohne lag falsch: Fehlalarm.',
+      uebersehen: 'Die Drohne lag falsch: Sie hat dieses Risiko übersehen.',
+      unauffaellig: 'Die Drohne lag richtig: Hier gab es nichts zu markieren.',
+    } satisfies Record<TourType, string>,
+    toSituations: 'Zum ersten Entscheid',
+    /** One line in the evaluation of the level. */
+    summary: (correct: number, total: number, points: number) =>
+      `${correct} von ${total} Orten richtig beurteilt, ${points} ${points === 1 ? 'Punkt' : 'Punkte'} für die Bauabnahme.`,
   },
 
   theory: {
