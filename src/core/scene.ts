@@ -29,7 +29,8 @@ export interface LotModel {
 
 /** What the 3D view should show. Declarative, so the renderer holds no game state. */
 export interface SceneModel {
-  mode: 'city' | 'level';
+  /** 'finale' is the closing view after all levels; the interface decides when it is shown. */
+  mode: 'city' | 'level' | 'finale';
   /** Index of the lot the camera follows in level mode. */
   focus: number | null;
   lots: LotModel[];
@@ -64,6 +65,12 @@ export interface SceneView {
   setInsets(insets: SceneInsets): void;
   /** Frame rate of the last 30 seconds and the cost of the last frame (L-05, L-09). */
   stats(): RenderStats;
+  /** Lets the player turn the camera round the city (G-54); off turns it back. */
+  setFreeCamera(free: boolean): void;
+  /** Turns the free camera by the given angle in radians; for keys, as dragging is for the pointer. */
+  orbit(radians: number): void;
+  /** The current picture as a PNG data URL, or null where nothing is drawn (G-54). */
+  capture(): string | null;
   /**
    * True while the short sequence after a level plays (B5): the view may move the camera
    * and celebrate. False ends all of that at once, e.g. when the player skips.
@@ -81,6 +88,7 @@ export function sceneModel(
   levels: readonly SceneLevel[],
   progress: Progress,
   run: LevelRun | null,
+  options: { finale?: boolean } = {},
 ): SceneModel {
   const order = levels.map((l) => l.level.id);
   let focus: number | null = null;
@@ -133,11 +141,15 @@ export function sceneModel(
       stars: 0,
     };
   });
+  const allCompleted = lots.length > 0 && lots.every((lot) => lot.status === 'done');
+  let mode: SceneModel['mode'] = 'city';
+  if (focus !== null) mode = 'level';
+  else if (options.finale && allCompleted) mode = 'finale';
   return {
-    mode: focus === null ? 'city' : 'level',
+    mode,
     focus,
     lots,
-    allCompleted: lots.length > 0 && lots.every((lot) => lot.status === 'done'),
+    allCompleted,
     deciding: run?.phase === 'situation',
   };
 }

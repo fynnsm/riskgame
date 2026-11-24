@@ -57,6 +57,8 @@ for (const [name, build] of STATES) {
     test.slow();
     await openWith(page, '/?quality=1', build());
     await expect(page.locator('.canvas-host canvas')).toBeVisible();
+    // The closing screen is one click away from the start page once every building stands.
+    if (name === 'schlussansicht') await page.getByTestId('play').click();
     // Camera and light glide into place; wait until the picture has settled.
     await page.waitForTimeout(2500);
     const directory = join(OUT, testInfo.project.name);

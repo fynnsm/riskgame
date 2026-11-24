@@ -955,3 +955,35 @@ h1 {
     animation: none;
   }
 }
+
+/* G-55: the name of the game as a wordmark on the start page and the closing screen. */
+.wordmark {
+  font-size: 2rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--dark);
+  text-shadow: 2px 2px 0 #ffd23f;
+}
+
+.actions-main .btn {
+  min-height: 56px;
+  font-size: 1.1rem;
+}
+
+/* G-54: looking at the city. The interface steps aside; only the way back stays. */
+#app[data-looking='true']:not([data-renderer='none']) .panel {
+  top: auto;
+  left: auto;
+  right: 14px;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  width: min(320px, calc(100% - 28px));
+  height: auto;
+}
+
+#app[data-looking='true'] .top-bar {
+  display: none;
+}
+
+#app[data-looking='true'] .canvas-host {
+  cursor: grab;
+}

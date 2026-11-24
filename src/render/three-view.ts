@@ -22,7 +22,15 @@ import type { Logger } from '../logging/logger.ts';
 import type { Part } from './boxes.ts';
 import { box, hash, shade } from './boxes.ts';
 import type { Quality } from './director.ts';
-import { celebrationFor, decorationFor, momentFor, resultSequence, timeOfDay } from './director.ts';
+import {
+  celebrationFor,
+  decorationFor,
+  finaleFlight,
+  finaleProgress,
+  momentFor,
+  resultSequence,
+  timeOfDay,
+} from './director.ts';
 import type { Lighting, TimeOfDay } from './palette.ts';
 import { C, LIGHTING } from './palette.ts';
 import { TUNING } from './tuning.ts';
@@ -326,6 +334,12 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   let presentStart: number | null = null;
   /** How far the camera has swung round the building, in radians. */
   let yaw = 0;
+  /** Time the closing view began, or null while it is not shown (G-53). */
+  let finaleStart: number | null = null;
+  /** G-54: the player's own turn of the camera while looking at the city. */
+  let freeCamera = false;
+  let userYaw = 0;
+  let dragFrom: number | null = null;
   const lotsGroup = new Group();
   scene.add(lotsGroup);
   let visuals: LotVisual[] = [];
@@ -1101,6 +1115,21 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       spanX = row * Math.SQRT1_2 + 12;
       spanY = row * Math.SQRT1_2 * elevationSin + tallest * elevationCos + 10;
       targetGoal.set(0, 3, 0);
+      const first = lotPosition(0, lotCount).x;
+      const last = lotPosition(lotCount - 1, lotCount).x;
+      if (model?.mode === 'finale' && finaleStart !== null) {
+        // G-53: the camera flies along the row, past all five buildings, then rests on the whole city.
+        const flight = finaleFlight(clock - finaleStart, reducedMotion);
+        if (flight.flying) {
+          spanX = 34;
+          spanY = tallest * elevationCos + 22;
+          targetGoal.set(first + (last - first) * flight.along, 5, 0);
+        }
+      } else if (!reducedMotion && !freeCamera) {
+        // G-55: the start page drifts slowly along the row instead of standing still.
+        const { driftSeconds, driftDistance } = TUNING.start;
+        targetGoal.x = Math.sin((clock / driftSeconds) * Math.PI * 2) * driftDistance;
+      }
     } else {
       const lot = model.lots[model.focus];
       const floors = lot?.building?.floors.length ?? 0;
@@ -1120,7 +1149,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     camera.bottom = -(height - view.cy) * view.unit;
     camera.updateProjectionMatrix();
     // B5: after a passed level the camera swings a quarter circle past the building and back.
-    panned.copy(viewDirection).applyAxisAngle(upAxis, yaw);
+    panned.copy(viewDirection).applyAxisAngle(upAxis, yaw + userYaw);
     camera.position.copy(target).addScaledVector(panned, TUNING.haze.cameraDistance);
     camera.lookAt(target);
     // G-45: a short shake when a tower comes down; never with reduced motion (the director decides).
@@ -1193,6 +1222,13 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       night,
       deciding: model?.deciding ?? false,
       focus: focusLot,
+      finale:
+        model?.mode === 'finale' && finaleStart !== null
+          ? {
+              stars: model.lots.reduce((sum, lot) => sum + lot.stars, 0),
+              seconds: reducedMotion ? 0 : clock - finaleStart,
+            }
+          : null,
       keepClear: focusLot
         ? [focusLot]
         : Array.from({ length: lotCount }, (_, i) => lotPosition(i, lotCount)),
@@ -1225,6 +1261,13 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       yawGoal = Math.sin(swing * Math.PI) * (Math.PI / 4);
     }
     yaw += (yawGoal - yaw) * (reducedMotion ? 1 : 1 - Math.exp(-dt * 8));
+    // Leaving the free view turns the camera back to where it always stands.
+    if (!freeCamera) userYaw += (0 - userYaw) * (reducedMotion ? 1 : 1 - Math.exp(-dt * 5));
+    if (model && model.focus === null) {
+      // City and closing view move the camera on their own, so its aim is set anew every frame.
+      updateCameraGoal();
+      if (model.mode === 'finale') syncTime();
+    }
     // Reduced motion: light changes at once instead of gliding (B0.6).
     easeLight(reducedMotion ? 1 : 1 - Math.exp(-dt * TUNING.camera.lightEaseRate));
     target.lerp(targetGoal, ease);
@@ -1281,10 +1324,70 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     start();
   }
 
+  /** Rebuilds the lots whose model, or whose day or night, has changed. */
+  function syncLots(next: SceneModel): void {
+    const count = next.lots.length;
+    if (count !== lotCount) {
+      lotCount = count;
+      rebuildCity();
+      visuals.forEach(removeLot);
+      visuals = [];
+    }
+    const updated: LotVisual[] = [];
+    next.lots.forEach((lot, index) => {
+      const previous = visuals[index];
+      if (previous && previous.key === lotKey(lot)) {
+        updated.push(previous);
+        return;
+      }
+      const visual = buildLot(lot, index, count, previous);
+      if (previous) removeLot(previous);
+      lotsGroup.add(visual.group);
+      updated.push(visual);
+    });
+    visuals = updated;
+  }
+
+  /** Applies the time of day the current moment asks for; rebuilds the towers when night falls or ends. */
+  function syncTime(): void {
+    if (!model) return;
+    const seconds = finaleStart === null ? 0 : clock - finaleStart;
+    const nextTime = timeOfDay(momentFor(model, finaleProgress(seconds, reducedMotion)));
+    if (nextTime === time) return;
+    const wasNight = night;
+    time = nextTime;
+    light = LIGHTING[time];
+    night = light.lightsOn;
+    paintSky();
+    applyDecoration();
+    logger.info('render.time', { time });
+    if (night !== wasNight) syncLots(model);
+  }
+
+  function onPointerDown(event: PointerEvent): void {
+    if (!freeCamera) return;
+    dragFrom = event.clientX;
+    canvas.setPointerCapture(event.pointerId);
+  }
+
+  function onPointerMove(event: PointerEvent): void {
+    if (!freeCamera || dragFrom === null) return;
+    userYaw -= (event.clientX - dragFrom) * 0.006;
+    dragFrom = event.clientX;
+  }
+
+  function onPointerUp(): void {
+    dragFrom = null;
+  }
+
   const observer = new ResizeObserver(resize);
   observer.observe(host);
   document.addEventListener('visibilitychange', onVisibility);
   canvas.addEventListener('webglcontextlost', onContextLost);
+  canvas.addEventListener('pointerdown', onPointerDown);
+  canvas.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('pointerup', onPointerUp);
+  canvas.addEventListener('pointercancel', onPointerUp);
   canvas.addEventListener('webglcontextrestored', onContextRestored);
 
   rebuildCity();
@@ -1297,37 +1400,35 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
 
   return {
     render(next: SceneModel): void {
-      const nextTime = timeOfDay(momentFor(next));
-      if (nextTime !== time) {
-        time = nextTime;
-        light = LIGHTING[time];
-        night = light.lightsOn;
-        paintSky();
-        applyDecoration();
-        logger.info('render.time', { time });
-      }
-      const count = next.lots.length;
-      if (count !== lotCount) {
-        lotCount = count;
-        rebuildCity();
-        visuals.forEach(removeLot);
-        visuals = [];
-      }
-      const updated: LotVisual[] = [];
-      next.lots.forEach((lot, index) => {
-        const previous = visuals[index];
-        if (previous && previous.key === lotKey(lot)) {
-          updated.push(previous);
-          return;
-        }
-        const visual = buildLot(lot, index, count, previous);
-        if (previous) removeLot(previous);
-        lotsGroup.add(visual.group);
-        updated.push(visual);
-      });
-      visuals = updated;
+      if (next.mode === 'finale' && finaleStart === null) finaleStart = clock;
+      if (next.mode !== 'finale') finaleStart = null;
       model = next;
+      syncTime();
+      syncLots(next);
       updateCameraGoal();
+    },
+
+    setFreeCamera(free: boolean): void {
+      freeCamera = free;
+      dragFrom = null;
+    },
+
+    orbit(radians: number): void {
+      if (freeCamera) userYaw += radians;
+    },
+
+    capture(): string | null {
+      try {
+        // Drawn and read in the same task, so the picture is still in the drawing buffer.
+        applyCamera();
+        renderer.render(scene, camera);
+        return canvas.toDataURL('image/png');
+      } catch (cause) {
+        logger.warn('render.capture.failed', {
+          message: cause instanceof Error ? cause.message : String(cause),
+        });
+        return null;
+      }
     },
 
     setPresenting(presenting: boolean): void {

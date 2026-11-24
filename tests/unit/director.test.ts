@@ -7,6 +7,8 @@ import {
   cityTitle,
   createDecorRandom,
   decorationFor,
+  finaleFlight,
+  finaleProgress,
   momentFor,
   nextPlaneDelay,
   planeLateralOffset,
@@ -45,25 +47,54 @@ describe('time of day (B2)', () => {
     expect(timeOfDay({ kind: 'level', nummer: 0 })).toBe('nacht');
   });
 
-  it('reads the moment off the scene model: level, start page or finished city', () => {
+  it('reads the moment off the scene model: level, start page or closing view', () => {
     const lots = [{ nummer: 1 }, { nummer: 2 }, { nummer: 3 }] as never;
-    expect(momentFor({ mode: 'level', focus: 2, lots, allCompleted: false })).toEqual({
-      kind: 'level',
-      nummer: 3,
+    expect(momentFor({ mode: 'level', focus: 2, lots })).toEqual({ kind: 'level', nummer: 3 });
+    expect(momentFor({ mode: 'city', focus: null, lots })).toEqual({ kind: 'start' });
+    expect(momentFor({ mode: 'finale', focus: null, lots }, 0.7)).toEqual({
+      kind: 'finale',
+      progress: 0.7,
     });
-    expect(momentFor({ mode: 'city', focus: null, lots, allCompleted: false })).toEqual({
-      kind: 'start',
-    });
-    expect(momentFor({ mode: 'city', focus: null, lots, allCompleted: true })).toEqual({
+    expect(momentFor({ mode: 'finale', focus: null, lots })).toEqual({
       kind: 'finale',
       progress: 0,
     });
   });
 
   it('falls back to the start page if the focused lot does not exist', () => {
-    expect(momentFor({ mode: 'level', focus: 9, lots: [], allCompleted: false })).toEqual({
-      kind: 'start',
-    });
+    expect(momentFor({ mode: 'level', focus: 9, lots: [] })).toEqual({ kind: 'start' });
+  });
+
+  it('flies the camera along the row of buildings and then lets it rest (G-53)', () => {
+    const total = TUNING.finale.flightSeconds;
+    expect(finaleFlight(0, false)).toEqual({ along: 0, flying: true });
+    expect(finaleFlight(total / 2, false).along).toBeCloseTo(0.5);
+    expect(finaleFlight(total, false)).toEqual({ along: 0.5, flying: false });
+    expect(finaleFlight(-3, false)).toEqual({ along: 0, flying: true });
+    const early = finaleFlight(total * 0.25, false).along;
+    const late = finaleFlight(total * 0.75, false).along;
+    expect(early).toBeLessThan(0.25);
+    expect(late).toBeGreaterThan(0.75);
+  });
+
+  it('does not fly at all with reduced motion: the city is simply shown, at night', () => {
+    expect(finaleFlight(1, true)).toEqual({ along: 0.5, flying: false });
+    expect(finaleProgress(0, true)).toBe(1);
+    expect(timeOfDay({ kind: 'finale', progress: finaleProgress(0, true) })).toBe('nacht');
+  });
+
+  it('lets night fall halfway through the dusk of the closing view', () => {
+    const dusk = TUNING.finale.duskSeconds;
+    expect(finaleProgress(0, false)).toBe(0);
+    expect(finaleProgress(dusk / 2, false)).toBe(0.5);
+    expect(finaleProgress(dusk * 3, false)).toBe(1);
+    expect(finaleProgress(-1, false)).toBe(0);
+    expect(timeOfDay({ kind: 'finale', progress: finaleProgress(dusk * 0.4, false) })).toBe(
+      'abend',
+    );
+    expect(timeOfDay({ kind: 'finale', progress: finaleProgress(dusk * 0.6, false) })).toBe(
+      'nacht',
+    );
   });
 
   it('has a lighting for every time of day, with lights on only at night', () => {

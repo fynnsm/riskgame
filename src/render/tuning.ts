@@ -76,6 +76,18 @@ export const TUNING = {
     transitionMs: 200,
   },
 
+  /** B5: the closing view after all five levels. */
+  finale: {
+    /** The camera flies past the five buildings in this time. */
+    flightSeconds: 9,
+    /** Evening turns into night halfway through this time. */
+    duskSeconds: 10,
+    fireworkSparks: 48,
+  },
+
+  /** B5: the start page drifts slowly along the row of lots. */
+  start: { driftSeconds: 46, driftDistance: 10 },
+
   /** B3: purely decorative life, per quality step 0, 1, 2. */
   decoration: {
     clouds: [6, 8, 10],

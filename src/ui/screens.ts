@@ -156,9 +156,10 @@ function notices(messages: readonly string[]): HTMLElement | null {
 
 export interface CityHandlers {
   startLevel(levelId: string): void;
+  showFinale(): void;
 }
 
-function summarySection(levels: readonly PlayableLevelView[], progress: Progress): HTMLElement {
+function summarySection(levels: readonly PlayableLevelView[], progress: Progress): HTMLElement[] {
   let total = 0;
   const rows = levels.map(({ level }) => {
     const best = levelProgress(progress, level.id).best;
@@ -181,19 +182,25 @@ function summarySection(levels: readonly PlayableLevelView[], progress: Progress
       ]);
     });
   });
-  return el('section', { class: 'card summary', attrs: { 'data-testid': 'summary' } }, [
-    el('h2', { text: T.summary.heading }),
-    el('p', { text: T.summary.lead }),
-    el('p', { class: 'summary-total' }, [
+  return [
+    el('p', { class: 'summary-total', attrs: { 'data-testid': 'summary' } }, [
       el('strong', { text: T.summary.totalStars(total, levels.length * 3) }),
       el('span', { text: ` · ${T.summary.playTime}: ${formatDuration(progress.playTimeMs)}` }),
     ]),
     el('ul', { class: 'plain-list' }, rows),
-    el('h3', { text: T.summary.goalsHeading }),
+    el('h2', { text: T.summary.goalsHeading }),
     el('ul', { class: 'plain-list goals' }, goals),
-  ]);
+  ];
 }
 
+export function totalStars(levels: readonly PlayableLevelView[], progress: Progress): number {
+  return levels.reduce((sum, l) => sum + (levelProgress(progress, l.level.id).best?.stars ?? 0), 0);
+}
+
+/**
+ * G-55: the start page. One main button, the state of every building, and the introduction
+ * only as long as nothing has been built.
+ */
 export function cityScreen(
   levels: readonly PlayableLevelView[],
   progress: Progress,
@@ -202,13 +209,27 @@ export function cityScreen(
   handlers: CityHandlers,
 ): HTMLElement {
   const order = levels.map((l) => l.level.id);
-  const allDone =
-    levels.length > 0 && levels.every((l) => levelProgress(progress, l.level.id).completed);
-  let primaryGiven = false;
+  const states = levels.map(({ level, available }) => ({
+    level,
+    available,
+    lp: levelProgress(progress, level.id),
+    unlocked: isUnlocked(progress, order, level.id),
+  }));
+  const allDone = states.length > 0 && states.every((s) => s.lp.completed);
+  const anyDone = states.some((s) => s.lp.completed);
+  const started = states.some((s) => s.lp.attempts > 0 || s.lp.theorySeen);
+  const next = states.find((s) => s.available && s.unlocked && !s.lp.completed);
 
-  const cards = levels.map(({ level, available }, index) => {
-    const lp = levelProgress(progress, level.id);
-    const unlocked = isUnlocked(progress, order, level.id);
+  const main = allDone
+    ? button(T.city.showFinale, handlers.showFinale, { primary: true, testId: 'play' })
+    : next
+      ? button(started ? T.city.resume : T.city.play, () => handlers.startLevel(next.level.id), {
+          primary: true,
+          testId: 'play',
+        })
+      : null;
+
+  const cards = states.map(({ level, available, lp, unlocked }, index) => {
     const playable = available && unlocked;
     const children: (HTMLElement | null)[] = [
       el('h3', { text: `${T.city.level(level.nummer)} · ${level.titel}` }),
@@ -225,12 +246,8 @@ export function cityScreen(
       children.push(el('p', { class: 'status', text: T.city.open }));
     }
     if (playable) {
-      // The first level not yet completed is the obvious next step and gets the primary button.
-      const primary = !primaryGiven && !lp.completed;
-      if (primary) primaryGiven = true;
       children.push(
         button(lp.completed ? T.city.repeat : T.city.start, () => handlers.startLevel(level.id), {
-          primary,
           testId: `start-${level.id}`,
         }),
       );
@@ -246,8 +263,14 @@ export function cityScreen(
   });
 
   return el('div', { class: 'screen screen-city', attrs: { 'data-screen': 'city' } }, [
-    heading(T.appTitle),
-    el('p', { class: 'lead', text: T.city.intro }),
+    el('h1', {
+      class: 'screen-title wordmark',
+      text: T.appTitle,
+      attrs: { tabindex: '-1', 'data-focus': 'true' },
+    }),
+    anyDone
+      ? null
+      : el('p', { class: 'lead', attrs: { 'data-testid': 'intro' }, text: T.city.intro }),
     notices(messages),
     contentErrors.length > 0
       ? el('div', { class: 'notices', attrs: { role: 'alert' } }, [
@@ -259,12 +282,62 @@ export function cityScreen(
           ),
         ])
       : null,
-    allDone ? summarySection(levels, progress) : null,
+    main ? el('div', { class: 'actions actions-main' }, [main]) : null,
     el('h2', { text: T.city.levelsHeading }),
     levels.length > 0
       ? el('ul', { class: 'plain-list level-list' }, cards)
       : el('p', { text: T.city.noLevels }),
     el('p', { class: 'muted small', text: T.city.deviceHint }),
+  ]);
+}
+
+export interface FinaleHandlers {
+  /** Null where there is no 3D view to look at or to save. */
+  look: (() => void) | null;
+  save: ((status: HTMLElement) => void) | null;
+  again(): void;
+}
+
+/** G-53: the closing screen with its title by stars and the overall evaluation. */
+export function finaleScreen(
+  levels: readonly PlayableLevelView[],
+  progress: Progress,
+  title: string,
+  handlers: FinaleHandlers,
+): HTMLElement {
+  const status = el('p', {
+    class: 'muted small',
+    attrs: { role: 'status', 'data-testid': 'save-status' },
+  });
+  return el('div', { class: 'screen screen-finale', attrs: { 'data-screen': 'finale' } }, [
+    el('p', { class: 'eyebrow', text: T.summary.heading }),
+    el('h1', {
+      class: 'screen-title wordmark',
+      text: title,
+      attrs: { tabindex: '-1', 'data-focus': 'true', 'data-testid': 'finale-title' },
+    }),
+    el('p', { class: 'lead', text: T.finale.lead }),
+    ...summarySection(levels, progress),
+    el('div', { class: 'actions' }, [
+      handlers.look
+        ? button(T.finale.look, handlers.look, { primary: true, testId: 'look' })
+        : null,
+      handlers.save
+        ? button(T.finale.save, () => handlers.save?.(status), { testId: 'save-picture' })
+        : null,
+      button(T.finale.again, handlers.again, { primary: !handlers.look, testId: 'again' }),
+    ]),
+    status,
+  ]);
+}
+
+/** G-54: only the city, and the way back. */
+export function lookScreen(back: () => void): HTMLElement {
+  return el('div', { class: 'screen screen-look', attrs: { 'data-screen': 'look' } }, [
+    el('p', { class: 'muted small', text: T.finale.lookHint }),
+    el('div', { class: 'actions' }, [
+      button(T.finale.backFromLook, back, { primary: true, testId: 'look-back' }),
+    ]),
   ]);
 }
 

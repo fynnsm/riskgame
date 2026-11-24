@@ -29,6 +29,9 @@ export const T = {
   } satisfies Record<Rating, string>,
 
   city: {
+    play: 'Spielen',
+    resume: 'Weiterspielen',
+    showFinale: 'Schlussbild ansehen',
     intro:
       'Baue fünf Gebäude. Jedes ist ein Projekt, und deine Entscheide im Risikomanagement halten es stabil oder bringen es zum Einsturz.',
     levelsHeading: 'Deine Bauplätze',
@@ -45,6 +48,24 @@ export const T = {
   },
 
   stars: (n: number) => `${n} von 3 Sternen`,
+
+  finale: {
+    titles: {
+      gold: 'Goldene Stadt',
+      solide: 'Solide Stadt',
+      baustellen: 'Stadt mit Baustellen',
+    },
+    lead: 'Alle fünf Gebäude stehen.',
+    look: 'Stadt ansehen',
+    save: 'Bild speichern',
+    again: 'Nochmals spielen',
+    backFromLook: 'Zurück zur Auswertung',
+    lookHint:
+      'Ziehe mit der Maus oder dem Finger, um die Stadt zu drehen. Mit den Pfeiltasten geht es auch.',
+    saved: 'Das Bild wurde gespeichert.',
+    saveFailed: 'Das Bild konnte nicht gespeichert werden.',
+    fileName: 'risk-tower-stadt.png',
+  },
 
   summary: {
     heading: 'Gesamtauswertung',

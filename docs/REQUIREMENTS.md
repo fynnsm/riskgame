@@ -388,15 +388,15 @@ Stand: **U** = umgesetzt, **O** = offen.
 | G-01 | Änderungen des Grafik-Updates liegen nur in `src/render`, `src/ui`, `src/audio`. Braucht die Darstellung eine neue Information, liefert `core` sie als Zustand | M | U |
 | G-02 | Nur Klötze mit flachen Farben: keine Texturen, Bilddateien oder externen Modelle; eigene Formen und Figuren | M | U |
 | G-03 | Zufall für Dekoration kommt aus einem eigenen Generator in `render`; der Generator des Spiels läuft dadurch nie weiter | M | U |
-| G-04 | Jede Animation ist überspringbar (Klick, Enter, Escape) und hält die Bedienung höchstens 4 Sekunden auf | M | U für die Sequenzen nach einem Level (Klick, Enter, Escape; höchstens 3.75 Sekunden); für Schlussbildschirm und Startseite offen |
+| G-04 | Jede Animation ist überspringbar (Klick, Enter, Escape) und hält die Bedienung höchstens 4 Sekunden auf | M | U (Sequenzen nach einem Level: Klick, Enter, Escape, höchstens 3.75 Sekunden; Schlussbildschirm und Startseite halten niemanden auf, weil Text und Knöpfe von Anfang an da sind) |
 | G-05 | Bei «Bewegung reduzieren»: keine Kamerafahrten, kein Kamerawackeln, kein Blitzen; stattdessen Überblendung auf das Endbild | M | U für alles bisher Umgesetzte |
-| G-06 | `?renderer=none` bleibt vollständig spielbar; jeder neue Bildschirm hat dort eine Text-Entsprechung | M | U für die Bildschirme nach einem Level; Schlussbildschirm offen |
+| G-06 | `?renderer=none` bleibt vollständig spielbar; jeder neue Bildschirm hat dort eine Text-Entsprechung | M | U |
 | G-07 | Alle Farben stehen in `src/render/palette.ts`, alle Zeiten und Mengen in `src/render/tuning.ts` | M | U |
 | G-08 | Leistungsgrenzen gemäss `docs/PERFORMANCE.md`: Zeichenaufrufe höchstens das 1.5-Fache des Ist-Zustands, höchstens 80 kB zusätzliche Übertragung, mindestens 30 Bilder pro Sekunde auf einem Mittelklasse-Handy | M | U (Messung und Test), Bildrate nur auf echten Geräten prüfbar |
 | G-09 | Jede neue Darstellung nennt, was sie auf Qualitätsstufe 0, 1 und 2 zeigt; Stufe 0 zeigt keine Dekoration ausser Wolken | M | U (Regel in `director.ts`) |
 | G-10 | Regie-Schicht `src/render/director.ts`: reine Funktionen ohne Three.js, die aus dem Spielzustand Anweisungen für die Szene berechnen; vollständig unit-getestet | M | U |
 | G-20 | Himmel als Farbverlauf passend zur Tageszeit; ein gerichtetes Licht und ein Umgebungslicht; weiche Schatten nur auf Stufe 2; leichter Dunst zum Stadtrand | M | U |
-| G-21 | Tageszeiten: Level 1 Morgen, 2 Mittag, 3 Nachmittag, 4 Abendlicht, 5 Nacht mit leuchtenden Fenstern und Strassenlampen; Startseite Mittag; Schlussansicht Abend mit Übergang zur Nacht | M | U (die Schlussansicht ruht vorerst im Abendlicht; der Übergang zur Nacht folgt mit G-53) |
+| G-21 | Tageszeiten: Level 1 Morgen, 2 Mittag, 3 Nachmittag, 4 Abendlicht, 5 Nacht mit leuchtenden Fenstern und Strassenlampen; Startseite Mittag; Schlussansicht Abend mit Übergang zur Nacht | M | U |
 | G-30 | Wolken: 6 bis 10 Klotz-Wolken in zwei Höhen, ziehen langsam, mit Schatten auf der Stadt (alle Stufen) | S | U (auf Stufe 2 echte Schatten, sonst weiche Flecken; Wolken weichen dem Gebäude aus) |
 | G-31 | Flugzeug quert alle 20 bis 40 Sekunden, mit Schatten; nie über der Bildmitte während einer Entscheidung (Stufe 1, 2) | S | U (während eines Levels fliegt es immer seitlich am Gebäude vorbei) |
 | G-32 | Heissluftballon und Vogelschwarm (Stufe 2) | K | U |
@@ -413,10 +413,10 @@ Stand: **U** = umgesetzt, **O** = offen.
 | G-50 | Bildschirm «Level bestanden»: Fertigstellung, Kameraschwenk im Viertelkreis, Banner «Bauabnahme bestanden», Sterne einzeln, dann die Auswertung; Feier nach Sternen (3: Feuerwerk, Fahne, Jubel; 2: Konfetti, Fahne; 1: nur Banner) | M | U (der Schwenk geht 45 Grad zur Seite und zurück statt 90 Grad weiter, damit nach der Sequenz dieselbe Ansicht steht; die Arbeiter jubeln oder nicken noch nicht) |
 | G-51 | Bildschirm «Bauabnahme nicht bestanden»: Figur mit Klemmbrett, Stempel «Nicht abgenommen», Absperrband; kein Jubel, kein Einsturz | M | U |
 | G-52 | Bildschirm «Einsturz»: Sequenz aus G-45, dann die Auswertung | M | U |
-| G-53 | Eigener Schlussbildschirm nach fünf Leveln: Kameraflug, Flugzeug mit Banner, Übergang zur Nacht, Feuerwerk, Titel nach Sternen (15: Goldene Stadt; 11 bis 14: Solide Stadt; 5 bis 10: Stadt mit Baustellen), Gesamtauswertung als eigene Seite | M | O (Titel-Zuordnung ist definiert) |
-| G-54 | Schlussbildschirm: «Stadt ansehen» (Oberfläche aus, Kamera frei), «Bild speichern» (PNG, nichts wird hochgeladen), «Nochmals spielen» | S | O |
-| G-55 | Startseite: Schriftzug, langsamer Kameraflug, ein Hauptknopf («Spielen» oder «Weiterspielen»), Bauplätze zeigen den Zustand; Einleitungstext nur, solange kein Level abgeschlossen ist | M | O |
-| G-56 | Levelstart: Die Kamera fliegt von der Stadtansicht zum Bauplatz | S | O |
+| G-53 | Eigener Schlussbildschirm nach fünf Leveln: Kameraflug, Flugzeug mit Banner, Übergang zur Nacht, Feuerwerk, Titel nach Sternen (15: Goldene Stadt; 11 bis 14: Solide Stadt; 5 bis 10: Stadt mit Baustellen), Gesamtauswertung als eigene Seite | M | U (das Banner am Flugzeug trägt pro Stern einen Klotz statt einer Zahl, weil Klötze keine Schrift tragen) |
+| G-54 | Schlussbildschirm: «Stadt ansehen» (Oberfläche aus, Kamera frei), «Bild speichern» (PNG, nichts wird hochgeladen), «Nochmals spielen» | S | U |
+| G-55 | Startseite: Schriftzug, langsamer Kameraflug, ein Hauptknopf («Spielen» oder «Weiterspielen»), Bauplätze zeigen den Zustand; Einleitungstext nur, solange kein Level abgeschlossen ist | M | U |
+| G-56 | Levelstart: Die Kamera fliegt von der Stadtansicht zum Bauplatz | S | U (die Kamera gleitet von der Stadtansicht zum Bauplatz) |
 | G-57 | Jeder Bildschirm setzt beim Erscheinen den Fokus auf seine Überschrift | M | U |
 | G-60 | Anzeigen mit Symbol (Münze, Uhr, Gebäude); Wertänderung zählt sichtbar, die Differenz schwebt kurz daneben; unter 30 pulsiert der Rahmen ruhig | S | O |
 | G-61 | Fortschrittspunkte zeigen das Symbol der Einstufung mit kurzer Animation | K | O (Symbole sind vorhanden) |
