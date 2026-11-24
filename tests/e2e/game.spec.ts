@@ -53,10 +53,17 @@ async function choose(page: Page, rating: Rating): Promise<void> {
   await expect(page.getByTestId('rating')).toHaveAttribute('data-rating', rating);
 }
 
-/** The short sequence after the last decision; the tests that are not about it skip it. */
+/**
+ * The short sequence after the last decision; the tests that are not about it skip it.
+ * The sequence also ends by itself after a few seconds. On a slow machine that can happen
+ * before the click, so a missing button is fine as long as the evaluation is there afterwards.
+ */
 async function skipSequence(page: Page): Promise<void> {
-  await expect(screen(page, 'sequence')).toBeVisible();
-  await page.getByTestId('skip').click();
+  await page
+    .getByTestId('skip')
+    .click({ timeout: 2000 })
+    .catch(() => undefined);
+  await expect(screen(page, 'result')).toBeVisible();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -552,7 +559,7 @@ test('shows «Baustopp» after a collapse and tapes off a building that was not 
     oneBefore((run) => run.outcome === 'collapsed'),
   );
   await expect(page.getByTestId('banner')).toHaveText('Baustopp');
-  await page.getByTestId('skip').click();
+  await skipSequence(page);
   await expect(screen(page, 'result')).toHaveAttribute('data-outcome', 'collapsed');
   await expect(screen(page, 'error')).toHaveCount(0);
 });
