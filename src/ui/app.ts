@@ -24,7 +24,7 @@ import type { ProgressStore } from '../storage/progress-store.ts';
 import type { SettingsStore } from '../storage/settings-store.ts';
 import type { Sound } from '../audio/sound.ts';
 import { criticalGauges } from '../core/gauges.ts';
-import { clear, button, el } from './dom.ts';
+import { clear, button, el, icon } from './dom.ts';
 import {
   briefingScreen,
   cityScreen,
@@ -237,15 +237,46 @@ export function createApp(options: AppOptions): App {
   function paintMute(): void {
     const muted = sound.isMuted();
     clear(muteButton);
+    // N6: a loudspeaker, struck through while muted. An «×» looked like «close».
+    const shapes = [
+      { d: 'M3 9v6h4l5 4V5L7 9H3z', filled: true },
+      muted ? { d: 'M4 3l17 18' } : { d: 'M16 8.5a5 5 0 0 1 0 7' },
+    ];
     muteButton.append(
-      el('span', {
-        class: 'menu-symbol',
-        text: muted ? T.sound.symbolOff : T.sound.symbolOn,
-        attrs: { 'aria-hidden': 'true' },
-      }),
+      icon(shapes, 'btn-icon'),
       el('span', { class: 'menu-word', text: muted ? T.sound.off : T.sound.on }),
     );
+    muteButton.setAttribute('aria-label', T.sound.label);
     muteButton.setAttribute('aria-pressed', String(muted));
+    muteButton.dataset.muted = String(muted);
+  }
+
+  /** N7: on a phone the options can lie below the fold; a hint at the foot of the panel leads there. */
+  let optionsWatcher: IntersectionObserver | null = null;
+  function watchOptions(): void {
+    optionsWatcher?.disconnect();
+    optionsWatcher = null;
+    const heading = panel.querySelector<HTMLElement>('[data-options-heading]');
+    const first = panel.querySelector<HTMLElement>('.option');
+    if (!heading || !first || typeof IntersectionObserver === 'undefined') return;
+    const hint = button(
+      T.situation.toOptions,
+      () => {
+        logger.info('options.hint.used');
+        heading.scrollIntoView({ block: 'start', behavior: env.reducedMotion ? 'auto' : 'smooth' });
+      },
+      { class: 'options-hint', testId: 'to-options' },
+    );
+    hint.hidden = true;
+    panel.append(hint);
+    optionsWatcher = new IntersectionObserver(
+      (entries) => {
+        // Gone as soon as the first option is in view.
+        hint.hidden = entries.some((entry) => entry.isIntersecting);
+      },
+      { root: panel, threshold: 0.5 },
+    );
+    optionsWatcher.observe(first);
   }
 
   function toggleMute(): void {
@@ -614,6 +645,8 @@ export function createApp(options: AppOptions): App {
       }
       root.dataset.mode = active ? 'level' : 'city';
       root.dataset.presenting = sequence ? 'true' : 'false';
+      root.dataset.phase = active && overlay === 'none' ? active.run.phase : 'none';
+      watchOptions();
       menuButton.hidden = overlay === 'error';
 
       view?.render(sceneModel(levels, progress, active?.run ?? null, { finale }));

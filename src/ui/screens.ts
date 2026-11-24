@@ -42,13 +42,17 @@ function starText(stars: Stars): string {
   return '★'.repeat(stars) + '☆'.repeat(3 - stars);
 }
 
-function starsBadge(stars: Stars): HTMLElement {
+/** `compact` shows the stars alone; the words stay for screen readers (N5). */
+function starsBadge(stars: Stars, compact = false): HTMLElement {
   return el(
     'span',
     { class: 'stars', attrs: { 'data-testid': 'stars', 'data-stars': String(stars) } },
     [
       el('span', { text: starText(stars), attrs: { 'aria-hidden': 'true' } }),
-      el('span', { class: 'stars-text', text: ` ${T.stars(stars)}` }),
+      el('span', {
+        class: compact ? 'stars-text sr-only' : 'stars-text',
+        text: ` ${T.stars(stars)}`,
+      }),
     ],
   );
 }
@@ -139,12 +143,23 @@ export function hud(run: LevelRun): HTMLElement {
                 class: `gauge-icon gauge-icon-${key}`,
                 attrs: { 'aria-hidden': 'true' },
               }),
-              T.gauges[key],
+              // N4: hidden to the eye on narrow phones; the meter keeps its name as aria-label.
+              el('span', { class: 'gauge-name', text: T.gauges[key] }),
             ]),
             el('div', { class: 'gauge-bar', attrs: { 'aria-hidden': 'true' } }, [fill]),
             el('span', { class: 'gauge-value' }, [
               el('span', { class: 'gauge-number', text: String(value) }),
-              critical ? ` · ${T.gaugeCritical}` : null,
+              critical
+                ? el('span', { class: 'gauge-critical-word', text: ` · ${T.gaugeCritical}` })
+                : null,
+              // On narrow phones the word gives way to a mark; frame and bar say the same.
+              critical
+                ? el('span', {
+                    class: 'gauge-critical-mark',
+                    text: ` ${T.gaugeCriticalMark}`,
+                    attrs: { 'aria-hidden': 'true' },
+                  })
+                : null,
             ]),
             // The change floats beside the gauge for a moment; the feedback text lists it as well.
             change !== 0
@@ -182,9 +197,10 @@ function summarySection(levels: readonly PlayableLevelView[], progress: Progress
     const best = levelProgress(progress, level.id).best;
     const stars = best?.stars ?? 0;
     total += stars;
-    return el('li', {}, [
-      el('span', { text: `${T.city.level(level.nummer)}: ${level.titel} ` }),
-      starsBadge(stars),
+    // N5: a grid of two columns, the name on the left and the stars flush right.
+    return el('li', { class: 'summary-row', attrs: { 'data-testid': 'summary-row' } }, [
+      el('span', { class: 'summary-name', text: `${T.city.level(level.nummer)}: ${level.titel}` }),
+      starsBadge(stars, true),
     ]);
   });
   const goals = levels.flatMap(({ level }) => {
@@ -204,7 +220,7 @@ function summarySection(levels: readonly PlayableLevelView[], progress: Progress
       el('strong', { text: T.summary.totalStars(total, levels.length * 3) }),
       el('span', { text: ` · ${T.summary.playTime}: ${formatDuration(progress.playTimeMs)}` }),
     ]),
-    el('ul', { class: 'plain-list' }, rows),
+    el('ul', { class: 'plain-list summary-list' }, rows),
     el('h2', { text: T.summary.goalsHeading }),
     el('ul', { class: 'plain-list goals' }, goals),
   ];
@@ -495,7 +511,7 @@ export function situationScreen(
       heading(situation.titel),
       el('p', { text: situation.situation }),
       aiOutput(situation),
-      el('h2', { text: T.situation.optionsHeading }),
+      el('h2', { text: T.situation.optionsHeading, attrs: { 'data-options-heading': 'true' } }),
       el(
         'div',
         { class: 'options' },

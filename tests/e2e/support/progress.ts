@@ -122,3 +122,22 @@ export function progressWhere(
   }
   throw new Error(`No sequence of decisions in level ${nummer} leads to the wanted state`);
 }
+
+/** A run of the given level that stands in front of the wanted situation as its first one. */
+export function progressAtSituation(nummer: number, situationId: string): Progress {
+  const level = LEVELS[nummer - 1] as Level;
+  for (let seed = 1; seed < 2000; seed++) {
+    const run = startRun(level, seed, { canSkipTheory: true });
+    if (run.situationIds[0] !== situationId) continue;
+    return withRun(progressWithCompleted(nummer - 1), step(run, level, { type: 'skipTheory' }));
+  }
+  throw new Error(`No seed puts ${situationId} first`);
+}
+
+/** The situation with the most text above its options: situation, prompt and answer. */
+export function longestSituation(nummer: number): string {
+  const level = LEVELS[nummer - 1] as Level;
+  const length = (s: Level['situationen'][number]): number =>
+    s.situation.length + (s.aiAusgabe ? s.aiAusgabe.prompt.length + s.aiAusgabe.antwort.length : 0);
+  return [...level.situationen].sort((a, b) => length(b) - length(a))[0]?.id ?? '';
+}

@@ -47,6 +47,32 @@ export function button(
   return node;
 }
 
+const SVG = 'http://www.w3.org/2000/svg';
+
+/** A small icon as embedded SVG, built node by node (no markup strings). Decorative: hidden from screen readers. */
+export function icon(
+  shapes: readonly { d: string; filled?: boolean }[],
+  className: string,
+): SVGSVGElement {
+  const svg = document.createElementNS(SVG, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', className);
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  for (const shape of shapes) {
+    const path = document.createElementNS(SVG, 'path');
+    path.setAttribute('d', shape.d);
+    path.setAttribute('fill', shape.filled ? 'currentColor' : 'none');
+    if (!shape.filled) {
+      path.setAttribute('stroke', 'currentColor');
+      path.setAttribute('stroke-width', '2.4');
+      path.setAttribute('stroke-linecap', 'round');
+    }
+    svg.append(path);
+  }
+  return svg;
+}
+
 export function clear(node: Element): void {
   node.replaceChildren();
 }

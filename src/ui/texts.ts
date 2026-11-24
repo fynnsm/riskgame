@@ -7,10 +7,10 @@ export const T = {
   menu: 'Menü',
   menuSymbol: '☰',
   sound: {
-    on: 'Ton an',
-    off: 'Ton aus',
-    symbolOn: '♪',
-    symbolOff: '×',
+    on: 'Ton: an',
+    off: 'Ton: aus',
+    /** What the switch does when pressed; the state is in aria-pressed. */
+    label: 'Ton stumm',
   },
   sheet: {
     collapse: 'Text einklappen',
@@ -25,6 +25,7 @@ export const T = {
     stabilitaet: 'Stabilität',
   } satisfies Record<GaugeKey, string>,
   gaugeCritical: 'kritisch',
+  gaugeCriticalMark: '!',
   stepper: (current: number, total: number) => `Entscheid ${current} von ${total}`,
 
   ratings: {
@@ -115,6 +116,7 @@ export const T = {
     prompt: 'Prompt',
     answer: 'Antwort',
     optionsHeading: 'Was tust du?',
+    toOptions: 'Was tust du? ↓',
     keyboardHint: 'Tipp: Mit den Tasten 1, 2 und 3 wählst du eine Option, mit Enter gehts weiter.',
   },
 

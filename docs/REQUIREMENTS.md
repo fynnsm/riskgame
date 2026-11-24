@@ -1,6 +1,6 @@
 # Risk Tower (Arbeitstitel) – Requirements
 
-Version 0.8 · Stand 24.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
+Version 0.9 · Stand 24.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
 
 ## 1. Zweck
 
@@ -427,4 +427,20 @@ Stand: **U** = umgesetzt, **O** = offen.
 | G-70 | Ton: Geräusche für Fertigstellung, Sterne, Feuerwerk, Stempel und Flugzeug, leise Stadt-Atmosphäre; alles über den Stumm-Schalter; keine Information nur über Ton | S | U (alle Geräusche im Browser erzeugt; mit dem Stumm-Schalter aus F-802) |
 | G-80 | E2E-Tests für die neuen Bildschirme, für reduzierte Bewegung, für `?renderer=none` und für die Zeichenaufrufe; ein Lauf speichert Bildschirmfotos als Artefakt der CI | M | U |
 | G-81 | `docs/CHECKLIST-VISUAL.md`: was auf echten Geräten zu prüfen ist, inklusive Ton und Bildrate | S | U |
+
+## 12. Nachtest zu Update 2
+
+Aus dem Auftrag «Nachtest zu Update 2» vom 24.11.2026. Stand: **U** = umgesetzt, **O** = offen.
+
+| ID | Anforderung | Prio | Stand |
+|---|---|---|---|
+| T-01 | Dreiecke: höchstens 150’000 auf Qualitätsstufe 1 und 80’000 auf Stufe 0, als Grenzen in `tuning.ts` und per E2E-Test geprüft; am Handy startet das Spiel auf Stufe 1 | M | O |
+| T-02 | Feier bei bestandenem Level: Banner zuerst, Sterne gross über dem Bild und nach spätestens 2 Sekunden alle sichtbar, bei 3 Sternen mindestens drei Explosionen mit je 30 bis 60 Klötzen, bei 2 Sternen Konfetti über die ganze Bildbreite; das Textfeld bleibt währenddessen eingeklappt. Dasselbe sinngemäss im Schlussbildschirm | M | O |
+| T-03 | Level 5: Die Baustelle hat eigene Scheinwerfer; Stockwerke, Neigung und Warnzeichen sind nachts so gut lesbar wie am Tag | M | O |
+| T-04 | Anzeigen brechen kein Wort um. Unter 430 px zeigen sie nur Symbol und Wert; die Beschriftung bleibt als `aria-label` | M | U |
+| T-05 | Schlussbildschirm: Level und Sterne in zwei Spalten, Sterne rechtsbündig; «3 von 3 Sternen» bleibt für Bildschirmleser | S | U |
+| T-06 | Ton-Knopf: Lautsprecher als eingebettetes SVG, durchgestrichen im stummen Zustand; Beschriftung «Ton: an» und «Ton: aus»; `aria-pressed` und `aria-label` gesetzt | S | U |
+| T-07 | Handy: Liegen die Optionen unter dem sichtbaren Bereich, führt ein Hinweis «Was tust du? ↓» am Fuss des Textfelds mit einem Tipp dorthin. Während einer Situation darf das Textfeld 65 % der Höhe einnehmen | M | U |
+| T-08 | `index.html` zeigt einen statischen Ladezustand (Schriftzug und «Wird geladen …») ohne Skript und ohne Inline-Stil; er verschwindet, sobald die Oberfläche steht | S | U |
+| T-09 | `docs/CONTENT-REPORT.md` listet pro Level die betroffenen Situationen mit den Zeichenzahlen der drei Optionen nebeneinander | S | O |
 
