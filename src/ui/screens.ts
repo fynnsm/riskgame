@@ -398,7 +398,6 @@ function eyebrow(level: Level, extra?: string): HTMLElement {
 
 export function briefingScreen(level: Level, run: LevelRun, handlers: RunHandlers): HTMLElement {
   const rules = acceptance({ ...run, history: [] });
-  const steps = run.situationIds.length;
   return el('div', { class: 'screen', attrs: { 'data-screen': 'briefing' } }, [
     eyebrow(level),
     heading(level.projekt.titel),
