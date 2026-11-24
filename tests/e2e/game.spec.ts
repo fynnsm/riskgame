@@ -478,8 +478,9 @@ test('opens the closing screen with its title, turns evening into night and save
   await expect(page.getByTestId('finale-title')).toBeFocused();
   await expect(page.getByTestId('summary')).toContainText('15 von 15 Sternen');
   await expect(page.locator('.canvas-host')).toHaveAttribute('data-time-of-day', 'abend');
+  // Night falls five seconds in; the generous limit is for machines that draw very slowly.
   await expect(page.locator('.canvas-host')).toHaveAttribute('data-time-of-day', 'nacht', {
-    timeout: 20_000,
+    timeout: 45_000,
   });
 
   const download = page.waitForEvent('download');

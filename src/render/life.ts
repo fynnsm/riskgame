@@ -20,7 +20,7 @@ import {
 } from './director.ts';
 import { C } from './palette.ts';
 import type { TrafficGrid, Vehicle, VehicleKind } from './traffic.ts';
-import { createTraffic, stepTraffic, VEHICLE_SIZE, vehiclePosition } from './traffic.ts';
+import { advanceTraffic, createTraffic, VEHICLE_SIZE, vehiclePosition } from './traffic.ts';
 import { TUNING } from './tuning.ts';
 
 /**
@@ -251,7 +251,7 @@ export function createLife(options: LifeOptions): Life {
     const { time, dt } = context;
 
     // Traffic
-    stepTraffic(vehicles, time, dt, grid);
+    advanceTraffic(vehicles, time, dt, grid);
     for (let i = 0; i < MAX_VEHICLES; i++) {
       const vehicle = vehicles[i];
       const at = AT.vehicles + i * 2;

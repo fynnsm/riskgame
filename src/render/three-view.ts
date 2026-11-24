@@ -1212,7 +1212,10 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     frame = 0;
     const frameStarted = performance.now();
     const seconds = now / 1000;
-    const dt = lastTime === null ? 0 : Math.min(0.1, seconds - lastTime);
+    // The scene's clock follows real time also when frames are slow. With the old cap of a tenth
+    // of a second per frame, a slow device fell behind: night came late and sequences outlasted
+    // their banners. Half a second is only a guard against a jump after the tab was asleep.
+    const dt = lastTime === null ? 0 : Math.min(TUNING.quality.maxFrameSeconds, seconds - lastTime);
     if (lastTime === null) sampleStart = seconds;
     lastTime = seconds;
     clock += dt;
