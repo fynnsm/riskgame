@@ -262,6 +262,27 @@ describe('sceneModel (F-408, F-409)', () => {
     });
   });
 
+  it('shows what a level ended in only on the result, not yet on the last feedback (B5)', () => {
+    const atFeedback = (choices: OptionId[]) => {
+      let run = replay(level, 1, [], choices.slice(0, -1));
+      run = step(run, level, { type: 'choose', optionId: choices[choices.length - 1] as OptionId });
+      expect(run.phase).toBe('feedback');
+      return sceneModel(levels, emptyProgress(), run).lots[0];
+    };
+    expect(atFeedback(ALL_GOOD)).toMatchObject({ finished: false, construction: true, stars: 0 });
+    expect(atFeedback(['B', 'B', 'B'])).toMatchObject({ collapsed: false, construction: true });
+    expect(atFeedback(['B', 'C', 'B', 'C', 'A', 'A'])).toMatchObject({ rejected: false });
+  });
+
+  it('passes the stars and a failed inspection on to the view', () => {
+    const lot = (choices: OptionId[]) =>
+      sceneModel(levels, emptyProgress(), finished(choices)).lots[0];
+    expect(lot(ALL_GOOD)).toMatchObject({ stars: 3, rejected: false });
+    expect(lot(['C', 'C', 'A', 'A', 'A', 'A'])).toMatchObject({ stars: 2, finished: true });
+    expect(lot(['B', 'C', 'B', 'C', 'A', 'A'])).toMatchObject({ stars: 0, rejected: true });
+    expect(lot(['B', 'B', 'B'])).toMatchObject({ stars: 0, rejected: false, collapsed: true });
+  });
+
   it('marks the building as finished once the level is passed, not while it is built or rejected', () => {
     const lot = (choices: OptionId[]) =>
       sceneModel(levels, emptyProgress(), finished(choices)).lots[0];
@@ -283,6 +304,7 @@ describe('sceneModel (F-408, F-409)', () => {
     const done = sceneModel(levels, progress, null);
     expect(done.lots.map((l) => l.status)).toEqual(['done', 'open', 'locked']);
     expect(done.lots.map((l) => l.finished)).toEqual([true, false, false]);
+    expect(done.lots.map((l) => l.stars)).toEqual([3, 0, 0]);
     expect(done.lots[0]?.building?.floors).toHaveLength(6);
 
     progress = finishRun(progress, replay(makeLevel(2), 1, [], ALL_GOOD), makeLevel(2));

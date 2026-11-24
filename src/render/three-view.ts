@@ -22,7 +22,7 @@ import type { Logger } from '../logging/logger.ts';
 import type { Part } from './boxes.ts';
 import { box, hash, shade } from './boxes.ts';
 import type { Quality } from './director.ts';
-import { decorationFor, momentFor, resultSequence, timeOfDay } from './director.ts';
+import { celebrationFor, decorationFor, momentFor, resultSequence, timeOfDay } from './director.ts';
 import type { Lighting, TimeOfDay } from './palette.ts';
 import { C, LIGHTING } from './palette.ts';
 import { TUNING } from './tuning.ts';
@@ -131,7 +131,13 @@ type ChunkKind =
   /** A piece that breaks off a floor built on a risky decision (G-42). */
   | 'debris'
   /** The cloud that billows up when the tower comes down (G-45). */
-  | 'collapseDust';
+  | 'collapseDust'
+  /** B5: rockets that burst over a building passed with three stars. */
+  | 'firework'
+  /** B5: paper raining on a building passed with two stars. */
+  | 'confetti'
+  /** B5: the inspector who walks round a building that was not accepted. */
+  | 'inspector';
 
 /** A group of boxes that moves as one: a module of the tower, a crane, a warning sign. */
 interface Chunk {
@@ -316,6 +322,10 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   let night = false;
   /** Time a collapse started to shake the camera, or null (G-45). */
   let shakeStart: number | null = null;
+  /** Time the sequence after a level started, or null while none plays (B5). */
+  let presentStart: number | null = null;
+  /** How far the camera has swung round the building, in radians. */
+  let yaw = 0;
   const lotsGroup = new Group();
   scene.add(lotsGroup);
   let visuals: LotVisual[] = [];
@@ -362,24 +372,28 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       const lit = night && hash(seed + 11 + s) < TUNING.litWindowShare + 0.2;
       const glass = door ? C.door : lit ? C.nightGlass : GLASS;
       const sill = facade.balcony && !ground;
-      if (mx === 1) {
-        if (s === broken) {
-          push(box(C.hole, 0.1, 0.56, width + 0.24, face, y, slot));
-        } else {
-          push(box(FRAME, 0.08, height + 0.14, width + 0.16, face, y, slot));
-          push(box(glass, 0.12, height, width, face + 0.01, y, slot));
-          if (sill)
-            push(box(C.steel, 0.3, 0.08, width + 0.3, face + 0.12, y - height / 2 - 0.1, slot));
+      // Every module is a corner of the tower, so it has one outer wall along x and one along z.
+      // All four sides carry windows, because the camera swings round after a passed level.
+      const fx = (mx === 1 ? 1 : -1) * face;
+      const fz = (mz === 1 ? 1 : -1) * face;
+      const outX = Math.sign(fx);
+      const outZ = Math.sign(fz);
+      if (s === broken && mx === 1) {
+        push(box(C.hole, 0.1, 0.56, width + 0.24, fx, y, slot));
+      } else {
+        push(box(FRAME, 0.08, height + 0.14, width + 0.16, fx, y, slot));
+        push(box(glass, 0.12, height, width, fx + outX * 0.01, y, slot));
+        if (sill) {
+          push(box(C.steel, 0.3, 0.08, width + 0.3, fx + outX * 0.12, y - height / 2 - 0.1, slot));
         }
       }
-      if (mz === 1) {
-        if (s === broken) {
-          push(box(C.hole, width + 0.24, 0.56, 0.1, slot, y, face));
-        } else {
-          push(box(FRAME, width + 0.16, height + 0.14, 0.08, slot, y, face));
-          push(box(glass, width, height, 0.12, slot, y, face + 0.01));
-          if (sill)
-            push(box(C.steel, width + 0.3, 0.08, 0.3, slot, y - height / 2 - 0.1, face + 0.12));
+      if (s === broken && mz === 1) {
+        push(box(C.hole, width + 0.24, 0.56, 0.1, slot, y, fz));
+      } else {
+        push(box(FRAME, width + 0.16, height + 0.14, 0.08, slot, y, fz));
+        push(box(glass, width, height, 0.12, slot, y, fz + outZ * 0.01));
+        if (sill) {
+          push(box(C.steel, width + 0.3, 0.08, 0.3, slot, y - height / 2 - 0.1, fz + outZ * 0.12));
         }
       }
     });
@@ -540,6 +554,18 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
         base.push(box(C.treeLight, 0.8, 0.6, 0.8, cx, PLOT_TOP + 1.7, cz));
       }
       base.push(box(C.pavement, 2.2, 0.04, 3.4, 0, PLOT_TOP + 0.02, 3.3));
+    }
+    if (lot.rejected) {
+      // B5: yellow and black tape closes the site until the building passes.
+      for (const side of [-1, 1]) {
+        for (let k = 0; k < 8; k++) {
+          const color = k % 2 === 0 ? C.yellow : C.ink;
+          base.push(box(color, 1.05, 0.16, 0.06, -3.68 + k * 1.05, PLOT_TOP + 0.75, side * 4.2));
+          base.push(box(color, 0.06, 0.16, 1.05, side * 4.2, PLOT_TOP + 0.75, -3.68 + k * 1.05));
+        }
+        base.push(box(C.steel, 0.14, 0.9, 0.14, side * 4.2, PLOT_TOP + 0.45, 4.2));
+        base.push(box(C.steel, 0.14, 0.9, 0.14, side * 4.2, PLOT_TOP + 0.45, -4.2));
+      }
     }
     if (lot.collapsed) {
       // G-45: a red and white barrier closes the site. The word «Baustopp» stands in the result text.
@@ -745,6 +771,61 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       }
     }
 
+    const celebration = celebrationFor(lot.stars);
+    if (roofed && celebration.flag) {
+      // B5: a flag on the roof of a building passed with two or three stars.
+      const flag = chunks.length;
+      chunks.push({
+        kind: 'fixed',
+        floor: 0,
+        seed: 0,
+        home: new Vector3(topX - 1.5, topY, topZ + 1.5),
+        rotation: new Euler(),
+      });
+      parts.push(
+        { ...box(C.steel, 0.1, 2.2, 0.1, 0, 1.3, 0), chunk: flag },
+        { ...box(C.yellow, 0.9, 0.5, 0.06, 0.5, 2.1, 0), chunk: flag },
+      );
+    }
+    if (lot.status === 'active' && lot.finished && celebration.effect !== 'keine') {
+      const sparks = celebration.effect === 'feuerwerk' ? 36 : 40;
+      const colors = [C.vividRed, C.yellow, C.teal, C.pink, C.blue, C.green];
+      for (let k = 0; k < sparks; k++) {
+        const spark = chunks.length;
+        chunks.push({
+          kind: celebration.effect === 'feuerwerk' ? 'firework' : 'confetti',
+          floor: 0,
+          seed: k,
+          home: new Vector3(topX, topY + 2, topZ),
+          rotation: new Euler(hash(k + 700) * 3, hash(k + 710) * 3, 0),
+        });
+        const color =
+          celebration.effect === 'feuerwerk'
+            ? colors[Math.floor(k / 12) % colors.length]
+            : colors[k % colors.length];
+        parts.push({ ...box(color ?? C.yellow, 0.5, 0.5, 0.5, 0, 0, 0), chunk: spark });
+      }
+    }
+    if (lot.rejected) {
+      // B5: the inspector with a clipboard; no cheering and no collapse.
+      const inspector = chunks.length;
+      chunks.push({
+        kind: 'inspector',
+        floor: 0,
+        seed: 0,
+        home: new Vector3(3.6, 0, 3.9),
+        rotation: new Euler(),
+      });
+      parts.push(
+        { ...box(C.ink, 0.34, 0.42, 0.24, 0, 0.21, 0), chunk: inspector },
+        { ...box(C.offWhite, 0.44, 0.5, 0.3, 0, 0.67, 0), chunk: inspector },
+        { ...box(C.skinA, 0.3, 0.28, 0.28, 0, 1.06, 0), chunk: inspector },
+        { ...box(C.white, 0.36, 0.14, 0.34, 0, 1.26, 0), chunk: inspector },
+        { ...box(C.wood, 0.3, 0.36, 0.06, 0.1, 0.72, 0.2), chunk: inspector },
+        { ...box(C.white, 0.24, 0.28, 0.04, 0.1, 0.74, 0.24), chunk: inspector },
+      );
+    }
+
     // One sign per gauge that core reports as critical, each with its own symbol (A6).
     // No sign without such a cause, and none on a finished building.
     if (lot.construction && building.warnings.length > 0) {
@@ -856,6 +937,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       if (progress >= 1) visual.roofStart = null;
     }
     const topFloor = visual.floorCount - 1;
+    // Seconds into the sequence after a level, or -1 while none plays.
+    const presentTime = presentStart === null ? -1 : time - presentStart;
 
     visual.chunks.forEach((chunk, i) => {
       chunkPosition.copy(chunk.home);
@@ -918,6 +1001,48 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
           chunkPosition.y += (1 - dust * dust) * from;
           chunkEuler.x += dust * 5;
         }
+      } else if (chunk.kind === 'firework') {
+        // Three bursts, twelve sparks each: a rocket climbs, then the sparks fly apart and fall.
+        const burst = Math.floor(chunk.seed / 12);
+        const since = presentTime - (1 + burst * 0.55);
+        const k = chunk.seed;
+        const ox = (burst - 1) * 2.6;
+        const oy = 3.5 + (burst % 2) * 1.4;
+        if (presentTime < 0 || since < -0.4 || since > 1.3) chunkScale.set(0, 0, 0);
+        else if (since < 0) {
+          chunkPosition.x += ox * (1 + since / 0.4);
+          chunkPosition.y += oy * (1 + since / 0.4);
+          chunkScale.set(0.5, 1.4, 0.5);
+        } else {
+          const angle = hash(k + 720) * Math.PI * 2;
+          const lift = hash(k + 730) * 2 - 0.6;
+          chunkPosition.x += ox + Math.cos(angle) * since * 3.4;
+          chunkPosition.z += Math.sin(angle) * since * 3.4;
+          chunkPosition.y += oy + lift * since * 2.2 - since * since * 1.6;
+          const size = 1 - since / 1.3;
+          chunkScale.set(size, size, size);
+        }
+      } else if (chunk.kind === 'confetti') {
+        const k = chunk.seed;
+        const since = presentTime - 1 - hash(k + 740) * 1.2;
+        if (presentTime < 0 || since < 0 || since > 2.2) chunkScale.set(0, 0, 0);
+        else {
+          chunkPosition.x += (hash(k + 750) - 0.5) * 6 + Math.sin(since * 5 + k) * 0.3;
+          chunkPosition.z += (hash(k + 760) - 0.5) * 6;
+          chunkPosition.y += 3 - since * 3.2;
+          chunkEuler.x += since * 6;
+          chunkScale.set(0.7, 0.2, 0.7);
+        }
+      } else if (chunk.kind === 'inspector') {
+        // One round of the building while the sequence plays; afterwards the inspector stands in front.
+        const round = presentTime < 0 ? 1 : Math.min(1, presentTime / 2);
+        if (round < 1) {
+          const angle = Math.PI / 4 + round * Math.PI * 2;
+          chunkPosition.x = Math.sin(angle) * 5.2;
+          chunkPosition.z = Math.cos(angle) * 5.2;
+          chunkPosition.y += Math.abs(Math.sin(presentTime * 10)) * 0.06;
+          chunkEuler.y = angle + Math.PI / 2;
+        }
       } else if (chunk.kind === 'collapseDust') {
         // Billows up as the floors hit the ground, then settles and is gone.
         const life = Math.min(1, fallTime / 2.4);
@@ -957,6 +1082,9 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   let width = 1;
   let height = 1;
 
+  const panned = new Vector3();
+  const upAxis = new Vector3(0, 1, 0);
+
   /** Chooses zoom and aim so the subject fills the part of the canvas no panel covers. */
   function updateCameraGoal(): void {
     const freeWidth = Math.max(120, width - insets.left - insets.right);
@@ -991,7 +1119,9 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     camera.top = view.cy * view.unit;
     camera.bottom = -(height - view.cy) * view.unit;
     camera.updateProjectionMatrix();
-    camera.position.copy(target).addScaledVector(viewDirection, TUNING.haze.cameraDistance);
+    // B5: after a passed level the camera swings a quarter circle past the building and back.
+    panned.copy(viewDirection).applyAxisAngle(upAxis, yaw);
+    camera.position.copy(target).addScaledVector(panned, TUNING.haze.cameraDistance);
     camera.lookAt(target);
     // G-45: a short shake when a tower comes down; never with reduced motion (the director decides).
     if (shakeStart !== null) {
@@ -1084,6 +1214,17 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     }
 
     const ease = reducedMotion || !cameraSnapped ? 1 : 1 - Math.exp(-dt * TUNING.camera.easeRate);
+    // The swing only plays for a passed building, after its roof has landed; never with reduced motion.
+    const focused = model && model.focus !== null ? model.lots[model.focus] : undefined;
+    let yawGoal = 0;
+    if (presentStart !== null && focused?.finished && !reducedMotion) {
+      const swing = Math.min(
+        1,
+        Math.max(0, (clock - presentStart - 1) / TUNING.sequence.panSeconds),
+      );
+      yawGoal = Math.sin(swing * Math.PI) * (Math.PI / 4);
+    }
+    yaw += (yawGoal - yaw) * (reducedMotion ? 1 : 1 - Math.exp(-dt * 8));
     // Reduced motion: light changes at once instead of gliding (B0.6).
     easeLight(reducedMotion ? 1 : 1 - Math.exp(-dt * TUNING.camera.lightEaseRate));
     target.lerp(targetGoal, ease);
@@ -1187,6 +1328,11 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       visuals = updated;
       model = next;
       updateCameraGoal();
+    },
+
+    setPresenting(presenting: boolean): void {
+      presentStart = presenting ? clock : null;
+      for (const visual of visuals) visual.dirty = true;
     },
 
     stats(): RenderStats {

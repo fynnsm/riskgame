@@ -281,7 +281,7 @@ Automatische Tests beweisen, dass Logik, Inhalte und Abläufe stimmen. Ob das Sp
 | `src/storage` | `ProgressStore` und die localStorage-Umsetzung | `core` |
 | `src/logging` | Logger, Ringpuffer, Fehlerbericht | – |
 | `src/render` | Three.js-Szene: Gebäude, Stadt, Kamera, Effekte | `core` (nur lesend) |
-| `src/ui` | HTML-Oberfläche: Anzeigen, Karten, Dialoge | `core` |
+| `src/ui` | HTML-Oberfläche: Anzeigen, Karten, Dialoge | `core`; aus `render` nur `director.ts` und `tuning.ts` (reine Funktionen und Zahlen ohne Three.js), damit Oberfläche und Szene denselben Ablauf kennen |
 | `src/audio` | Geräusche | – |
 
 ## 7. Nicht im Umfang der ersten Version
@@ -388,9 +388,9 @@ Stand: **U** = umgesetzt, **O** = offen.
 | G-01 | Änderungen des Grafik-Updates liegen nur in `src/render`, `src/ui`, `src/audio`. Braucht die Darstellung eine neue Information, liefert `core` sie als Zustand | M | U |
 | G-02 | Nur Klötze mit flachen Farben: keine Texturen, Bilddateien oder externen Modelle; eigene Formen und Figuren | M | U |
 | G-03 | Zufall für Dekoration kommt aus einem eigenen Generator in `render`; der Generator des Spiels läuft dadurch nie weiter | M | U |
-| G-04 | Jede Animation ist überspringbar (Klick, Enter, Escape) und hält die Bedienung höchstens 4 Sekunden auf | M | O |
-| G-05 | Bei «Bewegung reduzieren»: keine Kamerafahrten, kein Kamerawackeln, kein Blitzen; stattdessen Überblendung auf das Endbild | M | O |
-| G-06 | `?renderer=none` bleibt vollständig spielbar; jeder neue Bildschirm hat dort eine Text-Entsprechung | M | O |
+| G-04 | Jede Animation ist überspringbar (Klick, Enter, Escape) und hält die Bedienung höchstens 4 Sekunden auf | M | U für die Sequenzen nach einem Level (Klick, Enter, Escape; höchstens 3.75 Sekunden); für Schlussbildschirm und Startseite offen |
+| G-05 | Bei «Bewegung reduzieren»: keine Kamerafahrten, kein Kamerawackeln, kein Blitzen; stattdessen Überblendung auf das Endbild | M | U für alles bisher Umgesetzte |
+| G-06 | `?renderer=none` bleibt vollständig spielbar; jeder neue Bildschirm hat dort eine Text-Entsprechung | M | U für die Bildschirme nach einem Level; Schlussbildschirm offen |
 | G-07 | Alle Farben stehen in `src/render/palette.ts`, alle Zeiten und Mengen in `src/render/tuning.ts` | M | U |
 | G-08 | Leistungsgrenzen gemäss `docs/PERFORMANCE.md`: Zeichenaufrufe höchstens das 1.5-Fache des Ist-Zustands, höchstens 80 kB zusätzliche Übertragung, mindestens 30 Bilder pro Sekunde auf einem Mittelklasse-Handy | M | U (Messung und Test), Bildrate nur auf echten Geräten prüfbar |
 | G-09 | Jede neue Darstellung nennt, was sie auf Qualitätsstufe 0, 1 und 2 zeigt; Stufe 0 zeigt keine Dekoration ausser Wolken | M | U (Regel in `director.ts`) |
@@ -410,9 +410,9 @@ Stand: **U** = umgesetzt, **O** = offen.
 | G-43 | Wackeln und Neigung bewegen sich weich; im kritischen Bereich lösen sich kleine Teile, die Arbeiter treten zurück | S | U (Neigung folgt weich; im kritischen Bereich treten die Arbeiter zurück, lose Teile fallen nur nach riskanten Entscheiden) |
 | G-44 | Fertigstellung: Dach wird aufgesetzt, Gerüst und Kran verschwinden, der Bauzaun weicht einem Vorplatz mit Bäumen | S | U |
 | G-45 | Einsturz: Stockwerke kippen nacheinander in Neigungsrichtung, Staubwolke, Trümmer bleiben liegen, Schild «Baustopp», kurzes Kamerawackeln | S | U (das Wort «Baustopp» steht in der Auswertung, weil Klötze keine Schrift tragen) |
-| G-50 | Bildschirm «Level bestanden»: Fertigstellung, Kameraschwenk im Viertelkreis, Banner «Bauabnahme bestanden», Sterne einzeln, dann die Auswertung; Feier nach Sternen (3: Feuerwerk, Fahne, Jubel; 2: Konfetti, Fahne; 1: nur Banner) | M | O (Ablauf und Zuordnung sind definiert) |
-| G-51 | Bildschirm «Bauabnahme nicht bestanden»: Figur mit Klemmbrett, Stempel «Nicht abgenommen», Absperrband; kein Jubel, kein Einsturz | M | O |
-| G-52 | Bildschirm «Einsturz»: Sequenz aus G-45, dann die Auswertung | M | O |
+| G-50 | Bildschirm «Level bestanden»: Fertigstellung, Kameraschwenk im Viertelkreis, Banner «Bauabnahme bestanden», Sterne einzeln, dann die Auswertung; Feier nach Sternen (3: Feuerwerk, Fahne, Jubel; 2: Konfetti, Fahne; 1: nur Banner) | M | U (der Schwenk geht 45 Grad zur Seite und zurück statt 90 Grad weiter, damit nach der Sequenz dieselbe Ansicht steht; die Arbeiter jubeln oder nicken noch nicht) |
+| G-51 | Bildschirm «Bauabnahme nicht bestanden»: Figur mit Klemmbrett, Stempel «Nicht abgenommen», Absperrband; kein Jubel, kein Einsturz | M | U |
+| G-52 | Bildschirm «Einsturz»: Sequenz aus G-45, dann die Auswertung | M | U |
 | G-53 | Eigener Schlussbildschirm nach fünf Leveln: Kameraflug, Flugzeug mit Banner, Übergang zur Nacht, Feuerwerk, Titel nach Sternen (15: Goldene Stadt; 11 bis 14: Solide Stadt; 5 bis 10: Stadt mit Baustellen), Gesamtauswertung als eigene Seite | M | O (Titel-Zuordnung ist definiert) |
 | G-54 | Schlussbildschirm: «Stadt ansehen» (Oberfläche aus, Kamera frei), «Bild speichern» (PNG, nichts wird hochgeladen), «Nochmals spielen» | S | O |
 | G-55 | Startseite: Schriftzug, langsamer Kameraflug, ein Hauptknopf («Spielen» oder «Weiterspielen»), Bauplätze zeigen den Zustand; Einleitungstext nur, solange kein Level abgeschlossen ist | M | O |

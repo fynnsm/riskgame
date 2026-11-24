@@ -506,6 +506,74 @@ export interface ResultHandlers {
   nextLevel: (() => void) | null;
 }
 
+export type EndOutcome = 'completed' | 'rejected' | 'collapsed';
+
+const SEQUENCE_LEAD: Record<EndOutcome, string> = {
+  completed: T.sequence.completedLead,
+  rejected: T.sequence.rejectedLead,
+  collapsed: T.sequence.collapsedLead,
+};
+
+/**
+ * B5: the short moment between the last decision and the evaluation. With 3D it frames
+ * what happens on the site; without, it says the same in words. `starDelays` gives the
+ * second at which each star appears, or null to show everything at once.
+ */
+export function sequenceScreen(
+  outcome: EndOutcome,
+  stars: Stars,
+  starDelays: readonly number[] | null,
+  bannerDelay: number,
+  skip: () => void,
+): HTMLElement {
+  const banner = el('h1', {
+    class: `screen-title banner banner-${outcome}`,
+    text: T.sequence[outcome],
+    attrs: { tabindex: '-1', 'data-focus': 'true', 'data-testid': 'banner' },
+  });
+  const animated = starDelays !== null;
+  if (animated) banner.style.animationDelay = `${bannerDelay}s`;
+  const starRow =
+    outcome === 'completed'
+      ? el(
+          'p',
+          {
+            class: 'banner-stars',
+            attrs: {
+              'data-testid': 'banner-stars',
+              'data-stars': String(stars),
+              'aria-label': T.stars(stars),
+            },
+          },
+          [0, 1, 2].map((i) => {
+            const star = el('span', {
+              class: `banner-star${i < stars ? ' banner-star-on' : ''}`,
+              text: i < stars ? '★' : '☆',
+              attrs: { 'aria-hidden': 'true' },
+            });
+            const delay = starDelays?.[i];
+            if (animated && delay !== undefined) star.style.animationDelay = `${delay}s`;
+            return star;
+          }),
+        )
+      : null;
+  return el(
+    'div',
+    {
+      class: `screen screen-sequence${animated ? ' sequence-animated' : ''}`,
+      attrs: { 'data-screen': 'sequence', 'data-outcome': outcome },
+    },
+    [
+      banner,
+      starRow,
+      el('p', { class: 'lead', text: SEQUENCE_LEAD[outcome] }),
+      el('div', { class: 'actions' }, [
+        button(T.sequence.skip, skip, { primary: true, testId: 'skip' }),
+      ]),
+    ],
+  );
+}
+
 function causeItem(level: Level, choice: ChoiceRecord, note: string): HTMLElement {
   const situation = findSituation(level, choice.situationId);
   const option = findOption(situation, choice.optionId);
@@ -552,6 +620,11 @@ export function resultScreen(level: Level, run: LevelRun, handlers: ResultHandle
     children.push(
       heading(T.result.rejected),
       el('p', {
+        class: 'stamp',
+        text: T.sequence.rejected,
+        attrs: { 'data-testid': 'not-accepted' },
+      }),
+      el('p', {
         class: 'lead',
         attrs: { 'data-testid': 'rejected-reason' },
         text: T.result.rejectedLead(score.points, score.required, score.max),
@@ -566,6 +639,11 @@ export function resultScreen(level: Level, run: LevelRun, handlers: ResultHandle
   } else {
     children.push(
       heading(T.result.completed),
+      el('p', {
+        class: 'stamp stamp-good',
+        text: T.sequence.completed,
+        attrs: { 'data-testid': 'accepted' },
+      }),
       el('p', { class: 'lead', text: T.result.completedLead }),
       el('p', { class: 'result-stars' }, [
         starsBadge(starsFor(run)),

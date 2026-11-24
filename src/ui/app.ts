@@ -18,6 +18,8 @@ import { starsFor } from '../core/scoring.ts';
 import type { Logger } from '../logging/logger.ts';
 import { errorData } from '../logging/logger.ts';
 import { buildErrorReport } from '../logging/report.ts';
+import { resultSequence } from '../render/director.ts';
+import { TUNING } from '../render/tuning.ts';
 import type { ProgressStore } from '../storage/progress-store.ts';
 import { clear, button, el } from './dom.ts';
 import {
@@ -32,10 +34,14 @@ import {
   hud,
   menuScreen,
   resultScreen,
+  sequenceScreen,
   situationScreen,
   theoryScreen,
 } from './screens.ts';
 import { T } from './texts.ts';
+
+/** Seconds between one star and the next on the banner; the director plans with the same value. */
+const STAR_INTERVAL = TUNING.sequence.starIntervalSeconds;
 
 /** Longer pauses between two actions do not count as active play time (F-108). */
 const IDLE_CAP_MS = 120_000;
@@ -51,6 +57,8 @@ export interface AppEnvironment {
   reload(): void;
   /** A fresh 32-bit seed per run. Comes from outside core so core stays deterministic. */
   nextSeed(): number;
+  /** The system setting «reduce motion» (N-304). */
+  reducedMotion: boolean;
 }
 
 export interface AppOptions {
@@ -88,6 +96,26 @@ export function createApp(options: AppOptions): App {
   let notices: string[] = [...(options.startupNotices ?? [])];
   let lastActionAt = env.now();
   let view: SceneView | null = null;
+  /** B5: the short sequence between the last decision and the evaluation, while it plays. */
+  let sequence: { timer: number } | null = null;
+
+  /** Ends the sequence, whether its time is up or the player skips it (B0.5). */
+  function endSequence(skipped: boolean): void {
+    if (!sequence) return;
+    window.clearTimeout(sequence.timer);
+    sequence = null;
+    view?.setPresenting(false);
+    logger.info('sequence.ended', { skipped });
+    render();
+  }
+
+  function startSequence(run: LevelRun): void {
+    if (run.outcome === 'running') return;
+    const plan = resultSequence(run.outcome, starsFor(run), env.reducedMotion);
+    logger.info('sequence.started', { outcome: run.outcome, seconds: plan.seconds });
+    sequence = { timer: window.setTimeout(() => endSequence(false), plan.seconds * 1000) };
+    view?.setPresenting(true);
+  }
 
   const canvasHost = el('div', { class: 'canvas-host', attrs: { 'aria-hidden': 'true' } });
   const hudHost = el('div', { class: 'hud-host' });
@@ -277,6 +305,7 @@ export function createApp(options: AppOptions): App {
     }
     if (after.phase === 'result' && before.phase !== 'result') {
       progress = finishRun(progress, after, active.level);
+      startSequence(after);
       logger.info(`level.${after.outcome}`, {
         levelId: after.levelId,
         stars: starsFor(after),
@@ -292,6 +321,7 @@ export function createApp(options: AppOptions): App {
   }
 
   function leaveRun(): void {
+    if (sequence) endSequence(true);
     trackTime();
     logger.info('level.left', {
       levelId: progress.currentRun?.levelId,
@@ -305,6 +335,7 @@ export function createApp(options: AppOptions): App {
 
   function toggleMenu(): void {
     if (overlay === 'error') return;
+    if (sequence) endSequence(true);
     overlay = overlay === 'none' ? 'menu' : 'none';
     logger.info('menu.toggled', { open: overlay === 'menu' });
     render();
@@ -379,6 +410,18 @@ export function createApp(options: AppOptions): App {
       case 'feedback':
         return feedbackScreen(level, run, handlers);
       case 'result':
+        if (sequence && run.outcome !== 'running') {
+          const stars = starsFor(run);
+          const plan = resultSequence(run.outcome, stars, env.reducedMotion);
+          // Without a picture to watch there is nothing to wait for: show banner and stars at once.
+          const staged = view !== null && !env.reducedMotion;
+          const bannerAt = plan.bannerAt;
+          const firstStar = bannerAt + (plan.steps.find((s) => s.step === 'banner')?.seconds ?? 0);
+          const delays = [0, 1, 2].map((i) => firstStar + i * STAR_INTERVAL);
+          return sequenceScreen(run.outcome, stars, staged ? delays : null, bannerAt, () =>
+            endSequence(true),
+          );
+        }
         return resultScreen(level, run, {
           restart: () => startLevel(level.id),
           toCity: leaveRun,
@@ -398,6 +441,7 @@ export function createApp(options: AppOptions): App {
       const active = activeRun();
       if (active && overlay !== 'error') hudHost.append(hud(active.run));
       root.dataset.mode = active ? 'level' : 'city';
+      root.dataset.presenting = sequence ? 'true' : 'false';
       menuButton.hidden = overlay === 'error';
 
       view?.render(sceneModel(levels, progress, active?.run ?? null));
@@ -427,6 +471,11 @@ export function createApp(options: AppOptions): App {
 
   /** N-104: keys 1 to 3 choose an option, Enter triggers the primary button. */
   function onKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && sequence) {
+      event.preventDefault();
+      endSequence(true);
+      return;
+    }
     if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
     const target = event.target as HTMLElement | null;
     const tag = target?.tagName ?? '';

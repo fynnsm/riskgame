@@ -106,6 +106,8 @@ export interface Sequence {
   steps: { step: SequenceStep; seconds: number }[];
   /** Sum of all steps; never more than the limit in TUNING. */
   seconds: number;
+  /** Second at which the banner or stamp appears. */
+  bannerAt: number;
   cameraShake: boolean;
 }
 
@@ -119,13 +121,18 @@ export function resultSequence(
   reducedMotion: boolean,
 ): Sequence {
   if (reducedMotion) {
-    return { steps: [{ step: 'endbild', seconds: 0.2 }], seconds: 0.2, cameraShake: false };
+    return {
+      steps: [{ step: 'endbild', seconds: 0.2 }],
+      seconds: 0.2,
+      bannerAt: 0,
+      cameraShake: false,
+    };
   }
   let steps: Sequence['steps'];
   if (outcome === 'completed') {
     steps = [
       { step: 'fertigstellung', seconds: 1 },
-      { step: 'kameraschwenk', seconds: 1.2 },
+      { step: 'kameraschwenk', seconds: TUNING.sequence.panSeconds },
       { step: 'banner', seconds: 0.5 },
       { step: 'sterne', seconds: stars * TUNING.sequence.starIntervalSeconds },
     ];
@@ -138,7 +145,19 @@ export function resultSequence(
     steps = [{ step: 'einsturz', seconds: 2.4 }];
   }
   const seconds = steps.reduce((sum, s) => sum + s.seconds, 0);
-  return { steps, seconds, cameraShake: outcome === 'collapsed' };
+  // The banner follows the finished building and the swing; the stamp follows the inspector's
+  // round; «Baustopp» appears while the floors are still coming down.
+  const before = (name: SequenceStep): number => {
+    const index = steps.findIndex((s) => s.step === name);
+    return steps.slice(0, Math.max(0, index)).reduce((sum, s) => sum + s.seconds, 0);
+  };
+  const bannerAt =
+    outcome === 'completed'
+      ? before('banner')
+      : outcome === 'rejected'
+        ? before('stempel')
+        : seconds / 2;
+  return { steps, seconds, bannerAt, cameraShake: outcome === 'collapsed' };
 }
 
 /** B3: a plane must not cross the middle of the picture while the player decides. */

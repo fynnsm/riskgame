@@ -4,6 +4,8 @@ import type { BuildingModel } from './lean.ts';
 import { buildingModel } from './lean.ts';
 import type { Progress } from './progress.ts';
 import { floorRecords, isUnlocked, levelProgress } from './progress.ts';
+import type { Stars } from './scoring.ts';
+import { starsFor } from './scoring.ts';
 
 export type LotStatus = 'locked' | 'open' | 'active' | 'done';
 
@@ -19,6 +21,10 @@ export interface LotModel {
   construction: boolean;
   /** True once the building has passed its inspection: it gets its roof and loses the cranes. */
   finished: boolean;
+  /** True if the building stands but failed its inspection; the site is then taped off. */
+  rejected: boolean;
+  /** Stars of the finished building, 0 otherwise; decides how it is celebrated. */
+  stars: Stars;
 }
 
 /** What the 3D view should show. Declarative, so the renderer holds no game state. */
@@ -58,6 +64,11 @@ export interface SceneView {
   setInsets(insets: SceneInsets): void;
   /** Frame rate of the last 30 seconds and the cost of the last frame (L-05, L-09). */
   stats(): RenderStats;
+  /**
+   * True while the short sequence after a level plays (B5): the view may move the camera
+   * and celebrate. False ends all of that at once, e.g. when the player skips.
+   */
+  setPresenting(presenting: boolean): void;
   dispose(): void;
 }
 
@@ -77,15 +88,20 @@ export function sceneModel(
     const kind = level.projekt.gebaeude;
     if (run && run.levelId === level.id) {
       focus = index;
+      const ended = run.phase === 'result';
       return {
         levelId: level.id,
         nummer: level.nummer,
         kind,
         status: 'active',
         building: buildingModel(kind, floorRecords(run)),
-        collapsed: run.outcome === 'collapsed',
-        construction: run.outcome === 'running',
-        finished: run.outcome === 'completed',
+        // What the level ended in only shows once the player has moved on from the last
+        // feedback: the collapse, the roof or the tape belong to the result, not to the choice.
+        collapsed: ended && run.outcome === 'collapsed',
+        construction: !ended,
+        finished: ended && run.outcome === 'completed',
+        rejected: ended && run.outcome === 'rejected',
+        stars: ended ? starsFor(run) : 0,
       };
     }
     const lp = levelProgress(progress, level.id);
@@ -99,6 +115,8 @@ export function sceneModel(
         collapsed: false,
         construction: false,
         finished: true,
+        rejected: false,
+        stars: lp.best.stars,
       };
     }
     const open = available && isUnlocked(progress, order, level.id);
@@ -111,6 +129,8 @@ export function sceneModel(
       collapsed: false,
       construction: false,
       finished: false,
+      rejected: false,
+      stars: 0,
     };
   });
   return {

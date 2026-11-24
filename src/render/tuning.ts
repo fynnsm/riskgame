@@ -71,6 +71,8 @@ export const TUNING = {
     maxSeconds: 4,
     floorSetSeconds: 1.2,
     starIntervalSeconds: 0.35,
+    /** The camera swings past the building and back in this time. */
+    panSeconds: 1.2,
     transitionMs: 200,
   },
 

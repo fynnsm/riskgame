@@ -119,6 +119,16 @@ export const T = {
     nextLevel: 'Nächstes Level',
   },
 
+  sequence: {
+    completed: 'Bauabnahme bestanden',
+    rejected: 'Nicht abgenommen',
+    collapsed: 'Baustopp',
+    completedLead: 'Das Gebäude ist fertig.',
+    rejectedLead: 'Das Gebäude steht, aber die Prüfung fand zu viele offene Risiken.',
+    collapsedLead: 'Das Gebäude ist eingestürzt.',
+    skip: 'Zur Auswertung',
+  },
+
   goalStatus: {
     erreicht: 'Erreicht',
     'nicht-erreicht': 'Noch nicht erreicht',

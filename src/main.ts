@@ -117,6 +117,7 @@ async function boot(): Promise<void> {
       viewport: () => ({ width: window.innerWidth, height: window.innerHeight }),
       copyText: (text) => navigator.clipboard.writeText(text),
       reload: () => window.location.reload(),
+      reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
       nextSeed: () => {
         // `?seed=` pins the first run only, so a repeat still draws anew.
         if (fixedSeed !== undefined) {

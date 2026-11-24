@@ -162,6 +162,16 @@ describe('result sequences (B5, B0.5, B0.6)', () => {
     });
   });
 
+  it('shows the banner after the swing, the stamp after the round and «Baustopp» during the fall', () => {
+    expect(resultSequence('completed', 3, false).bannerAt).toBeCloseTo(2.2);
+    expect(resultSequence('rejected', 0, false).bannerAt).toBeCloseTo(2);
+    expect(resultSequence('collapsed', 0, false).bannerAt).toBeCloseTo(1.2);
+    for (const outcome of ['completed', 'rejected', 'collapsed'] as const) {
+      const sequence = resultSequence(outcome, 3, false);
+      expect(sequence.bannerAt).toBeLessThan(sequence.seconds);
+    }
+  });
+
   it('never holds the player up for more than four seconds', () => {
     for (const outcome of ['completed', 'rejected', 'collapsed'] as const) {
       for (const stars of [0, 1, 2, 3] as const) {
@@ -177,6 +187,7 @@ describe('result sequences (B5, B0.5, B0.6)', () => {
       expect(resultSequence(outcome, 3, true)).toEqual({
         steps: [{ step: 'endbild', seconds: 0.2 }],
         seconds: 0.2,
+        bannerAt: 0,
         cameraShake: false,
       });
     }
