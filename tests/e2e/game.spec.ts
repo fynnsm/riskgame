@@ -4,7 +4,16 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 import type { Level, OptionId } from '../../src/content/schema.ts';
 import { replay } from '../../src/core/game.ts';
-import { progressInLevel, progressWithCompleted } from './support/progress.ts';
+import type { LevelRun } from '../../src/core/game.ts';
+import { step } from '../../src/core/game.ts';
+import type { Progress } from '../../src/core/progress.ts';
+import { starsFor } from '../../src/core/scoring.ts';
+import {
+  openWith,
+  progressInLevel,
+  progressWhere,
+  progressWithCompleted,
+} from './support/progress.ts';
 
 type Rating = 'gut' | 'vertretbar' | 'riskant';
 
@@ -44,6 +53,19 @@ async function choose(page: Page, rating: Rating): Promise<void> {
   await expect(page.getByTestId('rating')).toHaveAttribute('data-rating', rating);
 }
 
+/**
+ * The short sequence after the last decision; the tests that are not about it skip it.
+ * The sequence also ends by itself after a few seconds. On a slow machine that can happen
+ * before the click, so a missing button is fine as long as the evaluation is there afterwards.
+ */
+async function skipSequence(page: Page): Promise<void> {
+  await page
+    .getByTestId('skip')
+    .click({ timeout: 2000 })
+    .catch(() => undefined);
+  await expect(screen(page, 'result')).toBeVisible();
+}
+
 test.beforeEach(async ({ page }) => {
   page.on('pageerror', (error) => {
     throw error;
@@ -67,6 +89,7 @@ test('plays a whole level and keeps the finished building', async ({ page }) => 
     await expect(page.getByTestId('explanation')).not.toBeEmpty();
     await page.getByTestId('next').click();
   }
+  await skipSequence(page);
 
   await expect(screen(page, 'result')).toHaveAttribute('data-outcome', 'completed');
   await expect(page.getByTestId('stars')).toHaveAttribute('data-stars', '3');
@@ -95,6 +118,7 @@ test('collapses, explains why and restarts the level, not the game', async ({ pa
     await page.getByTestId('next').click();
     if (collapsed) break;
   }
+  await skipSequence(page);
 
   await expect(screen(page, 'result')).toHaveAttribute('data-outcome', 'collapsed');
   await expect(page.getByTestId('collapse-reason')).toContainText('Stabilität');
@@ -142,6 +166,10 @@ test('fails the final inspection if the building stands on too many poor decisio
     await page.locator('.option', { hasText: option?.text ?? '' }).click();
     await page.getByTestId('next').click();
   }
+  await expect(page.getByTestId('banner')).toHaveText('Nicht abgenommen');
+  await expect(page.getByTestId('banner-stars')).toHaveCount(0);
+  await skipSequence(page);
+  await expect(page.getByTestId('not-accepted')).toHaveText('Nicht abgenommen');
 
   await expect(screen(page, 'result')).toHaveAttribute('data-outcome', 'rejected');
   await expect(page.getByTestId('rejected-reason')).toContainText('nötig sind 11');
@@ -455,6 +483,97 @@ test('runs the 3D view with reduced motion: no error, and the decoration stands 
   await expect(screen(page, 'error')).toHaveCount(0);
   await page.getByTestId('menu').click();
   expect(await page.getByTestId('report').inputValue()).toContain('"reducedMotion":true');
+});
+
+interface LastStep {
+  progress: Progress;
+  /** Text of the option that ends the level in the wanted way. */
+  option: string;
+}
+
+async function playLastDecision(page: Page, url: string, last: LastStep): Promise<void> {
+  await openWith(page, url, last.progress);
+  await expect(screen(page, 'situation')).toBeVisible();
+  await page.locator('.option', { hasText: last.option }).click();
+  await page.getByTestId('next').click();
+}
+
+/** A state one decision before the level ends in the wanted way, and the option that does it. */
+function oneBefore(wanted: (run: LevelRun) => boolean): LastStep {
+  let option = '';
+  const progress = progressWhere(1, (run) => {
+    if (run.phase !== 'situation') return false;
+    const situation = level1.situationen.find((s) => s.id === run.situationIds[run.step]);
+    const ending = situation?.optionen.find((candidate) => {
+      let after = step(run, level1, { type: 'choose', optionId: candidate.id });
+      after = step(after, level1, { type: 'continue' });
+      return after.phase === 'result' && wanted(after);
+    });
+    if (ending) option = ending.text;
+    return ending !== undefined;
+  });
+  return { progress, option };
+}
+
+test('shows «Bauabnahme bestanden» with the right number of stars, then the evaluation (B5)', async ({
+  page,
+}) => {
+  const threeStars = oneBefore((run) => run.outcome === 'completed' && starsFor(run) === 3);
+  await playLastDecision(page, SIMPLE, threeStars);
+
+  await expect(screen(page, 'sequence')).toHaveAttribute('data-outcome', 'completed');
+  await expect(page.getByTestId('banner')).toHaveText('Bauabnahme bestanden');
+  await expect(page.getByTestId('banner')).toBeFocused();
+  await expect(page.getByTestId('banner-stars')).toHaveAttribute('data-stars', '3');
+
+  // Nothing holds the player up for more than four seconds: the evaluation comes by itself.
+  await expect(screen(page, 'result')).toBeVisible({ timeout: 4500 });
+  await expect(page.getByTestId('accepted')).toHaveText('Bauabnahme bestanden');
+  await expect(page.getByTestId('stars')).toHaveAttribute('data-stars', '3');
+});
+
+for (const [how, act] of [
+  ['Enter', (page: Page) => page.keyboard.press('Enter')],
+  ['Escape', (page: Page) => page.keyboard.press('Escape')],
+  ['a click', (page: Page) => page.getByTestId('skip').click()],
+] as const) {
+  test(`lets the sequence after a level be skipped with ${how} (B0.5)`, async ({ page }) => {
+    await playLastDecision(
+      page,
+      SIMPLE,
+      oneBefore((run) => run.outcome === 'completed'),
+    );
+    await expect(screen(page, 'sequence')).toBeVisible();
+    await act(page);
+    await expect(screen(page, 'result')).toBeVisible({ timeout: 600 });
+  });
+}
+
+test('shows «Baustopp» after a collapse and tapes off a building that was not accepted, in 3D too (B5)', async ({
+  page,
+}) => {
+  test.slow();
+  await playLastDecision(
+    page,
+    '/?quality=1',
+    oneBefore((run) => run.outcome === 'collapsed'),
+  );
+  await expect(page.getByTestId('banner')).toHaveText('Baustopp');
+  await skipSequence(page);
+  await expect(screen(page, 'result')).toHaveAttribute('data-outcome', 'collapsed');
+  await expect(screen(page, 'error')).toHaveCount(0);
+});
+
+test('shows the final picture at once with reduced motion (B0.6)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await playLastDecision(
+    page,
+    SIMPLE,
+    oneBefore((run) => run.outcome === 'completed'),
+  );
+  // No staging and nothing to skip: the evaluation is there within a moment.
+  await expect(screen(page, 'result')).toBeVisible({ timeout: 1200 });
+  await expect(page.getByTestId('accepted')).toBeVisible();
 });
 
 test('ignores invalid URL parameters', async ({ page }) => {

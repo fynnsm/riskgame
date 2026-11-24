@@ -47,6 +47,9 @@ export const TUNING = {
     /** A sample this long decides whether the quality step drops (N-203). */
     sampleSeconds: 3,
     minFps: 28,
+    /** A frame slower than this is followed by a pause of the same length, at most the second value. */
+    slowFrameMs: 50,
+    maxBreatherMs: 250,
     /** Pixel ratio is capped here (N-205). */
     maxPixelRatio: 2,
     shadowMapSize: 2048,
@@ -71,6 +74,8 @@ export const TUNING = {
     maxSeconds: 4,
     floorSetSeconds: 1.2,
     starIntervalSeconds: 0.35,
+    /** The camera swings past the building and back in this time. */
+    panSeconds: 1.2,
     transitionMs: 200,
   },
 
