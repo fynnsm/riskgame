@@ -89,7 +89,7 @@
           "id": "C",
           "text": "Du verzichtest künftig auf AI-Zusammenfassungen und liest alle Berichte selbst.",
           "wirkung": {
-            "budget": "0",
+            "budget": "-klein",
             "zeit": "-mittel",
             "stabilitaet": "+klein"
           },
@@ -113,7 +113,7 @@
           "wirkung": {
             "budget": "0",
             "zeit": "+klein",
-            "stabilitaet": "-mittel"
+            "stabilitaet": "-gross"
           },
           "einstufung": "riskant",
           "erklaerung": "Ohne Schwelle gewöhnt man sich an jeden Wert. Wenn die Reklamationen kommen, ist es für günstige Korrekturen zu spät."
@@ -122,8 +122,8 @@
           "id": "B",
           "text": "Du legst einen Schwellenwert fest und was passiert, wenn er überschritten wird.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -133,8 +133,8 @@
           "id": "C",
           "text": "Du führst zwanzig weitere Kennzahlen ein, um ein vollständiges Bild zu bekommen.",
           "wirkung": {
-            "budget": "-klein",
-            "zeit": "-mittel",
+            "budget": "-mittel",
+            "zeit": "0",
             "stabilitaet": "+klein"
           },
           "einstufung": "vertretbar",
@@ -155,8 +155,8 @@
           "id": "A",
           "text": "Du gehst das Register jetzt einmal gründlich durch und dann wieder am Projektende.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-mittel",
+            "budget": "-klein",
+            "zeit": "-klein",
             "stabilitaet": "+klein"
           },
           "einstufung": "vertretbar",
@@ -177,8 +177,8 @@
           "id": "C",
           "text": "Du setzt die wichtigsten Risiken fest auf die Traktandenliste jeder Projektsitzung.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -204,7 +204,7 @@
           "text": "Du meldest das Risiko sofort als kritisch an den Lenkungsausschuss.",
           "wirkung": {
             "budget": "0",
-            "zeit": "-klein",
+            "zeit": "0",
             "stabilitaet": "-klein"
           },
           "einstufung": "vertretbar",
@@ -258,8 +258,8 @@
           "id": "B",
           "text": "Du nimmst das Risiko ins Register auf, bewertest es und bestimmst eine zuständige Person.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -302,9 +302,9 @@
           "id": "B",
           "text": "Du wartest noch eine Woche. Vielleicht holt der Lieferant auf.",
           "wirkung": {
-            "budget": "0",
+            "budget": "+klein",
             "zeit": "-klein",
-            "stabilitaet": "-mittel"
+            "stabilitaet": "-gross"
           },
           "einstufung": "riskant",
           "erklaerung": "Hoffnung ist keine Massnahme. Die Schwelle wurde in Ruhe festgelegt, damit im Ernstfall nicht gezögert wird. Jede Woche Warten macht den Notfallplan teurer."
@@ -383,7 +383,7 @@
           "id": "A",
           "text": "Du schreibst den Bericht wie früher von Hand.",
           "wirkung": {
-            "budget": "0",
+            "budget": "-klein",
             "zeit": "-mittel",
             "stabilitaet": "+klein"
           },
@@ -482,8 +482,8 @@
           "id": "B",
           "text": "Du lässt prüfen, ob die Schulung gewirkt hat, und passt dann die Bewertung an.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -519,7 +519,7 @@
           "id": "A",
           "text": "Du meldest dem Lenkungsausschuss, dass der Start vorgezogen werden kann.",
           "wirkung": {
-            "budget": "0",
+            "budget": "+klein",
             "zeit": "+mittel",
             "stabilitaet": "-gross"
           },
@@ -563,8 +563,8 @@
           "id": "A",
           "text": "Du fragst in den Sitzungen aktiv nach, dankst für Meldungen und trennst Meldung klar von Schuld.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -585,8 +585,8 @@
           "id": "C",
           "text": "Du führst ein Formular ein, das jedes Team wöchentlich ausfüllen muss.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-mittel",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+klein"
           },
           "einstufung": "vertretbar",

@@ -169,8 +169,8 @@ export function checkLevelRules(level: Level, points: EffectPoints): RuleIssue[]
     });
   }
 
-  // Patterns in the content (A1, A2). Warnings for now: the texts belong to the group, and the
-  // effect values are corrected in a separate step.
+  // Patterns in the content (A1, A2). Text lengths only warn, because the texts belong to the
+  // group. The spread of the effects is binding, because it decides whether the balance works.
   const warn = (path: string, message: string) =>
     issues.push({ path, message, severity: 'warning' });
   const stats = levelStats(level, points);
@@ -195,14 +195,14 @@ export function checkLevelRules(level: Level, points: EffectPoints): RuleIssue[]
       );
     }
     if (stats.budgetShare < LIMITS.minBudgetShare) {
-      warn(
+      error(
         'situationen',
         `nur ${percent(stats.budgetShare)} der Optionen haben eine Budgetwirkung (nötig mindestens ${percent(LIMITS.minBudgetShare)})`,
       );
     }
     for (const [gauge, costShare] of Object.entries(stats.goodCostShare)) {
       if (costShare > LIMITS.maxGoodCostShare) {
-        warn(
+        error(
           'situationen',
           `${percent(costShare)} der Kosten der guten Optionen entfallen auf «${gauge}» (erlaubt höchstens ${percent(LIMITS.maxGoodCostShare)})`,
         );

@@ -120,7 +120,7 @@
           "id": "B",
           "text": "Nein. Er soll die Reklamationen von Hand durchgehen und gruppieren.",
           "wirkung": {
-            "budget": "0",
+            "budget": "-klein",
             "zeit": "-mittel",
             "stabilitaet": "+klein"
           },
@@ -164,8 +164,8 @@
           "id": "B",
           "text": "Du verbietest ab sofort jede Bewertung durch AI im Projekt.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-mittel",
+            "budget": "-klein",
+            "zeit": "-klein",
             "stabilitaet": "+klein"
           },
           "einstufung": "vertretbar",
@@ -175,8 +175,8 @@
           "id": "C",
           "text": "Du stehst zur Bewertung, legst offen, wie sie entstand, und führst eine Prüfung durch Menschen ein.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -213,7 +213,7 @@
           "text": "Du lässt die Frage vom Rechtsdienst klären, bevor du planst.",
           "wirkung": {
             "budget": "-klein",
-            "zeit": "-klein",
+            "zeit": "0",
             "stabilitaet": "+gross"
           },
           "einstufung": "gut",
@@ -223,7 +223,7 @@
           "id": "C",
           "text": "Du verlässt dich auf die Antwort und planst ohne Hinweis.",
           "wirkung": {
-            "budget": "0",
+            "budget": "+klein",
             "zeit": "+klein",
             "stabilitaet": "-gross"
           },
@@ -289,7 +289,7 @@
           "id": "A",
           "text": "Du übernimmst die Auswertung. Die Datenmenge ist gross genug.",
           "wirkung": {
-            "budget": "0",
+            "budget": "+klein",
             "zeit": "+klein",
             "stabilitaet": "-mittel"
           },
@@ -301,7 +301,7 @@
           "text": "Du verwirfst die ganze Auswertung als unbrauchbar.",
           "wirkung": {
             "budget": "0",
-            "zeit": "-klein",
+            "zeit": "0",
             "stabilitaet": "-klein"
           },
           "einstufung": "vertretbar",
@@ -312,7 +312,7 @@
           "text": "Du holst bei den Teams in der Romandie und im Tessin ein, was in den Daten fehlt.",
           "wirkung": {
             "budget": "-klein",
-            "zeit": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -335,7 +335,7 @@
           "wirkung": {
             "budget": "0",
             "zeit": "0",
-            "stabilitaet": "-mittel"
+            "stabilitaet": "-gross"
           },
           "einstufung": "riskant",
           "erklaerung": "Kommt später heraus, dass das nicht stimmt, steht mehr auf dem Spiel als dieser Bericht. Vertrauen ist im Risikomanagement die wichtigste Währung."
@@ -377,8 +377,8 @@
           "id": "A",
           "text": "Du verbietest alle AI-Tools im Projekt, bis auf Weiteres.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-mittel",
+            "budget": "-klein",
+            "zeit": "-klein",
             "stabilitaet": "+klein"
           },
           "einstufung": "vertretbar",
@@ -399,8 +399,8 @@
           "id": "C",
           "text": "Du stoppst die Erweiterung und klärst mit der IT-Sicherheit, welche Tools freigegeben sind.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -481,7 +481,7 @@
           "text": "Der Assistent schlägt vor, ein Mensch genehmigt. Nach Stichproben entscheidet ihr neu.",
           "wirkung": {
             "budget": "-klein",
-            "zeit": "-klein",
+            "zeit": "0",
             "stabilitaet": "+gross"
           },
           "einstufung": "gut",
@@ -491,8 +491,8 @@
           "id": "C",
           "text": "Du schliesst aus, dass der Assistent bei Schadenfällen überhaupt mitwirkt.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-mittel",
+            "budget": "-mittel",
+            "zeit": "0",
             "stabilitaet": "+klein"
           },
           "einstufung": "vertretbar",
@@ -535,7 +535,7 @@
           "id": "C",
           "text": "Du fasst die Protokolle von Hand zusammen.",
           "wirkung": {
-            "budget": "0",
+            "budget": "-klein",
             "zeit": "-mittel",
             "stabilitaet": "+klein"
           },
@@ -568,8 +568,8 @@
           "id": "B",
           "text": "Du bittest alle, einen Punkt zu nennen, bei dem sie der AI widersprechen würden.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -579,7 +579,7 @@
           "id": "C",
           "text": "Du wiederholst den Workshop ohne die Ergebnisse der AI.",
           "wirkung": {
-            "budget": "0",
+            "budget": "-klein",
             "zeit": "-mittel",
             "stabilitaet": "+klein"
           },

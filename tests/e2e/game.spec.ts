@@ -57,7 +57,7 @@ test('plays a whole level and keeps the finished building', async ({ page }) => 
   await startLevel1(page);
   await expect(page.getByTestId('skip-theory')).toHaveCount(0);
   await throughBriefingAndTheory(page);
-  await expect(gauge(page, 'budget')).toHaveAttribute('data-value', '60');
+  await expect(gauge(page, 'budget')).toHaveAttribute('data-value', '76');
   await expect(page.getByTestId('stepper').locator('li')).toHaveCount(STEPS);
 
   for (let i = 0; i < STEPS; i++) {
@@ -101,7 +101,7 @@ test('collapses, explains why and restarts the level, not the game', async ({ pa
 
   await page.getByTestId('restart').click();
   await expect(screen(page, 'briefing')).toBeVisible();
-  await expect(gauge(page, 'stabilitaet')).toHaveAttribute('data-value', '60');
+  await expect(gauge(page, 'stabilitaet')).toHaveAttribute('data-value', '76');
 
   await page.getByTestId('menu').click();
   await page.getByTestId('abort').click();
