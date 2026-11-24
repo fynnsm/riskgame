@@ -23,13 +23,6 @@ export function withoutTour(level: Level): Level {
   return rest;
 }
 
-/** The level without its events. */
-export function withoutEvents(level: Level): Level {
-  const rest = { ...level };
-  delete rest.ereignisse;
-  return rest;
-}
-
 /**
  * F-906: the published build shows released content only, unless drafts are switched on.
  * A level with too few released situations is locked. A tour with too few released places

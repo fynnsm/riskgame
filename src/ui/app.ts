@@ -23,6 +23,7 @@ import type { MarkerSpot, RenderStats, SceneView } from '../core/scene.ts';
 import { sceneModel } from '../core/scene.ts';
 import { starsFor } from '../core/scoring.ts';
 import { judgedCount, registeredRisks } from '../core/tour.ts';
+import { dueRound, eventVerdict, findEvent, forecastOf, isRecommended } from '../core/events.ts';
 import type { Logger } from '../logging/logger.ts';
 import { errorData } from '../logging/logger.ts';
 import { buildErrorReport } from '../logging/report.ts';
@@ -47,6 +48,8 @@ import {
   feedbackScreen,
   hud,
   menuScreen,
+  eventResultScreen,
+  eventScreen,
   resultScreen,
   sequenceScreen,
   tourResultScreen,
@@ -507,6 +510,77 @@ export function createApp(options: AppOptions): App {
     return ahead.find((id) => !Object.hasOwn(run.tour?.judgements ?? {}, id)) ?? null;
   }
 
+  function gaugeData(run: LevelRun): Record<string, number> {
+    return {
+      budget: run.gauges.budget,
+      zeit: run.gauges.zeit,
+      stabilitaet: run.gauges.stabilitaet,
+    };
+  }
+
+  /** M-08: what the card of an event shows when it is announced. */
+  function logForecast(run: LevelRun, level: Level): void {
+    const index = dueRound(run.events, run.history.length);
+    const round = index === null ? undefined : run.events?.[index];
+    if (!round) return;
+    const forecast = forecastOf(findEvent(level, round.eventId), round);
+    logger.info('event.forecast', {
+      levelId: run.levelId,
+      eventId: round.eventId,
+      round: (index ?? 0) + 1,
+      source: forecast.source,
+      shown: forecast.shown,
+      ...gaugeData(run),
+    });
+  }
+
+  function logEventAction(
+    action: Extract<Action, { type: 'verifyForecast' | 'chooseStrategy' }>,
+    before: LevelRun,
+    after: LevelRun,
+    level: Level,
+  ): void {
+    const index = dueRound(before.events, before.history.length);
+    const round = index === null ? undefined : after.events?.[index];
+    if (!round) return;
+    const event = findEvent(level, round.eventId);
+    sound.play('choice');
+    if (action.type === 'verifyForecast') {
+      logger.info('event.verify', {
+        levelId: after.levelId,
+        eventId: event.id,
+        shown: event.aiPrognose?.angezeigt,
+        truth: event.wahrscheinlichkeit,
+        ...gaugeData(after),
+      });
+      return;
+    }
+    logger.info('event.strategy', {
+      levelId: after.levelId,
+      eventId: event.id,
+      strategyId: action.strategyId,
+      recommended: isRecommended(event, action.strategyId),
+      verified: round.verified,
+      outcome: after.outcome,
+      ...gaugeData(after),
+    });
+  }
+
+  function logResolution(run: LevelRun, level: Level): void {
+    const round = [...(run.events ?? [])].reverse().find((r) => r.resolution !== null);
+    if (!round) return;
+    if (round.resolution?.occurred) sound.play('warning');
+    logger.info('event.resolve', {
+      levelId: run.levelId,
+      eventId: round.eventId,
+      occurred: round.resolution?.occurred,
+      strategyId: round.strategy,
+      verdict: eventVerdict(round, level),
+      outcome: run.outcome,
+      ...gaugeData(run),
+    });
+  }
+
   function dispatch(action: Action): void {
     const active = activeRun();
     if (!active) return;
@@ -531,6 +605,8 @@ export function createApp(options: AppOptions): App {
         stabilitaet: after.gauges.stabilitaet,
         outcome: after.outcome,
       });
+    } else if (action.type === 'verifyForecast' || action.type === 'chooseStrategy') {
+      logEventAction(action, before, after, active.level);
     } else if (action.type === 'classify') {
       sound.play('choice');
       openSite = nextOpenPlace(after, action.siteId);
@@ -561,6 +637,8 @@ export function createApp(options: AppOptions): App {
         theoryIndex: after.theoryIndex,
       });
     }
+    if (after.phase === 'event' && before.phase !== 'event') logForecast(after, active.level);
+    if (after.phase === 'eventResult') logResolution(after, active.level);
     if (after.phase === 'tour' && before.phase !== 'tour') {
       openSite = null;
       logger.info('tour.start', {
@@ -710,9 +788,13 @@ export function createApp(options: AppOptions): App {
       case 'tourResult':
         return tourResultScreen(level, run, handlers);
       case 'event':
+        return eventScreen(level, run, {
+          verify: () => dispatch({ type: 'verifyForecast' }),
+          choose: (strategyId) => dispatch({ type: 'chooseStrategy', strategyId }),
+          next: handlers.next,
+        });
       case 'eventResult':
-        // Unreachable until levels carry events and these phases have their screens.
-        throw new Error(`No screen for phase ${run.phase}`);
+        return eventResultScreen(level, run, handlers);
       case 'situation':
         return situationScreen(
           level,
@@ -826,7 +908,7 @@ export function createApp(options: AppOptions): App {
     const target = event.target as HTMLElement | null;
     const tag = target?.tagName ?? '';
     if (tag === 'TEXTAREA' || tag === 'INPUT') return;
-    if (['1', '2', '3'].includes(event.key)) {
+    if (['1', '2', '3', '4'].includes(event.key)) {
       const option = panel.querySelector<HTMLButtonElement>(`button[data-key="${event.key}"]`);
       if (option) {
         event.preventDefault();

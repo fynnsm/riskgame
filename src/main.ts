@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { bundledLevelFiles } from './content/bundle.ts';
-import { loadLevels, withoutEvents } from './content/load.ts';
+import { loadLevels } from './content/load.ts';
 import { CONTENT_RULES } from './core/balance.ts';
 import type { SceneView } from './core/scene.ts';
 import { consoleSink } from './logging/console-sink.ts';
@@ -64,12 +64,7 @@ async function boot(): Promise<void> {
   const params = readParams();
 
   const showDrafts = import.meta.env.DEV || import.meta.env.VITE_SHOW_DRAFTS === '1';
-  const loaded = loadLevels(bundledLevelFiles(), CONTENT_RULES, showDrafts);
-  // The events have their rules and contents, but no screen yet: held back until they have one.
-  const content = {
-    ...loaded,
-    levels: loaded.levels.map((entry) => ({ ...entry, level: withoutEvents(entry.level) })),
-  };
+  const content = loadLevels(bundledLevelFiles(), CONTENT_RULES, showDrafts);
   logger.info('content.loaded', {
     levels: content.levels.length,
     errors: content.errors.length,

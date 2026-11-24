@@ -458,12 +458,12 @@ Stand: **U** = umgesetzt, **O** = offen.
 |---|---|---|---|
 | M-01 | Datengetrieben: Ein Level hat Rundgang oder Ereignisse genau dann, wenn seine Datei den Block `rundgang` oder `ereignisse` enthält. Kein Level-spezifischer Code | M | U (Schema) |
 | M-02 | Alle Regeln liegen in `src/core`, alle Zahlen in `src/core/balance.ts`. Jede Regel hat Unit-Tests, bevor Oberfläche oder 3D entstehen | M | U |
-| M-03 | Sämtlicher Zufall (Ziehung, Eintreten von Ereignissen) wird beim Start des Durchgangs aus dem Seed bestimmt und im Spielstand gespeichert. Ein Durchgang ist aus Seed und Eingaben vollständig wiederholbar | M | O (Regeln U; Protokoll der Ereignisse O) |
-| M-04 | Kein Zeitdruck, keine Geschicklichkeit. Alles ist mit Tastatur bedienbar und läuft mit `?renderer=none` als Text | M | O (Rundgang U; Ereignisse O) |
+| M-03 | Sämtlicher Zufall (Ziehung, Eintreten von Ereignissen) wird beim Start des Durchgangs aus dem Seed bestimmt und im Spielstand gespeichert. Ein Durchgang ist aus Seed und Eingaben vollständig wiederholbar | M | U |
+| M-04 | Kein Zeitdruck, keine Geschicklichkeit. Alles ist mit Tastatur bedienbar und läuft mit `?renderer=none` als Text | M | U |
 | M-05 | Schema der Inhalte Version 2; Level-Dateien ohne die neuen Blöcke bleiben gültig | M | U |
 | M-06 | Spielstand Version 3: abgeschlossene Level und Sterne bleiben erhalten, ein laufender Durchgang wird mit einmaligem Hinweis verworfen. Ist nur der laufende Durchgang unlesbar, gilt dasselbe | M | U |
 | M-07 | `docs/IMPORT.md` beschreibt beide Formate; `content:report` zeigt Rundgang-Stellen und Ereignisse mit Status und führt von Claude erstellte Inhalte in einer eigenen Liste | M | U |
-| M-08 | Log-Ereignisse `tour.start`, `tour.classify`, `tour.finish`, `event.forecast`, `event.verify`, `event.strategy`, `event.resolve`, je mit IDs und Anzeigewerten; der Fehlerbericht enthält sie | M | O (`tour.*` U; `event.*` O) |
+| M-08 | Log-Ereignisse `tour.start`, `tour.classify`, `tour.finish`, `event.forecast`, `event.verify`, `event.strategy`, `event.resolve`, je mit IDs und Anzeigewerten; der Fehlerbericht enthält sie | M | U |
 
 ### 13.2 Baustellen-Rundgang
 
@@ -482,14 +482,14 @@ Balance mit Rundgang: In der Simulation beurteilt die sorgfältige Spielweise de
 
 | ID | Anforderung | Prio | Stand |
 |---|---|---|---|
-| M-20 | Pro Durchgang 3 Ereignis-Runden, nach dem 2., 4. und 6. Entscheid: Meldung mit Wahrscheinlichkeit und Auswirkung, Wahl einer Strategie, Kosten sofort, Auflösung nach dem nächsten Stockwerk | M | O (Regeln U; Oberfläche O) |
-| M-21 | Vier Strategien in fester Reihenfolge: Vermeiden (keine Auswirkung), Vermindern (jede Auswirkung eine Stufe kleiner), Übertragen (Auswirkung auf das Budget entfällt), Akzeptieren (volle Auswirkung, kostenlos). Kosten und Wirkung sind vor der Wahl sichtbar; nicht verfügbare Strategien sind gesperrt und nennen den Grund | M | O (Regeln U; Oberfläche O) |
+| M-20 | Pro Durchgang 3 Ereignis-Runden, nach dem 2., 4. und 6. Entscheid: Meldung mit Wahrscheinlichkeit und Auswirkung, Wahl einer Strategie, Kosten sofort, Auflösung nach dem nächsten Stockwerk | M | U |
+| M-21 | Vier Strategien in fester Reihenfolge: Vermeiden (keine Auswirkung), Vermindern (jede Auswirkung eine Stufe kleiner), Übertragen (Auswirkung auf das Budget entfällt), Akzeptieren (volle Auswirkung, kostenlos). Kosten und Wirkung sind vor der Wahl sichtbar; nicht verfügbare Strategien sind gesperrt und nennen den Grund | M | U |
 | M-22 | Wahrscheinlichkeit: tief 20 %, mittel 40 %, hoch 60 % | M | U |
-| M-23 | AI-Prognose: Ein Ereignis kann seine Wahrscheinlichkeit als Prognose einer AI zeigen, mit Begründung. «Im Team prüfen» kostet 3 Punkte Zeit und zeigt die tatsächliche Wahrscheinlichkeit. Die Auswertung hält fest, ob einer unzuverlässigen Prognose ungeprüft vertraut wurde | M | O (Regeln U; Oberfläche O) |
-| M-24 | Reihenfolge: Kosten der Strategie sofort; Auswirkung des Ereignisses bei der Auflösung, nach der Wirkung des Entscheids derselben Runde. Fällt eine Anzeige auf 0, stürzt das Gebäude ein | M | O (Regeln U; Oberfläche O) |
-| M-25 | Punkte: Eine empfohlene Strategie gibt 1 Punkt, unabhängig vom Ausgang. Die Empfehlung bezieht sich auf die tatsächliche Wahrscheinlichkeit | M | O (Regeln U; Oberfläche O) |
+| M-23 | AI-Prognose: Ein Ereignis kann seine Wahrscheinlichkeit als Prognose einer AI zeigen, mit Begründung. «Im Team prüfen» kostet 3 Punkte Zeit und zeigt die tatsächliche Wahrscheinlichkeit. Die Auswertung hält fest, ob einer unzuverlässigen Prognose ungeprüft vertraut wurde | M | U |
+| M-24 | Reihenfolge: Kosten der Strategie sofort; Auswirkung des Ereignisses bei der Auflösung, nach der Wirkung des Entscheids derselben Runde. Fällt eine Anzeige auf 0, stürzt das Gebäude ein | M | U |
+| M-25 | Punkte: Eine empfohlene Strategie gibt 1 Punkt, unabhängig vom Ausgang. Die Empfehlung bezieht sich auf die tatsächliche Wahrscheinlichkeit | M | U |
 | M-26 | Bauabnahme: Die Schwelle ist ein Anteil von 0.69 der möglichen Punkte, gerundet auf die nächste ganze Zahl (ohne neue Mechaniken 11 von 16). Briefing und Sterne folgen derselben Logik. Ersetzt die Rundung von F-211 | M | U |
-| M-27 | Auswertung pro Ereignis: «Gut entschieden», «Gut entschieden, trotzdem Pech», «Glück gehabt» oder «Hier hat die Vorsorge gefehlt». Nach einem Einsturz erscheinen Ereignisse, die dazu beigetragen haben, in der Liste der Ursachen | M | O (Regeln U; Oberfläche O) |
+| M-27 | Auswertung pro Ereignis: «Gut entschieden», «Gut entschieden, trotzdem Pech», «Glück gehabt» oder «Hier hat die Vorsorge gefehlt». Nach einem Einsturz erscheinen Ereignisse, die dazu beigetragen haben, in der Liste der Ursachen | M | U (fünfte Aussage «Sicher, aber teuer» zu bestätigen) |
 | M-28 | Darstellung: Das Ereignis kündigt sich in der Szene an (Wolken, stehender Lastwagen, leere Arbeitsplätze, Funken am Kran, Figur mit Aktenkoffer). Die gewählte Massnahme wird als Bauteil sichtbar und bleibt am fertigen Gebäude. Tritt das Ereignis ein, spielt eine Szene von höchstens 2 Sekunden, überspringbar | S | O |
 | M-29 | Balance: Die Simulation prüft pro Level mit Ereignissen die sechs Kombinationen aus dem Auftrag, Abschnitt 5; keine einzelne Strategie ist immer richtig | M | O (Simulation U; drei Bedingungen offen, siehe 13.4) |
 

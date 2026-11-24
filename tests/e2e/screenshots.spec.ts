@@ -8,6 +8,8 @@ import { starsFor } from '../../src/core/scoring.ts';
 import {
   oneBefore,
   openWith,
+  progressAtEvent,
+  progressAtEventResult,
   progressInTour,
   progressWhere,
   progressWithCompleted,
@@ -56,6 +58,8 @@ const STATES: [string, () => Progress][] = [
   ['startseite', () => progressWithCompleted(0)],
   ['level-1-rundgang', () => progressInTour(3)],
   ['level-1-rundgang-aufloesung', () => progressInTour(5, true)],
+  ['level-3-ereignis', () => progressAtEvent(3, 'L3-E01', true)],
+  ['level-3-ereignis-aufloesung', () => progressAtEventResult(3, 'L3-E01', true, 'akzeptieren')],
   ...levelStates(1).map(([name, build]): [string, () => Progress] => [`level-1-${name}`, build]),
   ...levelStates(5).map(([name, build]): [string, () => Progress] => [`level-5-${name}`, build]),
   ['schlussansicht', () => progressWithCompleted(5)],

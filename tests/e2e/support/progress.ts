@@ -1,8 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from '@playwright/test';
-import { withoutEvents } from '../../../src/content/load.ts';
-import type { Level, OptionId, Rating } from '../../../src/content/schema.ts';
+import type {
+  Level,
+  OptionId,
+  Rating,
+  RiskEvent,
+  StrategyId,
+} from '../../../src/content/schema.ts';
+import { STRATEGY_IDS } from '../../../src/content/schema.ts';
+import { dueRound, findEvent, isRecommended } from '../../../src/core/events.ts';
 import type { LevelRun } from '../../../src/core/game.ts';
 import { startRun, step } from '../../../src/core/game.ts';
 import type { Progress } from '../../../src/core/progress.ts';
@@ -25,8 +32,7 @@ export function readLevel(nummer: number): Level {
     'levels',
     `level-${nummer}.json`,
   );
-  // The app holds the events back until they have a screen; the tests play what the app plays.
-  return withoutEvents(JSON.parse(readFileSync(file, 'utf8')) as Level);
+  return JSON.parse(readFileSync(file, 'utf8')) as Level;
 }
 
 export const LEVELS: Level[] = [1, 2, 3, 4, 5].map(readLevel);
@@ -58,6 +64,41 @@ export function throughTour(run: LevelRun, level: Level, correct = TOUR_CORRECT)
   });
   next = step(next, level, { type: 'finishTour' });
   return step(next, level, { type: 'continue' });
+}
+
+/** The first strategy an event recommends; what the tests take unless they say otherwise. */
+export function recommendedStrategy(event: RiskEvent): StrategyId {
+  return STRATEGY_IDS.find((id) => isRecommended(event, id)) ?? 'akzeptieren';
+}
+
+/** The event that is announced right now. */
+export function announcedEvent(run: LevelRun, level: Level): RiskEvent {
+  const index = dueRound(run.events, run.history.length);
+  const round = index === null ? undefined : run.events?.[index];
+  if (!round) throw new Error(`No event is announced in phase ${run.phase}`);
+  return findEvent(level, round.eventId);
+}
+
+/**
+ * Takes a run past the events between two floors: a resolution is read, an announced event
+ * gets the strategy `pick` names (default: the recommended one). Stops at the next situation.
+ */
+export function throughEvents(
+  run: LevelRun,
+  level: Level,
+  pick: (event: RiskEvent) => StrategyId = recommendedStrategy,
+): LevelRun {
+  let next = run;
+  while (next.phase === 'event' || next.phase === 'eventResult') {
+    next =
+      next.phase === 'eventResult'
+        ? step(next, level, { type: 'continue' })
+        : step(next, level, {
+            type: 'chooseStrategy',
+            strategyId: pick(announcedEvent(next, level)),
+          });
+  }
+  return next;
 }
 
 /** A run that stands in front of its first situation: theory skipped, tour done. */
@@ -92,7 +133,7 @@ export function played(
   for (const optionId of choices) {
     if (run.phase !== 'situation') break;
     run = step(run, level, { type: 'choose', optionId });
-    run = step(run, level, { type: 'continue' });
+    run = throughEvents(step(run, level, { type: 'continue' }), level);
   }
   return run;
 }
@@ -135,7 +176,7 @@ export function progressInLevel(nummer: number, ratings: readonly Rating[], seed
   choices.forEach((optionId, i) => {
     run = step(run, level, { type: 'choose', optionId });
     if (i < choices.length - 1 || run.outcome === 'running')
-      run = step(run, level, { type: 'continue' });
+      run = throughEvents(step(run, level, { type: 'continue' }), level);
   });
   return withRun(progressWithCompleted(nummer - 1), run);
 }
@@ -179,7 +220,7 @@ export function progressWhere(
         const option = situation?.optionen.find((o) => o.einstufung === rating);
         if (!option) continue;
         let after = step(run, level, { type: 'choose', optionId: option.id });
-        after = step(after, level, { type: 'continue' });
+        after = throughEvents(step(after, level, { type: 'continue' }), level);
         next.push({ run: after, ratings: [...ratings, rating] });
       }
     }
@@ -229,4 +270,73 @@ export function oneBefore(wanted: (run: LevelRun) => boolean, nummer = 1): LastS
     return ending !== undefined;
   });
   return { progress, option };
+}
+
+/**
+ * A run of the given level in front of its first event: two good decisions are taken, and
+ * the event announced is the wanted one, happening or not as asked.
+ */
+export function progressAtEvent(nummer: number, eventId: string, occurs: boolean): Progress {
+  const level = LEVELS[nummer - 1] as Level;
+  for (let seed = 1; seed < 5000; seed++) {
+    let run = started(level, seed);
+    const first = run.events?.[0];
+    if (first?.eventId !== eventId || first.occurs !== occurs) continue;
+    for (const optionId of choicesFor(level, seed, ['gut', 'gut'])) {
+      run = step(run, level, { type: 'choose', optionId });
+      run = step(run, level, { type: 'continue' });
+    }
+    if (run.phase !== 'event') throw new Error(`Seed ${seed} did not lead to an event`);
+    return withRun(progressWithCompleted(nummer - 1), run);
+  }
+  throw new Error(`No seed announces ${eventId} first in level ${nummer}`);
+}
+
+/**
+ * A run one click before an accepted event brings the building down: the floor after the
+ * event is set and shown, and the resolution that follows takes a gauge to zero.
+ */
+export function progressBeforeEventCollapse(nummer: number): Progress {
+  const level = LEVELS[nummer - 1] as Level;
+  for (let seed = 1; seed < 400; seed++) {
+    let frontier: LevelRun[] = [started(level, seed)];
+    for (let depth = 0; depth < 8 && frontier.length > 0; depth++) {
+      const next: LevelRun[] = [];
+      for (const run of frontier) {
+        if (run.phase !== 'situation') continue;
+        const situation = level.situationen.find((s) => s.id === run.situationIds[run.step]);
+        for (const option of situation?.optionen ?? []) {
+          const floor = step(run, level, { type: 'choose', optionId: option.id });
+          if (floor.outcome !== 'running') continue;
+          const after = step(floor, level, { type: 'continue' });
+          if (after.phase === 'eventResult' && after.outcome === 'collapsed') {
+            return withRun(progressWithCompleted(nummer - 1), floor);
+          }
+          next.push(throughEvents(after, level, () => 'akzeptieren'));
+        }
+      }
+      // Keep the search small: the runs with the weakest gauges are the ones that will fall.
+      frontier = next
+        .sort((a, b) => Math.min(...Object.values(a.gauges)) - Math.min(...Object.values(b.gauges)))
+        .slice(0, 40);
+    }
+  }
+  throw new Error(`No run of level ${nummer} collapses through an accepted event`);
+}
+
+/** The same run one floor later: the strategy is chosen, a good decision taken, the event resolved. */
+export function progressAtEventResult(
+  nummer: number,
+  eventId: string,
+  occurs: boolean,
+  strategyId: StrategyId,
+): Progress {
+  const level = LEVELS[nummer - 1] as Level;
+  const progress = progressAtEvent(nummer, eventId, occurs);
+  let run = step(progress.currentRun as LevelRun, level, { type: 'chooseStrategy', strategyId });
+  const situation = level.situationen.find((s) => s.id === run.situationIds[run.step]);
+  const good = situation?.optionen.find((o) => o.einstufung === 'gut');
+  if (!good) throw new Error(`No good option after ${eventId}`);
+  run = step(run, level, { type: 'choose', optionId: good.id });
+  return withRun(progress, step(run, level, { type: 'continue' }));
 }

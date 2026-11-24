@@ -43,6 +43,17 @@ Automatische Tests sehen nicht, ob das Spiel gut aussieht und sich gut anfühlt.
 - [ ] Mit Tastatur: Tab zum ersten Ort, Enter öffnet, 1 und 2 beurteilen, Enter beendet erst, wenn alles beurteilt ist
 - [ ] Aktive Spielzeit für Level 1 von Hand messen und in `docs/later/BRAINSTORMING.md` unter O-1 eintragen
 
+## Ereignisse (Level 3 bis 5)
+
+- [ ] Die Karte eines Ereignisses ist auf dem Handy ohne Suchen lesbar: Meldung, Prognose, Auswirkung, dann die vier Strategien
+- [ ] «AI-Prognose» und «Einschätzung des Teams» sind auf einen Blick zu unterscheiden
+- [ ] Kosten und Wirkung jeder Strategie sind vor der Wahl verständlich, auch für jemanden, der die Regeln nicht kennt
+- [ ] Eine gesperrte Strategie wirkt gesperrt, und der Grund ist lesbar
+- [ ] Die Auflösung kommt nach dem nächsten Stockwerk und ist als Folge der eigenen Wahl erkennbar
+- [ ] Die fünf Aussagen («Gut entschieden» bis «Sicher, aber teuer») passen zu dem, was passiert ist
+- [ ] Mit Tastatur: 1 bis 4 wählen die Strategie, die Taste einer gesperrten Strategie tut nichts
+- [ ] Aktive Spielzeit für Level 3 bis 5 von Hand messen und in `docs/later/BRAINSTORMING.md` unter O-1 eintragen
+
 ## Leistung
 
 - [ ] Auf einem Mittelklasse-Handy läuft die 3D-Ansicht flüssig

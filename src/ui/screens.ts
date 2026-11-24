@@ -1,16 +1,33 @@
+import { effectValue } from '../content/effects.ts';
 import { checkVideoUrl } from '../content/rules.ts';
 import { tourType } from '../content/mechanics-rules.ts';
 import type {
+  Effects,
   GaugeKey,
   Level,
   Option,
+  Probability,
   Rating,
+  RiskEvent,
   Situation,
+  StrategyId,
   TheoryStep,
   TourSite,
 } from '../content/schema.ts';
-import { GAUGE_KEYS } from '../content/schema.ts';
+import { GAUGE_KEYS, STRATEGY_IDS } from '../content/schema.ts';
 import { BALANCE } from '../core/balance.ts';
+import type { EventRound } from '../core/events.ts';
+import {
+  dueRound,
+  eventCauses,
+  eventVerdict,
+  findEvent,
+  forecastOf,
+  impactUnder,
+  isRecommended,
+  pendingRound,
+  trustedUnreliable,
+} from '../core/events.ts';
 import type { ChoiceRecord, LevelRun } from '../core/game.ts';
 import { findOption, findSituation } from '../core/game.ts';
 import type { Gauges } from '../core/gauges.ts';
@@ -115,12 +132,23 @@ function stepper(run: LevelRun): HTMLElement {
 }
 
 /** The three gauges as HTML above the canvas (N-301), each with label and number (N-303). */
+/** The round resolved most recently; the one the resolution screen is about. */
+function lastResolved(run: LevelRun): EventRound | undefined {
+  return [...(run.events ?? [])].reverse().find((round) => round.resolution !== null);
+}
+
 export function hud(run: LevelRun): HTMLElement {
   const gauges = run.gauges;
   const last = run.history[run.history.length - 1];
   let delta = run.phase === 'feedback' && last ? last.delta : null;
   // The tour moves the stability the building starts with; its resolution shows that (M-13).
   if (run.phase === 'tourResult') delta = run.tour?.result?.delta ?? null;
+  // M-24: a strategy costs at once, an event takes its toll at the resolution.
+  const waiting = pendingRound(run.events);
+  if (run.phase === 'situation' && waiting !== null && run.history.length === run.step) {
+    delta = run.events?.[waiting]?.cost ?? null;
+  }
+  if (run.phase === 'eventResult') delta = lastResolved(run)?.resolution?.delta ?? null;
   const started = run.phase !== 'briefing' && run.phase !== 'theory';
   return el('div', { class: 'hud', attrs: { 'data-testid': 'hud' } }, [
     el(
@@ -417,6 +445,12 @@ export function briefingScreen(level: Level, run: LevelRun, handlers: RunHandler
     }),
     run.tour
       ? el('p', { attrs: { 'data-testid': 'rules-tour' }, text: T.briefing.tour(TOUR_MAX_POINTS) })
+      : null,
+    run.events
+      ? el('p', {
+          attrs: { 'data-testid': 'rules-events' },
+          text: T.events.briefing(run.events.length),
+        })
       : null,
     el('div', { class: 'actions' }, [
       button(T.briefing.start, handlers.next, { primary: true, testId: 'next' }),
@@ -730,6 +764,292 @@ function causeItem(level: Level, choice: ChoiceRecord, note: string): HTMLElemen
   ]);
 }
 
+/** «Budget −14, Zeit −6»: the steps of an effect in points, without those that are nought. */
+function effectText(effects: Effects): string {
+  return GAUGE_KEYS.filter((key) => effects[key] !== '0')
+    .map((key) => `${T.gauges[key]} ${signed(effectValue(effects[key], BALANCE.effectPoints))}`)
+    .join(', ');
+}
+
+function probabilityText(probability: Probability): string {
+  return T.events.probability[probability](
+    Math.round(BALANCE.events.probability[probability] * 100),
+  );
+}
+
+export interface EventHandlers {
+  verify(): void;
+  choose(strategyId: StrategyId): void;
+  next(): void;
+}
+
+function strategyButton(
+  event: RiskEvent,
+  id: StrategyId,
+  key: number,
+  handlers: EventHandlers,
+): HTMLElement {
+  const strategy = event.strategien[id];
+  const node = el(
+    'button',
+    {
+      class: 'btn option strategy',
+      attrs: { type: 'button', 'data-testid': `strategy-${id}`, 'data-strategy': id },
+    },
+    [
+      el('span', { class: 'option-key', text: String(key), attrs: { 'aria-hidden': 'true' } }),
+      el('span', { class: 'strategy-body' }, [
+        el('strong', { class: 'strategy-name', text: T.events.strategy[id] }),
+        el('span', { class: 'option-text', text: strategy.text }),
+        ...(strategy.verfuegbar
+          ? [
+              // M-21: cost and effect are on the table before the choice.
+              el('span', {
+                class: 'strategy-cost',
+                attrs: { 'data-testid': 'strategy-cost' },
+                text: effectText(strategy.kosten)
+                  ? T.events.cost(effectText(strategy.kosten))
+                  : T.events.free,
+              }),
+              el('span', {
+                class: 'strategy-effect',
+                attrs: { 'data-testid': 'strategy-effect' },
+                text: effectText(impactUnder(event.auswirkung, id))
+                  ? T.events.remaining(effectText(impactUnder(event.auswirkung, id)))
+                  : T.events.nothingRemains,
+              }),
+            ]
+          : [
+              el('span', {
+                class: 'strategy-locked',
+                attrs: { 'data-testid': 'strategy-locked' },
+                text: T.events.locked(strategy.grund),
+              }),
+            ]),
+      ]),
+    ],
+  );
+  if (strategy.verfuegbar) {
+    node.dataset.key = String(key);
+    node.addEventListener('click', () => handlers.choose(id));
+  } else {
+    // Visible but locked, with the reason why (M-21).
+    node.disabled = true;
+  }
+  return node;
+}
+
+/** M-20 to M-23: an event is announced; the player weighs four strategies. No clock runs. */
+export function eventScreen(level: Level, run: LevelRun, handlers: EventHandlers): HTMLElement {
+  const index = dueRound(run.events, run.history.length);
+  const round = index === null ? undefined : run.events?.[index];
+  if (index === null || !round) throw new Error(`${level.id} has no event to show`);
+  const event = findEvent(level, round.eventId);
+  const forecast = forecastOf(event, round);
+  const shown = probabilityText(forecast.shown);
+  return el('div', { class: 'screen', attrs: { 'data-screen': 'event', 'data-event': event.id } }, [
+    eyebrow(level, T.events.progress(index + 1, run.events?.length ?? 0)),
+    heading(event.titel),
+    el('p', { text: event.meldung }),
+    el(
+      'div',
+      {
+        class: `forecast forecast-${forecast.source}`,
+        attrs: { 'data-testid': 'forecast', 'data-source': forecast.source },
+      },
+      [
+        el('h2', { text: T.events.source[forecast.source] }),
+        el('p', {
+          class: 'forecast-shown',
+          attrs: { 'data-testid': 'forecast-shown', 'data-probability': forecast.shown },
+          text: forecast.source === 'ai' ? T.events.aiSays(shown) : T.events.teamSays(shown),
+        }),
+        event.aiPrognose ? el('p', { class: 'small', text: event.aiPrognose.begruendung }) : null,
+        forecast.canVerify
+          ? button(T.events.verify(BALANCE.events.verifyCostTime), handlers.verify, {
+              testId: 'verify',
+            })
+          : null,
+        forecast.source === 'ai' && forecast.truth
+          ? el('p', {
+              class: 'forecast-truth',
+              attrs: { 'data-testid': 'forecast-truth', 'data-probability': forecast.truth },
+              text: T.events.verified(probabilityText(forecast.truth)),
+            })
+          : null,
+        forecast.source === 'ai' && forecast.truth && event.aiPrognose
+          ? el('p', { class: 'small', text: event.aiPrognose.aufloesung })
+          : null,
+      ],
+    ),
+    el('h2', { text: T.events.impactHeading }),
+    el('p', { attrs: { 'data-testid': 'impact' }, text: effectText(event.auswirkung) }),
+    el('h2', { text: T.events.strategiesHeading, attrs: { 'data-options-heading': 'true' } }),
+    el(
+      'div',
+      { class: 'options', attrs: { 'data-testid': 'strategies' } },
+      // M-21: always the same four, in the same order.
+      STRATEGY_IDS.map((id, i) => strategyButton(event, id, i + 1, handlers)),
+    ),
+  ]);
+}
+
+function verdictBadge(round: EventRound, level: Level): HTMLElement | null {
+  const verdict = eventVerdict(round, level);
+  if (!verdict) return null;
+  const good = verdict === 'gut' || verdict === 'pech';
+  return el('span', {
+    class: `rating ${good ? 'rating-gut' : verdict === 'vorsorge' ? 'rating-riskant' : 'rating-vertretbar'}`,
+    text: T.events.verdict[verdict],
+    attrs: { 'data-testid': 'verdict', 'data-verdict': verdict },
+  });
+}
+
+/** What the evaluation says about one round, on its resolution and at the end of the level. */
+function roundNotes(round: EventRound, level: Level): (HTMLElement | null)[] {
+  const event = findEvent(level, round.eventId);
+  if (round.strategy === null) return [];
+  const strategy = event.strategien[round.strategy];
+  const recommended = STRATEGY_IDS.filter((id) => isRecommended(event, id));
+  const chosenRecommended = recommended.includes(round.strategy);
+  return [
+    el('p', { class: 'chosen' }, [
+      el('strong', { text: `${T.events.strategy[round.strategy]}: ` }),
+      el('span', { text: strategy.text }),
+    ]),
+    el('p', {}, [verdictBadge(round, level)]),
+    strategy.verfuegbar ? el('p', { text: strategy.erklaerung }) : null,
+    chosenRecommended
+      ? null
+      : el('p', {
+          attrs: { 'data-testid': 'recommended' },
+          text: T.events.recommendedWas(recommended.map((id) => T.events.strategy[id]).join(', ')),
+        }),
+    el('p', {
+      class: 'muted small',
+      attrs: { 'data-testid': 'event-points' },
+      text: chosenRecommended ? T.events.point : T.events.noPoint,
+    }),
+    // M-23: the evaluation says so if an unreliable forecast was trusted without a check.
+    trustedUnreliable(event, round) && event.aiPrognose
+      ? el('p', {
+          class: 'notice',
+          attrs: { 'data-testid': 'trusted-forecast' },
+          text: T.events.trusted(
+            probabilityText(event.aiPrognose.angezeigt),
+            probabilityText(event.wahrscheinlichkeit),
+          ),
+        })
+      : null,
+    round.verified
+      ? el('p', {
+          class: 'muted small',
+          attrs: { 'data-testid': 'checked-forecast' },
+          text: T.events.checked,
+        })
+      : null,
+  ];
+}
+
+/** M-24, M-27: the event of the round before, resolved after the floor that followed. */
+export function eventResultScreen(
+  level: Level,
+  run: LevelRun,
+  handlers: Pick<EventHandlers, 'next'>,
+): HTMLElement {
+  const round = lastResolved(run);
+  const resolution = round?.resolution;
+  if (!round || !resolution) throw new Error(`${level.id} has no resolved event to show`);
+  const event = findEvent(level, round.eventId);
+  const index = (run.events ?? []).indexOf(round);
+  const harmed = GAUGE_KEYS.some((key) => resolution.delta[key] !== 0);
+  const done = run.outcome !== 'running';
+  return el(
+    'div',
+    {
+      class: 'screen',
+      attrs: {
+        'data-screen': 'event-result',
+        'data-event': event.id,
+        'data-occurred': String(resolution.occurred),
+      },
+    },
+    [
+      eyebrow(
+        level,
+        `${T.events.progress(index + 1, run.events?.length ?? 0)} · ${T.events.resolution}`,
+      ),
+      heading(resolution.occurred ? T.events.occurred : T.events.notOccurred),
+      el('p', {
+        class: 'lead',
+        text: resolution.occurred
+          ? T.events.occurredLead(event.titel)
+          : T.events.notOccurredLead(event.titel),
+      }),
+      el('h2', { text: T.events.yourStrategy }),
+      ...roundNotes(round, level),
+      el('h2', { text: T.events.harm }),
+      harmed
+        ? deltaList(resolution.delta, resolution.gaugesAfter)
+        : el('p', { attrs: { 'data-testid': 'no-harm' }, text: T.events.noHarm }),
+      run.outcome === 'collapsed'
+        ? el('p', {
+            class: 'notice notice-strong',
+            text: T.events.collapse,
+            attrs: { role: 'alert' },
+          })
+        : null,
+      el('div', { class: 'actions' }, [
+        button(done ? T.feedback.toResult : T.next, handlers.next, {
+          primary: true,
+          testId: 'next',
+        }),
+      ]),
+    ],
+  );
+}
+
+/** The events of a run in the evaluation of the level. */
+function eventList(level: Level, run: LevelRun): HTMLElement {
+  return el(
+    'ol',
+    { class: 'decisions', attrs: { 'data-testid': 'events' } },
+    (run.events ?? [])
+      .filter((round) => round.strategy !== null)
+      .map((round) => {
+        const event = findEvent(level, round.eventId);
+        let state: string = T.events.open;
+        if (round.resolution) {
+          state = round.resolution.occurred ? T.events.occurred : T.events.notOccurred;
+        }
+        return el('li', { attrs: { 'data-event': event.id } }, [
+          el('h3', { text: event.titel }),
+          el('p', { class: 'muted small', text: state }),
+          ...roundNotes(round, level),
+        ]);
+      }),
+  );
+}
+
+/** M-27: what the events took from a gauge that hit zero, in the list of causes. */
+function eventCauseItems(level: Level, run: LevelRun, failed: readonly GaugeKey[]): HTMLElement[] {
+  return eventCauses(run.events, failed).map((cause) => {
+    const event = findEvent(level, cause.eventId);
+    const round = run.events?.find((r) => r.eventId === cause.eventId);
+    const name = round?.strategy ? T.events.strategy[round.strategy] : '';
+    return el('li', { attrs: { 'data-cause': 'event', 'data-event': event.id } }, [
+      el('h3', { text: event.titel }),
+      el('p', {}, [
+        el('strong', { text: T.events.cause[cause.part](name) }),
+        el('span', {
+          class: 'cause-loss',
+          text: ` ${T.result.causeLoss(T.gauges[cause.gauge], cause.loss)}`,
+        }),
+      ]),
+    ]);
+  });
+}
+
 export interface TourHandlers {
   /** Opens the card of a place; null closes the open one. */
   open(siteId: string | null): void;
@@ -930,13 +1250,12 @@ export function resultScreen(level: Level, run: LevelRun, handlers: ResultHandle
         text: T.result.collapsedLead(gauges.map((key) => T.gauges[key]).join(', ')),
       }),
       el('h2', { text: T.result.causes }),
-      el(
-        'ol',
-        { class: 'decisions', attrs: { 'data-testid': 'causes' } },
-        collapseCauses(run.history, gauges).map(({ choice, gauge, loss }) =>
+      el('ol', { class: 'decisions', attrs: { 'data-testid': 'causes' } }, [
+        ...collapseCauses(run.history, gauges).map(({ choice, gauge, loss }) =>
           causeItem(level, choice, T.result.causeLoss(T.gauges[gauge], loss)),
         ),
-      ),
+        ...eventCauseItems(level, run, gauges),
+      ]),
     );
   } else if (run.outcome === 'rejected') {
     children.push(
@@ -999,6 +1318,10 @@ export function resultScreen(level: Level, run: LevelRun, handlers: ResultHandle
       : null,
     el('h2', { text: T.result.decisions }),
     decisionList(level, run.history),
+    run.events?.some((round) => round.strategy !== null)
+      ? el('h2', { text: T.events.heading })
+      : null,
+    run.events?.some((round) => round.strategy !== null) ? eventList(level, run) : null,
   );
 
   const actions = failed

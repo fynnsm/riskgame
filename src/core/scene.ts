@@ -195,6 +195,7 @@ export function sceneModel(
     focus,
     lots,
     allCompleted,
-    deciding: run?.phase === 'situation',
+    // An event is weighed as calmly as a situation is read (M-04).
+    deciding: run?.phase === 'situation' || run?.phase === 'event',
   };
 }
