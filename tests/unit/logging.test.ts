@@ -167,6 +167,7 @@ describe('error report (L-05 to L-07)', () => {
       recentIds: run.recentIds,
       choices: run.history.map((c) => c.optionId),
       tour: null,
+      events: [],
       phase: run.phase,
       outcome: run.outcome,
       gauges: { ...run.gauges },
@@ -209,6 +210,7 @@ describe('error report (L-05 to L-07)', () => {
       recentIds: ['L1-S02'],
       choices,
       tour: null,
+      events: [],
     });
     const rebuilt = replay(level, data!.seed, data!.recentIds, data!.choices as OptionId[]);
     expect(rebuilt).toEqual(run);

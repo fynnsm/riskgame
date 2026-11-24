@@ -8,6 +8,8 @@ export interface ReplayData {
   choices: string[];
   /** Places put into the risk register on the site tour; null if no tour was finished. */
   tour: string[] | null;
+  /** Per answered event: whether the forecast was checked, and the strategy chosen. */
+  events: { verified: boolean; strategy: string }[];
 }
 
 export interface ReportRun extends ReplayData {
@@ -79,13 +81,13 @@ export function buildErrorReport(input: ReportInput): string {
   }
   lines.push('');
   if (input.run) {
-    const { levelId, seed, recentIds, choices, tour, phase, outcome, gauges } = input.run;
+    const { levelId, seed, recentIds, choices, tour, events, phase, outcome, gauges } = input.run;
     const gaugeText = Object.entries(gauges)
       .map(([key, value]) => `${key}=${value}`)
       .join(', ');
     lines.push(`Aktueller Durchgang: ${levelId}, Phase ${phase}, Ergebnis ${outcome}`);
     lines.push(`Anzeigen: ${gaugeText}`);
-    const replay: ReplayData = { levelId, seed, recentIds, choices, tour };
+    const replay: ReplayData = { levelId, seed, recentIds, choices, tour, events };
     lines.push(REPLAY_PREFIX + JSON.stringify(replay));
   } else {
     lines.push('Aktueller Durchgang: keiner');
@@ -100,6 +102,17 @@ export function buildErrorReport(input: ReportInput): string {
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === 'string');
+}
+
+function isEventList(value: unknown): value is { verified: boolean; strategy: string }[] {
+  return (
+    Array.isArray(value) &&
+    value.every((entry: unknown) => {
+      if (typeof entry !== 'object' || entry === null) return false;
+      const item = entry as Record<string, unknown>;
+      return typeof item.verified === 'boolean' && typeof item.strategy === 'string';
+    })
+  );
 }
 
 /** Reads seed and choices back out of a pasted report. Returns null if there is no usable run. */
@@ -124,5 +137,6 @@ export function extractReplay(report: string): ReplayData | null {
     choices: data.choices,
     // Reports written before the tour existed have no such field.
     tour: isStringArray(data.tour) ? data.tour : null,
+    events: isEventList(data.events) ? data.events : [],
   };
 }

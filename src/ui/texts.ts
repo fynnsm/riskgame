@@ -1,5 +1,6 @@
 import type { TourType } from '../content/mechanics-rules.ts';
-import type { GaugeKey, Rating, TourPlace } from '../content/schema.ts';
+import type { GaugeKey, Probability, Rating, StrategyId, TourPlace } from '../content/schema.ts';
+import type { EventCause, EventVerdict } from '../core/events.ts';
 import type { GoalStatus } from '../core/scoring.ts';
 import type { TourGrade } from '../core/tour.ts';
 
@@ -101,6 +102,67 @@ export const T = {
     /** M-14: added to the rules in a level with a site tour. */
     tour: (points: number) =>
       `Vor dem ersten Entscheid gehst du über die Baustelle. Der Rundgang gibt bis zu ${points} Punkte und entscheidet, wie stabil dein Gebäude startet.`,
+  },
+
+  /** M-20 to M-28: events and the four strategies. */
+  events: {
+    progress: (i: number, n: number) => `Ereignis ${i} von ${n}`,
+    resolution: 'Auflösung',
+    /** M-14, M-25: added to the rules in a level with events. */
+    briefing: (rounds: number) =>
+      `Zwischen den Entscheiden melden sich ${rounds} Ereignisse. Wählst du die empfohlene Strategie, gibt das je 1 Punkt, egal ob das Ereignis eintritt.`,
+    source: { ai: 'AI-Prognose', team: 'Einschätzung des Teams' },
+    probabilityHeading: 'Wahrscheinlichkeit',
+    probability: {
+      tief: (percent: number) => `tief, rund ${percent} %`,
+      mittel: (percent: number) => `mittel, rund ${percent} %`,
+      hoch: (percent: number) => `hoch, rund ${percent} %`,
+    } satisfies Record<Probability, (percent: number) => string>,
+    aiSays: (probability: string) => `Die AI sagt: ${probability}`,
+    teamSays: (probability: string) => `Das Team schätzt: ${probability}`,
+    verify: (cost: number) => `Im Team prüfen (Zeit −${cost})`,
+    verified: (probability: string) => `Geprüft, tatsächlich: ${probability}`,
+    impactHeading: 'Wenn es eintritt',
+    strategiesHeading: 'Was tust du?',
+    strategy: {
+      vermeiden: 'Vermeiden',
+      vermindern: 'Vermindern',
+      uebertragen: 'Übertragen',
+      akzeptieren: 'Akzeptieren',
+    } satisfies Record<StrategyId, string>,
+    cost: (text: string) => `Kostet sofort: ${text}`,
+    free: 'Kostet nichts',
+    remaining: (text: string) => `Tritt es ein, bleibt: ${text}`,
+    nothingRemains: 'Tritt es ein, bleibt nichts',
+    locked: (reason: string) => `Nicht möglich: ${reason}`,
+    occurred: 'Eingetreten',
+    notOccurred: 'Nicht eingetreten',
+    occurredLead: (title: string) => `Das Ereignis ist eingetreten: ${title}`,
+    notOccurredLead: (title: string) => `Das Ereignis ist ausgeblieben: ${title}`,
+    yourStrategy: 'Deine Strategie',
+    harm: 'Auswirkung auf die Anzeigen',
+    noHarm: 'Keine Auswirkung auf die Anzeigen.',
+    verdict: {
+      gut: 'Gut entschieden',
+      pech: 'Gut entschieden, trotzdem Pech',
+      glueck: 'Glück gehabt',
+      vorsorge: 'Hier hat die Vorsorge gefehlt',
+      teuer: 'Sicher, aber teuer',
+    } satisfies Record<EventVerdict, string>,
+    recommendedWas: (names: string) => `Empfohlen war: ${names}.`,
+    point: 'Die empfohlene Strategie gibt 1 Punkt für die Bauabnahme.',
+    noPoint: 'Für diese Strategie gibt es keinen Punkt.',
+    trusted: (shown: string, truth: string) =>
+      `Du hast der AI-Prognose vertraut, ohne sie zu prüfen. Sie lag daneben: Die AI sagte «${shown}», tatsächlich war es «${truth}».`,
+    checked: 'Du hast die AI-Prognose im Team prüfen lassen.',
+    collapse: 'Eine Anzeige ist auf null gefallen. Das Gebäude stürzt ein.',
+    heading: 'Ereignisse',
+    open: 'Nicht mehr aufgelöst',
+    cause: {
+      strategie: (name: string) => `Strategie «${name}»`,
+      pruefung: () => 'Prüfung im Team',
+      ereignis: () => 'Ereignis eingetreten',
+    } satisfies Record<EventCause['part'], (name: string) => string>,
   },
 
   /** M-10 to M-15: the site tour with the AI drone. */

@@ -597,5 +597,315 @@
       "autor": "CL",
       "status": "entwurf"
     }
-  ]
+  ],
+  "ereignisse": {
+    "ereignisseProDurchgang": 3,
+    "pool": [
+      {
+        "id": "L4-E01",
+        "titel": "Die Schnittstelle bricht unter Last",
+        "meldung": "Das Portal holt die Termine aus dem Kliniksystem. Bricht diese Schnittstelle ab, können Patientinnen und Patienten nicht mehr buchen.",
+        "darstellung": "defekt",
+        "wahrscheinlichkeit": "hoch",
+        "aiPrognose": {
+          "angezeigt": "tief",
+          "verlaesslich": false,
+          "begruendung": "Die AI wertet die Fehlermeldungen der letzten vier Wochen aus. In dieser Zeit lief nur der Testbetrieb mit wenigen Zugriffen.",
+          "aufloesung": "Die Entwicklerin zeigt dir die Lasttests: Sobald viele Termine gleichzeitig gebucht werden, bricht die Schnittstelle ab."
+        },
+        "auswirkung": {
+          "budget": "-mittel",
+          "zeit": "-klein",
+          "stabilitaet": "-mittel"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Den Start verschieben, bis der Hersteller die Schnittstelle neu gebaut hat.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "-gross",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Sicher, aber sehr teuer in der Zeit: Das Portal startet Monate später, und niemand weiss, wann der Hersteller liefert."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Jede Woche einen Lasttest fahren und eine Warteschlange einbauen.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Der Lasttest ist das Frühwarnzeichen, die Warteschlange fängt Spitzen ab. Kleiner Aufwand, deutlich weniger Schaden."
+          },
+          "uebertragen": {
+            "verfuegbar": true,
+            "text": "Im Vertrag eine Entschädigung des Herstellers bei Ausfällen vereinbaren.",
+            "kosten": {
+              "budget": "-mittel",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Die Entschädigung ersetzt Geld. Die Patientinnen und Patienten stehen trotzdem vor einem Portal, das nicht geht."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Die Wahrscheinlichkeit ist hoch und die Auswirkung spürbar. Dafür ist Akzeptieren nicht gedacht."
+          }
+        },
+        "lernziel": "L4-Z3",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L4-E02",
+        "titel": "Die Datenschutz-Prüfung vor dem Start",
+        "meldung": "Die Datenschutzberaterin des Spitals prüft das Portal kurz vor dem Start. Findet sie Mängel, stoppt sie die Einführung, bis alles behoben ist.",
+        "darstellung": "behoerde",
+        "wahrscheinlichkeit": "mittel",
+        "auswirkung": {
+          "budget": "-mittel",
+          "zeit": "-gross",
+          "stabilitaet": "-klein"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Die Beraterin ab jetzt an jedem Zwischenstand beteiligen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "-klein",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Wer früh mitprüft, findet Mängel, solange sie billig zu beheben sind. Ein Stopp kurz vor dem Start fällt damit weg."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Eine externe Vorprüfung in Auftrag geben.",
+            "kosten": {
+              "budget": "-mittel",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Die Vorprüfung findet einiges, kostet aber viel. Und die Beraterin des Spitals kann trotzdem noch etwas beanstanden."
+          },
+          "uebertragen": {
+            "verfuegbar": true,
+            "text": "Die Kosten für Nachbesserungen vertraglich dem Hersteller geben.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Dann zahlt der Hersteller die Nachbesserung. Der Stopp und die verlorene Zeit bleiben aber bei euch."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Ein Stopp kurz vor dem Start trifft das Projekt hart. Das abzuwarten, ohne etwas zu tun, ist zu riskant."
+          }
+        },
+        "lernziel": "L4-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L4-E03",
+        "titel": "Der Hoster fällt aus",
+        "meldung": "Das Portal läuft bei einem externen Hoster. Fällt sein Rechenzentrum aus, ist das Portal nicht erreichbar, und das Spital muss Termine von Hand nachtragen.",
+        "darstellung": "ausfall",
+        "wahrscheinlichkeit": "mittel",
+        "aiPrognose": {
+          "angezeigt": "mittel",
+          "verlaesslich": true,
+          "begruendung": "Die AI hat das Störungsprotokoll des Hosters aus den letzten zwei Jahren ausgewertet, das du ihr gegeben hast.",
+          "aufloesung": "Der Betriebsleiter vergleicht mit seinem eigenen Protokoll: Die Zahlen stimmen überein."
+        },
+        "auswirkung": {
+          "budget": "-gross",
+          "zeit": "0",
+          "stabilitaet": "-klein"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Das Portal auf eigene Server im Spital zügeln.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "-gross",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Dann seid ihr unabhängig vom Hoster. Der Umzug kostet aber sehr viel Zeit, und eigene Server fallen auch aus."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Ein zweites Rechenzentrum als Reserve mieten.",
+            "kosten": {
+              "budget": "-mittel",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Die Reserve hilft, kostet aber jeden Monat viel Geld für einen Fall, der vielleicht nie eintritt."
+          },
+          "uebertragen": {
+            "verfuegbar": true,
+            "text": "Mit dem Hoster eine garantierte Verfügbarkeit mit Gutschrift vereinbaren.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Der Schaden wäre vor allem Geld für die Nacharbeit. Diesen Teil kann der Hoster tragen, und zwar für einen kleinen Aufpreis."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Die Nacharbeit nach einem Ausfall ist teuer. Für ein Risiko dieser Grösse lohnt sich eine Absicherung."
+          }
+        },
+        "lernziel": "L4-Z3",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L4-E04",
+        "titel": "Lücken am Schulungstag",
+        "meldung": "Am Schulungstag für das Empfangspersonal könnten einzelne Mitarbeitende fehlen. Sie müssten das Portal später nachlernen.",
+        "darstellung": "generisch",
+        "wahrscheinlichkeit": "tief",
+        "auswirkung": {
+          "budget": "0",
+          "zeit": "-klein",
+          "stabilitaet": "-klein"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Die Schulung verschieben, bis sicher alle da sind.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "-mittel",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Den Tag, an dem sicher alle da sind, gibt es nicht. Du verlierst Zeit und hast das Risiko am neuen Termin wieder."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Die Schulung aufzeichnen und einen Ersatztermin reservieren.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Brauchbar, aber für ein kleines und unwahrscheinliches Risiko gibst du hier sicher Geld aus."
+          },
+          "uebertragen": {
+            "verfuegbar": false,
+            "text": "Das Risiko an jemand anderen abgeben.",
+            "grund": "Es gibt keinen Geldschaden, den jemand übernehmen könnte."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Klein und unwahrscheinlich: Du nimmst es ins Register, legst fest, ab wie vielen Absenzen du handelst, und beobachtest."
+          }
+        },
+        "lernziel": "L4-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L4-E05",
+        "titel": "Die Schlüsselperson wirkt unzufrieden",
+        "meldung": "Nur eine Person kennt das Berechtigungskonzept des Portals. Sie wirkt seit Wochen unzufrieden. Geht sie, weiss niemand, wer was sehen darf.",
+        "darstellung": "ausfall",
+        "wahrscheinlichkeit": "mittel",
+        "auswirkung": {
+          "budget": "0",
+          "zeit": "-gross",
+          "stabilitaet": "-mittel"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Das Berechtigungskonzept an eine externe Firma auslagern.",
+            "kosten": {
+              "budget": "-mittel",
+              "zeit": "-mittel",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Dann hängt es an keiner Einzelperson mehr. Die Übergabe kostet aber sicher Geld und Zeit, und das Wissen wandert aus dem Haus."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Das Konzept dokumentieren und eine zweite Person einarbeiten.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Du hast das Frühwarnzeichen gesehen und handelst, bevor die Schwelle überschritten ist. Der Aufwand ist klein."
+          },
+          "uebertragen": {
+            "verfuegbar": false,
+            "text": "Den Abgang versichern.",
+            "grund": "Der Schaden ist Zeit und Wissen, nicht Geld. Beides lässt sich nicht versichern."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Das Frühwarnzeichen ist da. Wer es sieht und nichts tut, hat das Risiko nicht überwacht, sondern nur angeschaut."
+          }
+        },
+        "lernziel": "L4-Z2",
+        "autor": "CC",
+        "status": "entwurf"
+      }
+    ]
+  }
 }

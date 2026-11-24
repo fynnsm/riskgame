@@ -1,7 +1,14 @@
 import type { PlayableLevel } from '../content/load.ts';
 import type { Level, Option } from '../content/schema.ts';
 import type { Action, LevelRun } from '../core/game.ts';
-import { currentOptions, currentSituation, isRunConsistent, startRun, step } from '../core/game.ts';
+import {
+  currentOptions,
+  currentSituation,
+  eventInputsOf,
+  isRunConsistent,
+  startRun,
+  step,
+} from '../core/game.ts';
 import type { Progress } from '../core/progress.ts';
 import {
   addPlayTime,
@@ -12,10 +19,11 @@ import {
   levelProgress,
   withRun,
 } from '../core/progress.ts';
-import type { RenderStats, SceneView } from '../core/scene.ts';
+import type { MarkerSpot, RenderStats, SceneView } from '../core/scene.ts';
 import { sceneModel } from '../core/scene.ts';
 import { starsFor } from '../core/scoring.ts';
 import { judgedCount, registeredRisks } from '../core/tour.ts';
+import { dueRound, eventVerdict, findEvent, forecastOf, isRecommended } from '../core/events.ts';
 import type { Logger } from '../logging/logger.ts';
 import { errorData } from '../logging/logger.ts';
 import { buildErrorReport } from '../logging/report.ts';
@@ -40,6 +48,8 @@ import {
   feedbackScreen,
   hud,
   menuScreen,
+  eventResultScreen,
+  eventScreen,
   resultScreen,
   sequenceScreen,
   tourResultScreen,
@@ -193,6 +203,11 @@ export function createApp(options: AppOptions): App {
     el('span', { class: 'menu-word', text: T.menu }),
   );
   const debugHost = el('div', { class: 'debug-host' });
+  /**
+   * M-15: one button per place of the tour, laid over its pin in the picture. Pointer only:
+   * the list «Orte» is what keyboard and screen reader use, so these stay out of their way.
+   */
+  const markerHost = el('div', { class: 'tour-markers', attrs: { 'aria-hidden': 'true' } });
   const noStats: RenderStats = {
     fps: null,
     fpsAverage: null,
@@ -398,6 +413,7 @@ export function createApp(options: AppOptions): App {
             recentIds: run.recentIds,
             choices: run.history.map((c) => c.optionId),
             tour: registeredRisks(run.tour),
+            events: eventInputsOf(run),
             phase: run.phase,
             outcome: run.outcome,
             gauges: { ...run.gauges },
@@ -452,12 +468,117 @@ export function createApp(options: AppOptions): App {
     render();
   }
 
+  /** Puts the buttons where the view says the pins are; called by the view when they move. */
+  function placeMarkers(spots: readonly MarkerSpot[]): void {
+    const run = activeRun()?.run;
+    const level = activeRun()?.level;
+    const wanted = new Set(spots.map((spot) => spot.siteId));
+    for (const marker of [...markerHost.children]) {
+      if (!wanted.has((marker as HTMLElement).dataset.marker ?? '')) marker.remove();
+    }
+    for (const spot of spots) {
+      let marker = [...markerHost.children].find(
+        (node): node is HTMLButtonElement =>
+          node instanceof HTMLButtonElement && node.dataset.marker === spot.siteId,
+      );
+      if (!marker) {
+        const site = level?.rundgang?.stellen.find((s) => s.id === spot.siteId);
+        marker = el('button', {
+          class: 'tour-marker',
+          attrs: { type: 'button', tabindex: '-1', 'data-marker': spot.siteId },
+        });
+        if (site) marker.title = T.tour.place[site.ort];
+        marker.addEventListener('click', () => {
+          logger.info('tour.place.picked', { levelId: run?.levelId, siteId: spot.siteId });
+          // On a phone the sheet may be folded away; the card must be seen.
+          if (sheet === 'collapsed') setSheet('open');
+          openPlace(spot.siteId);
+        });
+        markerHost.append(marker);
+      }
+      marker.dataset.selected = String(spot.siteId === openSite);
+      marker.style.left = `${spot.x}px`;
+      marker.style.top = `${spot.y}px`;
+    }
+  }
+
   /** The next place still to judge after the given one, so the tour reads like a walk. */
   function nextOpenPlace(run: LevelRun, after: string): string | null {
     const ids = run.tour?.siteIds ?? [];
     const from = ids.indexOf(after);
     const ahead = [...ids.slice(from + 1), ...ids.slice(0, from)];
     return ahead.find((id) => !Object.hasOwn(run.tour?.judgements ?? {}, id)) ?? null;
+  }
+
+  function gaugeData(run: LevelRun): Record<string, number> {
+    return {
+      budget: run.gauges.budget,
+      zeit: run.gauges.zeit,
+      stabilitaet: run.gauges.stabilitaet,
+    };
+  }
+
+  /** M-08: what the card of an event shows when it is announced. */
+  function logForecast(run: LevelRun, level: Level): void {
+    const index = dueRound(run.events, run.history.length);
+    const round = index === null ? undefined : run.events?.[index];
+    if (!round) return;
+    const forecast = forecastOf(findEvent(level, round.eventId), round);
+    logger.info('event.forecast', {
+      levelId: run.levelId,
+      eventId: round.eventId,
+      round: (index ?? 0) + 1,
+      source: forecast.source,
+      shown: forecast.shown,
+      ...gaugeData(run),
+    });
+  }
+
+  function logEventAction(
+    action: Extract<Action, { type: 'verifyForecast' | 'chooseStrategy' }>,
+    before: LevelRun,
+    after: LevelRun,
+    level: Level,
+  ): void {
+    const index = dueRound(before.events, before.history.length);
+    const round = index === null ? undefined : after.events?.[index];
+    if (!round) return;
+    const event = findEvent(level, round.eventId);
+    sound.play('choice');
+    if (action.type === 'verifyForecast') {
+      logger.info('event.verify', {
+        levelId: after.levelId,
+        eventId: event.id,
+        shown: event.aiPrognose?.angezeigt,
+        truth: event.wahrscheinlichkeit,
+        ...gaugeData(after),
+      });
+      return;
+    }
+    logger.info('event.strategy', {
+      levelId: after.levelId,
+      eventId: event.id,
+      strategyId: action.strategyId,
+      recommended: isRecommended(event, action.strategyId),
+      verified: round.verified,
+      outcome: after.outcome,
+      ...gaugeData(after),
+    });
+  }
+
+  function logResolution(run: LevelRun, level: Level): void {
+    const round = [...(run.events ?? [])].reverse().find((r) => r.resolution !== null);
+    if (!round) return;
+    if (round.resolution?.occurred) sound.play('warning');
+    logger.info('event.resolve', {
+      levelId: run.levelId,
+      eventId: round.eventId,
+      occurred: round.resolution?.occurred,
+      strategyId: round.strategy,
+      verdict: eventVerdict(round, level),
+      outcome: run.outcome,
+      ...gaugeData(run),
+    });
   }
 
   function dispatch(action: Action): void {
@@ -484,6 +605,8 @@ export function createApp(options: AppOptions): App {
         stabilitaet: after.gauges.stabilitaet,
         outcome: after.outcome,
       });
+    } else if (action.type === 'verifyForecast' || action.type === 'chooseStrategy') {
+      logEventAction(action, before, after, active.level);
     } else if (action.type === 'classify') {
       sound.play('choice');
       openSite = nextOpenPlace(after, action.siteId);
@@ -514,6 +637,8 @@ export function createApp(options: AppOptions): App {
         theoryIndex: after.theoryIndex,
       });
     }
+    if (after.phase === 'event' && before.phase !== 'event') logForecast(after, active.level);
+    if (after.phase === 'eventResult') logResolution(after, active.level);
     if (after.phase === 'tour' && before.phase !== 'tour') {
       openSite = null;
       logger.info('tour.start', {
@@ -662,6 +787,14 @@ export function createApp(options: AppOptions): App {
         );
       case 'tourResult':
         return tourResultScreen(level, run, handlers);
+      case 'event':
+        return eventScreen(level, run, {
+          verify: () => dispatch({ type: 'verifyForecast' }),
+          choose: (strategyId) => dispatch({ type: 'chooseStrategy', strategyId }),
+          next: handlers.next,
+        });
+      case 'eventResult':
+        return eventResultScreen(level, run, handlers);
       case 'situation':
         return situationScreen(
           level,
@@ -715,7 +848,11 @@ export function createApp(options: AppOptions): App {
       watchOptions();
       menuButton.hidden = overlay === 'error';
 
-      view?.render(sceneModel(levels, progress, active?.run ?? null, { finale }));
+      view?.render(sceneModel(levels, progress, active?.run ?? null, { finale, openSite }));
+      markerHost.hidden = !(active && overlay === 'none' && active.run.phase === 'tour');
+      for (const marker of markerHost.querySelectorAll<HTMLElement>('[data-marker]')) {
+        marker.dataset.selected = String(marker.dataset.marker === openSite);
+      }
       root.dataset.looking = looking ? 'true' : 'false';
       updateInsets();
       renderDebug();
@@ -771,7 +908,7 @@ export function createApp(options: AppOptions): App {
     const target = event.target as HTMLElement | null;
     const tag = target?.tagName ?? '';
     if (tag === 'TEXTAREA' || tag === 'INPUT') return;
-    if (['1', '2', '3'].includes(event.key)) {
+    if (['1', '2', '3', '4'].includes(event.key)) {
       const option = panel.querySelector<HTMLButtonElement>(`button[data-key="${event.key}"]`);
       if (option) {
         event.preventDefault();
@@ -813,7 +950,7 @@ export function createApp(options: AppOptions): App {
   return {
     start(): void {
       clear(root);
-      root.append(canvasHost, topBar, panel, sheetButton, debugHost);
+      root.append(canvasHost, markerHost, topBar, panel, sheetButton, debugHost);
       root.dataset.sheet = sheet;
       sheetButton.textContent = T.sheet.collapse;
       sheetButton.setAttribute('aria-expanded', 'true');
@@ -830,6 +967,7 @@ export function createApp(options: AppOptions): App {
       restore();
       try {
         view = options.createView(canvasHost);
+        view.onMarkers(placeMarkers);
       } catch (cause) {
         // The game must stay playable without graphics (N-207).
         logger.error('render.init.failed', errorData(cause));

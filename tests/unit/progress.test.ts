@@ -64,6 +64,8 @@ describe('stars (F-603)', () => {
     gauges,
     situationIds: ['1', '2', '3', '4', '5', '6'],
     tour: null,
+    events: null,
+    eventPoints: 0,
   });
 
   it('gives two stars for a mostly good run', () => {
@@ -90,7 +92,15 @@ describe('stars (F-603)', () => {
 
   it('states the points reached and the points needed for the inspection (F-211)', () => {
     const eight = ['1', '2', '3', '4', '5', '6', '7', '8'];
-    expect(acceptance({ history: rated('ggvr'), situationIds: eight, tour: null })).toEqual({
+    expect(
+      acceptance({
+        history: rated('ggvr'),
+        situationIds: eight,
+        tour: null,
+        events: null,
+        eventPoints: 0,
+      }),
+    ).toEqual({
       points: 5,
       max: 16,
       required: 11,

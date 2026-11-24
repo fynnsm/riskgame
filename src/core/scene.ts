@@ -1,4 +1,4 @@
-import type { BuildingKind, Level } from '../content/schema.ts';
+import type { BuildingKind, Level, TourPlace } from '../content/schema.ts';
 import type { LevelRun } from './game.ts';
 import type { BuildingModel } from './lean.ts';
 import { buildingModel } from './lean.ts';
@@ -6,8 +6,32 @@ import type { Progress } from './progress.ts';
 import { floorRecords, isUnlocked, levelProgress } from './progress.ts';
 import type { Stars } from './scoring.ts';
 import { starsFor } from './scoring.ts';
+import { tourReview } from './tour.ts';
+import type { MeasureMark, ThreatMark } from './events.ts';
+import { measuresOf, threatOf } from './events.ts';
 
 export type LotStatus = 'locked' | 'open' | 'active' | 'done';
+
+/** One place of the site tour as the picture shows it (M-15). */
+export interface TourMarker {
+  siteId: string;
+  ort: TourPlace;
+  /** Whether the AI drone marked the place. */
+  marked: boolean;
+  /** Before the resolution a place only shows that it was judged, never how. */
+  judged: boolean;
+  /** Whether the judgement was right; null until the tour is resolved. */
+  verdict: 'right' | 'wrong' | null;
+  /** True for the place whose card is open. */
+  selected: boolean;
+}
+
+/** Where a place of the tour lies on the canvas, in CSS pixels from its top left corner. */
+export interface MarkerSpot {
+  siteId: string;
+  x: number;
+  y: number;
+}
 
 export interface LotModel {
   levelId: string;
@@ -25,6 +49,12 @@ export interface LotModel {
   rejected: boolean;
   /** Stars of the finished building, 0 otherwise; decides how it is celebrated. */
   stars: Stars;
+  /** The places of the site tour while it is walked or resolved; null at any other time. */
+  tour: TourMarker[] | null;
+  /** M-28: the event that hangs over the site or has just been resolved; null otherwise. */
+  threat: ThreatMark | null;
+  /** M-28: the measures taken against events; they stay on the finished building. */
+  measures: MeasureMark[];
 }
 
 /** What the 3D view should show. Declarative, so the renderer holds no game state. */
@@ -76,6 +106,11 @@ export interface SceneView {
    * and celebrate. False ends all of that at once, e.g. when the player skips.
    */
   setPresenting(presenting: boolean): void;
+  /**
+   * Reports where the places of the tour lie on the canvas, whenever that changes, so the
+   * interface can put its buttons there (M-15). An empty list means: no tour in the picture.
+   */
+  onMarkers(listener: ((spots: readonly MarkerSpot[]) => void) | null): void;
   dispose(): void;
 }
 
@@ -88,7 +123,7 @@ export function sceneModel(
   levels: readonly SceneLevel[],
   progress: Progress,
   run: LevelRun | null,
-  options: { finale?: boolean } = {},
+  options: { finale?: boolean; openSite?: string | null } = {},
 ): SceneModel {
   const order = levels.map((l) => l.level.id);
   let focus: number | null = null;
@@ -97,6 +132,19 @@ export function sceneModel(
     if (run && run.levelId === level.id) {
       focus = index;
       const ended = run.phase === 'result';
+      const touring = run.phase === 'tour' || run.phase === 'tourResult';
+      const resolved = run.phase === 'tourResult';
+      const tour =
+        touring && run.tour
+          ? tourReview(run.tour, level).map((item): TourMarker => ({
+              siteId: item.site.id,
+              ort: item.site.ort,
+              marked: item.site.drohne === 'markiert',
+              judged: item.judged,
+              verdict: resolved ? (item.correct ? 'right' : 'wrong') : null,
+              selected: !resolved && item.site.id === (options.openSite ?? null),
+            }))
+          : null;
       return {
         levelId: level.id,
         nummer: level.nummer,
@@ -110,6 +158,10 @@ export function sceneModel(
         finished: ended && run.outcome === 'completed',
         rejected: ended && run.outcome === 'rejected',
         stars: ended ? starsFor(run) : 0,
+        tour,
+        threat: threatOf(run.events, level, run.phase, run.history.length),
+        // A measure belongs to a floor; once the building has fallen there is nothing to hold it.
+        measures: ended && run.outcome === 'collapsed' ? [] : measuresOf(run.events),
       };
     }
     const lp = levelProgress(progress, level.id);
@@ -125,6 +177,9 @@ export function sceneModel(
         finished: true,
         rejected: false,
         stars: lp.best.stars,
+        tour: null,
+        threat: null,
+        measures: lp.best.measures,
       };
     }
     const open = available && isUnlocked(progress, order, level.id);
@@ -139,6 +194,9 @@ export function sceneModel(
       finished: false,
       rejected: false,
       stars: 0,
+      tour: null,
+      threat: null,
+      measures: [],
     };
   });
   const allCompleted = lots.length > 0 && lots.every((lot) => lot.status === 'done');
@@ -150,6 +208,7 @@ export function sceneModel(
     focus,
     lots,
     allCompleted,
-    deciding: run?.phase === 'situation',
+    // An event is weighed as calmly as a situation is read (M-04).
+    deciding: run?.phase === 'situation' || run?.phase === 'event',
   };
 }

@@ -1,3 +1,5 @@
+import type { TourPlace } from '../content/schema.ts';
+
 /**
  * Every duration and amount of the 3D presentation (B0.9). Nothing here changes a rule
  * of the game; those numbers live in src/core/balance.ts.
@@ -118,6 +120,45 @@ export const TUNING = {
     bannerSeconds: 6,
     bannerHeight: 15,
     bannerRange: 70,
+  },
+
+  /** M-15: the site tour. Where each place lies on the plot, and how the drone flies. */
+  tour: {
+    spots: {
+      lager: { x: -3.2, z: 2.3 },
+      kran: { x: -3.3, z: -3.2 },
+      container: { x: 3.3, z: -3.3 },
+      geruest: { x: 0, z: -3.7 },
+      zufahrt: { x: 0, z: 4.0 },
+      baubuero: { x: 3.6, z: -0.2 },
+      team: { x: 3.4, z: 3.0 },
+      material: { x: -3.7, z: -0.5 },
+      nachbarn: { x: -1.9, z: 3.9 },
+      technik: { x: 1.9, z: 3.8 },
+    } satisfies Record<TourPlace, { x: number; z: number }>,
+    /** The pin floats this high above its place. */
+    pinHeight: 2.3,
+    /** One round of the drone over the site, and where it flies. */
+    lapSeconds: 4.5,
+    lapRadius: 4.9,
+    droneHeight: 4.4,
+    /** Where the drone waits while no place is open: beside the module that hangs in the middle. */
+    rest: { x: 2.6, z: 2.6 },
+    /** How fast the drone follows the place that is open. */
+    followRate: 2.2,
+  },
+
+  /** M-28: an event in the picture. */
+  event: {
+    /** The scene of an event that happens: at most two seconds, and it never blocks a click. */
+    strikeSeconds: 1.8,
+    /** An event that passes by takes this long to leave the picture. */
+    leaveSeconds: 1.4,
+    /** Where the thing that announces the event stands on the plot. */
+    spot: { x: 4.5, z: -0.7 },
+    /** Storm clouds hang this far above the top floor. */
+    cloudHeight: 5.2,
+    rainDrops: 14,
   },
 
   /** B5: the start page drifts slowly along the row of lots. */

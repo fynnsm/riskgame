@@ -1,5 +1,7 @@
 import type { Level } from '../content/schema.ts';
 import type { LevelRun } from './game.ts';
+import type { MeasureMark } from './events.ts';
+import { measuresOf } from './events.ts';
 import type { Gauges } from './gauges.ts';
 import { lowestValue } from './gauges.ts';
 import type { FloorRecord } from './lean.ts';
@@ -15,6 +17,8 @@ export interface LevelBest {
   floors: FloorRecord[];
   /** IDs of the learning goals reached in that run (F-604). */
   goalsReached: string[];
+  /** The measures taken against events; they stay visible on the building (M-28). */
+  measures: MeasureMark[];
 }
 
 export interface LevelProgress {
@@ -33,8 +37,16 @@ export interface Progress {
   playTimeMs: number;
 }
 
-export function floorRecords(run: Pick<LevelRun, 'history'>): FloorRecord[] {
-  return run.history.map((c) => ({ gauges: c.gaugesAfter, rating: c.rating }));
+/**
+ * One record per floor. The top floor carries the gauges as they are now, not as they were
+ * when it was set: what an event took since then must show in how the building stands.
+ */
+export function floorRecords(run: Pick<LevelRun, 'history' | 'gauges'>): FloorRecord[] {
+  const top = run.history.length - 1;
+  return run.history.map((c, i) => ({
+    gauges: i === top ? run.gauges : c.gaugesAfter,
+    rating: c.rating,
+  }));
 }
 
 export function emptyProgress(): Progress {
@@ -101,6 +113,7 @@ export function finishRun(progress: Progress, run: LevelRun, level: Level): Prog
       goalsReached: goalResults(level, run.history)
         .filter((g) => g.status === 'erreicht')
         .map((g) => g.id),
+      measures: measuresOf(run.events),
     };
     if (isBetter(candidate, best)) best = candidate;
   }

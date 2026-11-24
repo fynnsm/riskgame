@@ -4,6 +4,7 @@ import { BALANCE } from './balance.ts';
 import type { ChoiceRecord, LevelRun } from './game.ts';
 import type { Gauges } from './gauges.ts';
 import { lowestValue } from './gauges.ts';
+import { eventMaxPoints } from './events.ts';
 import { TOUR_MAX_POINTS } from './tour.ts';
 
 export type Stars = 0 | 1 | 2 | 3;
@@ -29,19 +30,24 @@ export interface Acceptance {
 }
 
 /** What of a run counts for the final inspection. */
-export type Scored = Pick<LevelRun, 'history' | 'situationIds' | 'tour'>;
+export type Scored = Pick<LevelRun, 'history' | 'situationIds' | 'tour' | 'events' | 'eventPoints'>;
 
 /**
  * Points reached so far and needed at the end. The decisions count by their rating, the
- * site tour by how well it went (M-13); a level without a tour has fewer points to give.
+ * site tour by how well it went (M-13), each event by whether the recommended strategy was
+ * chosen (M-25). A level without tour or events has fewer points to give.
  */
 export function acceptance(run: Scored): Acceptance {
   const ratings = run.history.reduce((sum, c) => sum + BALANCE.ratingPoints[c.rating], 0);
-  const max = run.situationIds.length * BALANCE.ratingPoints.gut + (run.tour ? TOUR_MAX_POINTS : 0);
+  const max =
+    run.situationIds.length * BALANCE.ratingPoints.gut +
+    (run.tour ? TOUR_MAX_POINTS : 0) +
+    eventMaxPoints(run.events);
   return {
-    points: ratings + (run.tour?.result?.points ?? 0),
+    points: ratings + (run.tour?.result?.points ?? 0) + run.eventPoints,
     max,
-    required: Math.ceil(max * BALANCE.acceptance.minScoreRatio),
+    // M-26: rounded to the nearest whole point, not up.
+    required: Math.round(max * BALANCE.acceptance.minScoreRatio),
   };
 }
 

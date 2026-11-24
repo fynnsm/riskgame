@@ -9,6 +9,7 @@ import { BALANCE } from '../../src/core/balance.ts';
 import type { LevelRun } from '../../src/core/game.ts';
 import { GameError, isRunConsistent, replay, startRun, step } from '../../src/core/game.ts';
 import { createRng } from '../../src/core/rng.ts';
+import { sceneModel } from '../../src/core/scene.ts';
 import { acceptance, isAccepted, starsFor } from '../../src/core/scoring.ts';
 import { playRandom, playStrategy, simulateLevel } from '../../src/core/simulate.ts';
 import {
@@ -22,9 +23,10 @@ import { buildErrorReport, extractReplay } from '../../src/logging/report.ts';
 import { createLogger } from '../../src/logging/logger.ts';
 import { createLocalStorageStore } from '../../src/storage/local-storage-store.ts';
 import { emptyProgress, withRun } from '../../src/core/progress.ts';
-import { clone, makeLevel, makeMechanicsLevel, memoryStorage, RULES } from './fixtures.ts';
+import { clone, makeLevel, makeTourLevel, memoryStorage, RULES } from './fixtures.ts';
 
-const level = makeMechanicsLevel();
+// The tour alone: the events have their own tests.
+const level = makeTourLevel();
 const pool = level.rundgang?.stellen ?? [];
 const START = BALANCE.gauge.start;
 const KLEIN = BALANCE.effectPoints.klein;
@@ -297,6 +299,7 @@ describe('replay with a tour (L-07, M-03)', () => {
         recentIds: run.recentIds,
         choices: [],
         tour: risks,
+        events: [],
         phase: run.phase,
         outcome: run.outcome,
         gauges: { ...run.gauges },
@@ -319,6 +322,7 @@ describe('replay with a tour (L-07, M-03)', () => {
       recentIds: [],
       choices: ['A'],
       tour: null,
+      events: [],
     });
   });
 });
@@ -409,5 +413,47 @@ describe('tour in the balance simulation', () => {
     const a = playRandom(level, createRng(5));
     const b = playRandom(level, createRng(5));
     expect(a).toEqual(b);
+  });
+});
+
+describe('tour in the scene model (M-15)', () => {
+  const levels = [{ level, available: true }];
+  const lotOf = (run: LevelRun, openSite: string | null = null) =>
+    sceneModel(levels, withRun(emptyProgress(), run), run, { openSite }).lots[0];
+
+  it('shows the eight places while the tour is walked, judged or not, but never how', () => {
+    let run = atTour();
+    for (const siteId of (run.tour?.siteIds ?? []).slice(0, 3)) {
+      run = step(run, level, { type: 'classify', siteId, risk: true });
+    }
+    const open = run.tour?.siteIds[5] ?? '';
+    const markers = lotOf(run, open)?.tour ?? [];
+    expect(markers.map((m) => m.siteId)).toEqual(run.tour?.siteIds);
+    expect(markers.filter((m) => m.judged)).toHaveLength(3);
+    expect(markers.every((m) => m.verdict === null)).toBe(true);
+    expect(markers.filter((m) => m.selected).map((m) => m.siteId)).toEqual([open]);
+    // Five of the eight are marked by the drone: three found risks and two false alarms.
+    expect(markers.filter((m) => m.marked)).toHaveLength(5);
+    for (const marker of markers) {
+      expect(marker.ort).toBe(pool.find((s) => s.id === marker.siteId)?.ort);
+    }
+  });
+
+  it('shows right and wrong in the resolution and selects nothing any more', () => {
+    const run = finished(6);
+    const markers = lotOf(run, run.tour?.siteIds[0] ?? null)?.tour ?? [];
+    expect(markers.filter((m) => m.verdict === 'right')).toHaveLength(6);
+    expect(markers.filter((m) => m.verdict === 'wrong')).toHaveLength(2);
+    expect(markers.some((m) => m.selected)).toBe(false);
+  });
+
+  it('shows no places before the tour, after it or in a level without one', () => {
+    expect(lotOf(startRun(level, 7))?.tour).toBeNull();
+    expect(lotOf(step(finished(6), level, { type: 'continue' }))?.tour).toBeNull();
+    const plain = makeLevel();
+    const run = startRun(plain, 7);
+    const model = sceneModel([{ level: plain, available: true }], emptyProgress(), run);
+    expect(model.lots[0]?.tour).toBeNull();
+    expect(sceneModel(levels, emptyProgress(), null).lots[0]?.tour).toBeNull();
   });
 });

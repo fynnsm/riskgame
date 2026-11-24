@@ -591,5 +591,315 @@
       "autor": "CL",
       "status": "entwurf"
     }
-  ]
+  ],
+  "ereignisse": {
+    "ereignisseProDurchgang": 3,
+    "pool": [
+      {
+        "id": "L5-E01",
+        "titel": "Der Assistent erfindet eine Deckung",
+        "meldung": "Der Assistent beantwortet Fragen zur Deckung. Erfindet er eine Leistung, die in keiner Police steht, verlassen sich Kundinnen und Kunden darauf.",
+        "darstellung": "defekt",
+        "wahrscheinlichkeit": "hoch",
+        "aiPrognose": {
+          "angezeigt": "tief",
+          "verlaesslich": false,
+          "begruendung": "Die Einschätzung stammt vom Assistenten selbst: Er bewertet seine eigenen Antworten als fast immer korrekt.",
+          "aufloesung": "Zwei Sachbearbeiterinnen prüfen eine Stichprobe von Hand. Mehrere Antworten nennen Leistungen, die in keiner Police stehen."
+        },
+        "auswirkung": {
+          "budget": "-mittel",
+          "zeit": "-klein",
+          "stabilitaet": "-mittel"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Deckungsfragen ganz vom Assistenten fernhalten und an Menschen leiten.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "-gross",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Das schliesst den Fehler aus, verlangt aber einen grossen Umbau. Und der Assistent verliert einen Teil seines Nutzens."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Antworten zur Deckung nur mit Zitat aus der Police zulassen und Stichproben prüfen.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Die Quelle macht jede Antwort überprüfbar, die Stichprobe zeigt früh, wenn etwas kippt. Kleiner Aufwand, grosse Wirkung."
+          },
+          "uebertragen": {
+            "verfuegbar": true,
+            "text": "Den Anbieter vertraglich für falsche Auskünfte haften lassen.",
+            "kosten": {
+              "budget": "-mittel",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Der Anbieter zahlt dann vielleicht. Den Kundinnen und Kunden gegenüber bleibt aber eure Versicherung verantwortlich."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Halluzinationen sind bei solchen Fragen wahrscheinlich und folgenreich. Das lässt sich nicht einfach hinnehmen."
+          }
+        },
+        "lernziel": "L5-Z1",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L5-E02",
+        "titel": "Gespräche fliessen ins Training",
+        "meldung": "Der Anbieter möchte Gesprächsverläufe nutzen, um sein Modell zu verbessern. Darin stehen Gesundheitsangaben eurer Kundinnen und Kunden.",
+        "darstellung": "behoerde",
+        "wahrscheinlichkeit": "mittel",
+        "auswirkung": {
+          "budget": "-mittel",
+          "zeit": "-gross",
+          "stabilitaet": "-klein"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Die Nutzung für das Training vor dem Start vertraglich ausschliessen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "-klein",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Was nicht hinausgeht, kann nicht missbraucht werden. Mit einer Verhandlung vor dem Start ist das Risiko ganz weg."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Gesundheitsangaben vor der Weitergabe automatisch schwärzen.",
+            "kosten": {
+              "budget": "-mittel",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Das Schwärzen ist teuer und findet nie alles. Ein Teil der heiklen Angaben geht trotzdem hinaus."
+          },
+          "uebertragen": {
+            "verfuegbar": true,
+            "text": "Eine Cyberversicherung abschliessen.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Die Versicherung zahlt Kosten. Das Vertrauen der Kundschaft und der Stopp des Projekts bleiben euer Schaden."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Es geht um besonders heikle Personendaten. Dieses Risiko trägt man nicht einfach."
+          }
+        },
+        "lernziel": "L5-Z2",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L5-E03",
+        "titel": "Der Anbieter erhöht die Preise",
+        "meldung": "Der Assistent läuft auf dem Modell eines einzigen Anbieters. Erhöht er die Preise pro Anfrage, sprengt der Betrieb das Budget.",
+        "darstellung": "generisch",
+        "wahrscheinlichkeit": "mittel",
+        "aiPrognose": {
+          "angezeigt": "mittel",
+          "verlaesslich": true,
+          "begruendung": "Die AI hat die Preislisten des Anbieters aus den letzten Jahren verglichen, die du ihr gegeben hast.",
+          "aufloesung": "Der Einkauf bestätigt: Die Listen sind vollständig, und der Vertrag erlaubt dem Anbieter Anpassungen."
+        },
+        "auswirkung": {
+          "budget": "-gross",
+          "zeit": "0",
+          "stabilitaet": "-klein"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Auf ein offenes Modell wechseln, das ihr selbst betreibt.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "-gross",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Dann bestimmt ihr die Kosten selbst. Der Wechsel wirft das Projekt aber um Monate zurück."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Einen zweiten Anbieter parallel anbinden.",
+            "kosten": {
+              "budget": "-mittel",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Ein zweiter Anbieter gibt euch Verhandlungsmacht, kostet aber doppelte Arbeit. Ein Teil der Mehrkosten bleibt."
+          },
+          "uebertragen": {
+            "verfuegbar": true,
+            "text": "Einen Festpreis über die ganze Laufzeit vereinbaren.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Der Schaden wäre reines Geld. Mit dem Festpreis trägt der Anbieter das Preisrisiko, und ihr zahlt dafür einen kleinen Aufschlag."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Die Auswirkung auf das Budget wäre gross. Dafür lohnt sich eine Absicherung."
+          }
+        },
+        "lernziel": "L5-Z3",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L5-E04",
+        "titel": "Schlechte Note im Test",
+        "meldung": "Ein Konsumentenmagazin testet AI-Assistenten von Versicherungen. Euer Assistent könnte dabei schlecht abschneiden.",
+        "darstellung": "generisch",
+        "wahrscheinlichkeit": "tief",
+        "auswirkung": {
+          "budget": "0",
+          "zeit": "-klein",
+          "stabilitaet": "-klein"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Den Start verschieben, bis der Test erschienen ist.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "-mittel",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Du verlierst sicher Zeit, um einem unsicheren und kleinen Schaden auszuweichen. Der Aufwand passt nicht zum Risiko."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Eine Agentur für die Kommunikation auf Abruf halten.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Brauchbar, aber für ein kleines und unwahrscheinliches Risiko gibst du hier sicher Geld aus."
+          },
+          "uebertragen": {
+            "verfuegbar": false,
+            "text": "Das Risiko an jemand anderen abgeben.",
+            "grund": "Es gibt keinen Geldschaden, den jemand übernehmen könnte."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Klein und unwahrscheinlich: Du hältst das Risiko fest, legst offen, wie der Assistent arbeitet, und beobachtest."
+          }
+        },
+        "lernziel": "L5-Z3",
+        "autor": "CC",
+        "status": "entwurf"
+      },
+      {
+        "id": "L5-E05",
+        "titel": "Niemand ist zuständig",
+        "meldung": "Für Beschwerden über Antworten des Assistenten ist keine Stelle benannt. Häufen sie sich, bleiben sie liegen, und niemand entscheidet.",
+        "darstellung": "ausfall",
+        "wahrscheinlichkeit": "mittel",
+        "auswirkung": {
+          "budget": "0",
+          "zeit": "-gross",
+          "stabilitaet": "-mittel"
+        },
+        "strategien": {
+          "vermeiden": {
+            "verfuegbar": true,
+            "text": "Den Assistenten vorerst nur intern einsetzen, ohne Kundenkontakt.",
+            "kosten": {
+              "budget": "-mittel",
+              "zeit": "-mittel",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Ohne Kundenkontakt gibt es keine Beschwerden. Du verschiebst damit aber den Nutzen des ganzen Projekts."
+          },
+          "vermindern": {
+            "verfuegbar": true,
+            "text": "Eine zuständige Person benennen und den Ablauf für Beschwerden festlegen.",
+            "kosten": {
+              "budget": "-klein",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": true,
+            "erklaerung": "Die Verantwortung bleibt beim Menschen, und jetzt hat sie einen Namen. Beschwerden werden schnell entschieden."
+          },
+          "uebertragen": {
+            "verfuegbar": false,
+            "text": "Die Verantwortung an den Anbieter abgeben.",
+            "grund": "Die Verantwortung für Entscheide bleibt bei euch. Sie lässt sich nicht abgeben."
+          },
+          "akzeptieren": {
+            "verfuegbar": true,
+            "text": "Nichts tun und das Risiko tragen.",
+            "kosten": {
+              "budget": "0",
+              "zeit": "0",
+              "stabilitaet": "0"
+            },
+            "empfohlen": false,
+            "erklaerung": "Unklare Zuständigkeit ist bei AI-Entscheiden kein kleines Risiko: Am Ende haftet eure Versicherung."
+          }
+        },
+        "lernziel": "L5-Z3",
+        "autor": "CC",
+        "status": "entwurf"
+      }
+    ]
+  }
 }

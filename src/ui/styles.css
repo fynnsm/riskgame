@@ -53,6 +53,33 @@ body {
   inset: 0;
 }
 
+/* M-15: buttons over the pins of the tour. The layer itself lets every touch through. */
+.tour-markers {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.tour-marker {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  padding: 0;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.tour-marker:hover,
+.tour-marker[data-selected='true'] {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px var(--dark);
+}
+
 .canvas-host canvas {
   display: block;
   width: 100%;
@@ -426,6 +453,63 @@ p {
   color: #fff;
   text-align: center;
   line-height: 28px;
+  font-weight: 700;
+}
+
+/* M-21: the four strategies. Name, what it means here, what it costs, what it leaves. */
+.strategy-body {
+  display: grid;
+  gap: 2px;
+}
+
+.strategy-name {
+  font-family: var(--pixel);
+}
+
+.strategy-cost,
+.strategy-effect,
+.strategy-locked {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.strategy-cost {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.strategy:disabled {
+  opacity: 1;
+  background: #e4ebf2;
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.strategy:disabled .option-key {
+  background: var(--ink-soft);
+}
+
+.forecast {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+/* An AI forecast looks different from the team's estimate: the source is part of the message. */
+.forecast-ai {
+  border-style: dashed;
+  border-color: var(--accent);
+}
+
+.forecast h2 {
+  margin-top: 0;
+}
+
+.forecast-shown,
+.forecast-truth {
   font-weight: 700;
 }
 

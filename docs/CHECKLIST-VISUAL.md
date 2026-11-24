@@ -109,3 +109,29 @@ In den Systemeinstellungen «Bewegung reduzieren» einschalten.
 Mit `?renderer=none` öffnen.
 
 - [ ] Ein ganzes Level, «bestanden», «nicht bestanden», Einsturz und der Schlussbildschirm sind als Text vorhanden
+
+## Rundgang in 3D (M-15)
+
+Automatisch geprüft ist nur: Acht Knöpfe liegen im freien Bildbereich, keiner deckt einen anderen, ein Tipp öffnet den Ort. Von Hand zu prüfen:
+
+- [ ] Beim Start des Rundgangs fliegt die Drohne eine Runde über die Baustelle; die Pins erscheinen, wenn sie vorbeikommt
+- [ ] Orange Pins mit «!» (von der Drohne markiert) und weisse Pins (nicht markiert) sind auf dem Handy klar zu unterscheiden
+- [ ] Ein beurteilter Pin wird dunkel mit Balken und verrät nicht, wie geurteilt wurde
+- [ ] Die Pins sind mit dem Daumen zu treffen, auch wo zwei nahe beieinander liegen
+- [ ] Die Drohne schwebt zum geöffneten Ort; mit «Bewegung reduzieren» steht sie still, und die Pins sind sofort da
+- [ ] In der Auflösung sind richtige Pins grün, falsche rot
+- [ ] Die Requisiten (Container, Gerüst, Schranke, Baubüro …) sind als das erkennbar, was sie meinen
+
+## Ereignisse in 3D (M-28)
+
+Automatisch geprüft ist nur: Das Szenenmodell sagt, was zu sehen ist; die Ansicht läuft mit einem Ereignis ohne Fehler und innerhalb des Budgets. Von Hand zu prüfen:
+
+- [ ] Jedes Ereignis kündigt sich an und ist als das erkennbar, was es meint: Gewitterwolken über dem Gebäude, stehender Lastwagen, leerer Arbeitsplatz, Schaltkasten mit Funken, Figur mit Aktenkoffer, Warntafel
+- [ ] Das Schild darüber zeigt «!», solange das Ereignis droht; es bleibt bis nach dem nächsten Stockwerk stehen
+- [ ] Tritt das Ereignis ein, wird das Schild rot und schlägt kurz aus (höchstens 2 Sekunden); beim Gewitter fällt Regen. «Weiter» lässt sich jederzeit drücken
+- [ ] Bleibt das Ereignis aus, wird das Schild grün, und das Ganze verschwindet aus dem Bild
+- [ ] Die gewählte Massnahme erscheint am Stockwerk, das gerade stand: grüne Bauwand (Vermeiden), Gerüst mit orangem Netz (Vermindern), blaues Schild (Übertragen). «Akzeptieren» baut nichts
+- [ ] Die Massnahmen bleiben am fertigen Gebäude in der Stadt sichtbar und neigen sich mit ihm
+- [ ] Mit «Bewegung reduzieren» steht alles still
+- [ ] Die Wolken verdecken weder das hängende Modul noch die Warnschilder so, dass etwas unlesbar wird
+

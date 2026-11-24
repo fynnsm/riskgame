@@ -1,8 +1,11 @@
-import type { Level, Option, Rating, Situation } from '../content/schema.ts';
+import type { Level, Option, Rating, RiskEvent, Situation, StrategyId } from '../content/schema.ts';
+import { STRATEGY_IDS } from '../content/schema.ts';
 import { BALANCE } from './balance.ts';
-import type { ChoiceRecord, Outcome } from './game.ts';
+import { availableStrategy, dueRound, findEvent, forecastOf, isRecommended } from './events.ts';
+import type { ChoiceRecord, LevelRun, Outcome } from './game.ts';
+import { currentOptions, startRun, step } from './game.ts';
 import type { Gauges } from './gauges.ts';
-import { applyEffects, isCollapsed, lowestValue, startGauges } from './gauges.ts';
+import { applyEffects, criticalGauges, isCollapsed, lowestValue, startGauges } from './gauges.ts';
 import { computeLean } from './lean.ts';
 import type { Rng } from './rng.ts';
 import { createRng, shuffle } from './rng.ts';
@@ -98,14 +101,24 @@ export function playRun(
       return { outcome: 'collapsed', steps: history.length, gauges, lowest: 0, tilt: 1, stars: 0 };
     }
   }
-  const outcome = isAccepted({ history, situationIds, tour }) ? 'completed' : 'rejected';
+  const outcome = isAccepted({ history, situationIds, tour, events: null, eventPoints: 0 })
+    ? 'completed'
+    : 'rejected';
   return {
     outcome,
     steps: history.length,
     gauges,
     lowest: lowestValue(gauges),
     tilt: computeLean(gauges).tilt,
-    stars: starsFor({ outcome, history, gauges, situationIds, tour }),
+    stars: starsFor({
+      outcome,
+      history,
+      gauges,
+      situationIds,
+      tour,
+      events: null,
+      eventPoints: 0,
+    }),
   };
 }
 
@@ -247,4 +260,214 @@ export function balanceProblems(report: BalanceReport): BalanceProblem[] {
 /** True if the level breaks none of the rules. */
 export function isBalanced(report: BalanceReport): boolean {
   return balanceProblems(report).length === 0;
+}
+
+/** How a simulated player answers events (brief of update 3, section 5). */
+export type EventPolicy =
+  /** Always a recommended strategy. */
+  | 'recommended'
+  /** Has every AI forecast checked first, then takes a recommended strategy. */
+  | 'verified'
+  | 'accept'
+  | 'avoid'
+  | 'mitigate'
+  | 'transfer'
+  /** Any available strategy, and any option in the situations. */
+  | 'random';
+
+const FALLBACKS: Record<
+  Exclude<EventPolicy, 'recommended' | 'verified' | 'random'>,
+  StrategyId[]
+> = {
+  accept: ['akzeptieren'],
+  avoid: ['vermeiden', 'akzeptieren'],
+  // Who always mitigates transfers where mitigating is not on offer, and the other way round.
+  mitigate: ['vermindern', 'uebertragen', 'akzeptieren'],
+  transfer: ['uebertragen', 'vermindern', 'akzeptieren'],
+};
+
+function strategyFor(event: RiskEvent, policy: EventPolicy, rng: Rng): StrategyId {
+  const available = STRATEGY_IDS.filter((id) => availableStrategy(event, id) !== null);
+  if (policy === 'random') {
+    return available[Math.floor(rng() * available.length)] ?? 'akzeptieren';
+  }
+  if (policy === 'recommended' || policy === 'verified') {
+    return available.find((id) => isRecommended(event, id)) ?? 'akzeptieren';
+  }
+  return FALLBACKS[policy].find((id) => available.includes(id)) ?? 'akzeptieren';
+}
+
+/**
+ * Plays one whole run through the same steps the game takes, so the simulation cannot
+ * drift from the rules. `allOccur` forces every event to happen: the worst case.
+ */
+export function playEvents(
+  level: Level,
+  seed: number,
+  policy: EventPolicy,
+  allOccur = false,
+): LevelRun {
+  const rng = createRng(seed ^ 0x9e3779b9);
+  let run = step(startRun(level, seed, { canSkipTheory: true }), level, { type: 'skipTheory' });
+  if (allOccur && run.events) {
+    run = { ...run, events: run.events.map((round) => ({ ...round, occurs: true })) };
+  }
+  for (let guard = 0; guard < 200 && run.phase !== 'result'; guard++) {
+    if (run.phase === 'tour') {
+      for (const siteId of run.tour?.siteIds ?? []) {
+        const site = level.rundgang?.stellen.find((s) => s.id === siteId);
+        const risk = policy === 'random' ? rng() < 0.5 : (site?.istRisiko ?? false);
+        run = step(run, level, { type: 'classify', siteId, risk });
+      }
+      run = step(run, level, { type: 'finishTour' });
+    } else if (run.phase === 'situation') {
+      const options = currentOptions(run, level);
+      const option =
+        policy === 'random'
+          ? options[Math.floor(rng() * options.length)]
+          : options.find((o) => o.einstufung === 'gut');
+      if (!option) throw new Error(`No option to choose in ${level.id}`);
+      run = step(run, level, { type: 'choose', optionId: option.id });
+    } else if (run.phase === 'event') {
+      const index = dueRound(run.events, run.history.length);
+      const round = index === null ? undefined : run.events?.[index];
+      if (!round) throw new Error(`No event due in ${level.id}`);
+      const event = findEvent(level, round.eventId);
+      if (policy === 'verified' && forecastOf(event, round).canVerify) {
+        run = step(run, level, { type: 'verifyForecast' });
+        if (run.phase !== 'event') continue;
+      }
+      run = step(run, level, {
+        type: 'chooseStrategy',
+        strategyId: strategyFor(event, policy, rng),
+      });
+    } else {
+      run = step(run, level, { type: 'continue' });
+    }
+  }
+  return run;
+}
+
+export interface EventBalanceReport {
+  levelId: string;
+  runs: number;
+  /** Good decisions and recommended strategies, every event happening. */
+  recommended: { collapses: number; failures: number; lowest: number };
+  /** The same after having every forecast checked. */
+  verified: { collapses: number; lowest: number };
+  /**
+   * Accepting every event: the share of runs that end collapsed or not accepted, and the
+   * share that end so or with a gauge in the critical range.
+   */
+  accept: { failRate: number; strainedRate: number };
+  /** Share of runs in which avoiding everything leaves little or no time. */
+  avoid: { lowTimeRate: number };
+  /** Share of runs in which mitigating, or transferring, everything leaves little or no budget. */
+  mitigate: { lowBudgetRate: number };
+  transfer: { lowBudgetRate: number };
+  random: { passRate: number; collapseRate: number; failRate: number };
+}
+
+/** Brief of update 3, section 5: the six ways of playing a level with events, over seeded draws. */
+export function simulateEvents(
+  level: Level,
+  runs: number = BALANCE.checks.events.runs,
+): EventBalanceReport {
+  const c = BALANCE.checks.events;
+  const report: EventBalanceReport = {
+    levelId: level.id,
+    runs,
+    recommended: { collapses: 0, failures: 0, lowest: 100 },
+    verified: { collapses: 0, lowest: 100 },
+    accept: { failRate: 0, strainedRate: 0 },
+    avoid: { lowTimeRate: 0 },
+    mitigate: { lowBudgetRate: 0 },
+    transfer: { lowBudgetRate: 0 },
+    random: { passRate: 0, collapseRate: 0, failRate: 0 },
+  };
+  const count = {
+    accept: 0,
+    strained: 0,
+    avoid: 0,
+    mitigate: 0,
+    transfer: 0,
+    pass: 0,
+    collapse: 0,
+  };
+  for (let i = 0; i < runs; i++) {
+    const seed = c.seed + i;
+
+    const recommended = playEvents(level, seed, 'recommended', true);
+    if (recommended.outcome === 'collapsed') report.recommended.collapses += 1;
+    if (recommended.outcome !== 'completed') report.recommended.failures += 1;
+    report.recommended.lowest = Math.min(
+      report.recommended.lowest,
+      lowestValue(recommended.gauges),
+    );
+
+    const verified = playEvents(level, seed, 'verified', true);
+    if (verified.outcome === 'collapsed') report.verified.collapses += 1;
+    report.verified.lowest = Math.min(report.verified.lowest, lowestValue(verified.gauges));
+
+    const accept = playEvents(level, seed, 'accept');
+    const failed = accept.outcome !== 'completed';
+    if (failed) count.accept += 1;
+    if (failed || criticalGauges(accept.gauges).length > 0) count.strained += 1;
+    if (playEvents(level, seed, 'avoid').gauges.zeit < c.avoidTimeBelow) count.avoid += 1;
+    if (playEvents(level, seed, 'mitigate').gauges.budget < c.lowBudgetBelow) count.mitigate += 1;
+    if (playEvents(level, seed, 'transfer').gauges.budget < c.lowBudgetBelow) count.transfer += 1;
+
+    const random = playEvents(level, seed, 'random');
+    if (random.outcome === 'completed') count.pass += 1;
+    if (random.outcome === 'collapsed') count.collapse += 1;
+  }
+  report.accept = { failRate: count.accept / runs, strainedRate: count.strained / runs };
+  report.avoid.lowTimeRate = count.avoid / runs;
+  report.mitigate.lowBudgetRate = count.mitigate / runs;
+  report.transfer.lowBudgetRate = count.transfer / runs;
+  report.random = {
+    passRate: count.pass / runs,
+    collapseRate: count.collapse / runs,
+    failRate: 1 - count.pass / runs,
+  };
+  return report;
+}
+
+/** Conditions of the brief that hold and are enforced: breaking one stops the check. */
+export type EventBalanceProblem =
+  | 'recommended-collapses'
+  | 'recommended-fails'
+  | 'verified-collapses'
+  | 'avoid-cheap'
+  | 'mitigate-cheap'
+  | 'transfer-cheap';
+
+/**
+ * Conditions of the brief that cannot hold together with the others (REQUIREMENTS.md, M-29).
+ * They are measured and shown, but do not stop the check until it is decided what replaces them.
+ */
+export type EventBalanceOpen = 'recommended-low' | 'accept-safe' | 'random-range';
+
+export function eventBalanceProblems(report: EventBalanceReport): EventBalanceProblem[] {
+  const c = BALANCE.checks.events;
+  const problems: EventBalanceProblem[] = [];
+  if (report.recommended.collapses > 0) problems.push('recommended-collapses');
+  if (report.recommended.failures > report.recommended.collapses)
+    problems.push('recommended-fails');
+  if (report.verified.collapses > 0) problems.push('verified-collapses');
+  if (report.avoid.lowTimeRate < c.avoidShareMin) problems.push('avoid-cheap');
+  if (report.mitigate.lowBudgetRate < c.lowBudgetShareMin) problems.push('mitigate-cheap');
+  if (report.transfer.lowBudgetRate < c.lowBudgetShareMin) problems.push('transfer-cheap');
+  return problems;
+}
+
+export function eventBalanceOpen(report: EventBalanceReport): EventBalanceOpen[] {
+  const c = BALANCE.checks;
+  const open: EventBalanceOpen[] = [];
+  if (report.recommended.lowest < c.events.recommendedMinGauge) open.push('recommended-low');
+  if (report.accept.failRate < c.events.acceptFailMin) open.push('accept-safe');
+  if (report.random.failRate < c.randomFailMin || report.random.failRate > c.randomFailMax) {
+    open.push('random-range');
+  }
+  return open;
 }

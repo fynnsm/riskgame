@@ -18,10 +18,12 @@ export const BALANCE = {
   ratingPoints: { gut: 2, vertretbar: 1, riskant: 0 },
 
   /**
-   * F-211: a building that still stands is only accepted if this share of the possible
-   * rating points was reached. This is what stops blind clicking from passing a level.
+   * F-211, M-26: a building that still stands is only accepted if this share of the possible
+   * points was reached, rounded to the nearest whole point. This is what stops blind clicking
+   * from passing a level. The share gives 11 of 16 points for a level of decisions alone and
+   * grows with the points of the site tour and of the events.
    */
-  acceptance: { minScoreRatio: 0.65 },
+  acceptance: { minScoreRatio: 0.69 },
 
   /** F-603: an accepted level always earns one star; these bars earn the second and third. */
   stars: {
@@ -47,6 +49,24 @@ export const BALANCE = {
     /** Random choice: share of runs that must end in a collapse or a failed inspection. */
     randomFailMin: 0.6,
     randomFailMax: 0.9,
+    /**
+     * M-29: what a level with events must hold, measured over seeded runs with good decisions
+     * (brief of update 3, section 5). No single strategy may be right every time.
+     */
+    events: {
+      runs: 5000,
+      seed: 20261124,
+      /** Recommended strategies, every event happening: no gauge ends below this. */
+      recommendedMinGauge: 30,
+      /** Accepting everything: at least this share of runs collapses or fails the inspection. */
+      acceptFailMin: 0.4,
+      /** Avoiding everything: time ends below this value in at least this share of runs. */
+      avoidTimeBelow: 20,
+      avoidShareMin: 0.5,
+      /** Mitigating or transferring everything: budget ends below this value in at least this share. */
+      lowBudgetBelow: 30,
+      lowBudgetShareMin: 0.5,
+    },
   },
 
   /** F-602: share of the possible rating points needed for a learning goal to count as reached. */

@@ -8,9 +8,9 @@ Stand: 60 Situationen in 5 Leveln, davon 60 im Entwurf und 0 freigegeben.
 |---|---|---|---|---|---|---|---|---|---|---|
 | Level 1 | 12 | 12 | 0 | 12 (12 Entwurf) | – | 5 (42 %) | 11 (92 %) | 6 | 42 % | 50 % / 50 % / 0 % |
 | Level 2 | 12 | 12 | 0 | – | – | 4 (33 %) | 10 (83 %) | 8 | 42 % | 50 % / 50 % / 0 % |
-| Level 3 | 12 | 12 | 0 | – | – | 4 (33 %) | 10 (83 %) | 10 | 47 % | 50 % / 50 % / 0 % |
-| Level 4 | 12 | 12 | 0 | – | – | 4 (33 %) | 9 (75 %) | 8 | 42 % | 50 % / 50 % / 0 % |
-| Level 5 | 12 | 12 | 0 | – | – | 3 (25 %) | 9 (75 %) | 8 | 42 % | 50 % / 50 % / 0 % |
+| Level 3 | 12 | 12 | 0 | – | 5 (5 Entwurf) | 4 (33 %) | 10 (83 %) | 10 | 47 % | 50 % / 50 % / 0 % |
+| Level 4 | 12 | 12 | 0 | – | 5 (5 Entwurf) | 4 (33 %) | 9 (75 %) | 8 | 42 % | 50 % / 50 % / 0 % |
+| Level 5 | 12 | 12 | 0 | – | 5 (5 Entwurf) | 3 (25 %) | 9 (75 %) | 8 | 42 % | 50 % / 50 % / 0 % |
 
 ## Was die Spalten bedeuten
 
@@ -34,14 +34,17 @@ Diese Inhalte hat nicht die Gruppe geschrieben. «CC» steht für die Beispielin
 
 **Level 3**
 
+- Von Claude Code (CC), Ereignisse: L3-E01, L3-E02, L3-E03, L3-E04, L3-E05
 - Erste Fassung von Claude (CL), Situationen: L3-S01, L3-S02, L3-S03, L3-S04, L3-S05, L3-S06, L3-S07, L3-S08, L3-S09, L3-S10, L3-S11, L3-S12
 
 **Level 4**
 
+- Von Claude Code (CC), Ereignisse: L4-E01, L4-E02, L4-E03, L4-E04, L4-E05
 - Erste Fassung von Claude (CL), Situationen: L4-S01, L4-S02, L4-S03, L4-S04, L4-S05, L4-S06, L4-S07, L4-S08, L4-S09, L4-S10, L4-S11, L4-S12
 
 **Level 5**
 
+- Von Claude Code (CC), Ereignisse: L5-E01, L5-E02, L5-E03, L5-E04, L5-E05
 - Erste Fassung von Claude (CL), Situationen: L5-S01, L5-S02, L5-S03, L5-S04, L5-S05, L5-S06, L5-S07, L5-S08, L5-S09, L5-S10, L5-S11, L5-S12
 
 ## Betroffene Situationen

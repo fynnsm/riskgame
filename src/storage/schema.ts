@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { OPTION_IDS, RATINGS } from '../content/schema.ts';
+import { OPTION_IDS, RATINGS, STRATEGY_IDS } from '../content/schema.ts';
 import { BALANCE } from '../core/balance.ts';
 import { PROGRESS_VERSION } from '../core/progress.ts';
 
@@ -42,12 +42,33 @@ const tourSchema = z.strictObject({
     .nullable(),
 });
 
+const eventRoundSchema = z.strictObject({
+  eventId: id,
+  occurs: z.boolean(),
+  verified: z.boolean(),
+  strategy: z.enum(STRATEGY_IDS).nullable(),
+  cost: deltaSchema.nullable(),
+  resolution: z
+    .strictObject({ occurred: z.boolean(), delta: deltaSchema, gaugesAfter: gaugesSchema })
+    .nullable(),
+});
+
 export const runSchema = z.strictObject({
   levelId: id,
   seed: z.number().int().min(0).max(0xffffffff),
   recentIds: z.array(id).max(MAX_LIST),
   canSkipTheory: z.boolean(),
-  phase: z.enum(['briefing', 'theory', 'tour', 'tourResult', 'situation', 'feedback', 'result']),
+  phase: z.enum([
+    'briefing',
+    'theory',
+    'tour',
+    'tourResult',
+    'situation',
+    'feedback',
+    'event',
+    'eventResult',
+    'result',
+  ]),
   theoryIndex: z.number().int().min(0).max(MAX_LIST),
   situationIds: z.array(id).max(MAX_LIST),
   optionOrders: z.array(z.array(optionId).max(OPTION_IDS.length)).max(MAX_LIST),
@@ -56,6 +77,8 @@ export const runSchema = z.strictObject({
   history: z.array(choiceSchema).max(MAX_LIST),
   outcome: z.enum(['running', 'completed', 'collapsed', 'rejected']),
   tour: tourSchema.nullable(),
+  events: z.array(eventRoundSchema).max(MAX_LIST).nullable(),
+  eventPoints: z.number().int().min(0).max(MAX_LIST),
 });
 
 const bestSchema = z.strictObject({
@@ -63,6 +86,16 @@ const bestSchema = z.strictObject({
   gauges: gaugesSchema,
   floors: z.array(z.strictObject({ gauges: gaugesSchema, rating: z.enum(RATINGS) })).max(MAX_LIST),
   goalsReached: z.array(id).max(MAX_LIST),
+  // Buildings finished before the events existed have no measures; they load as they are.
+  measures: z
+    .array(
+      z.strictObject({
+        floor: z.number().int().min(0).max(MAX_LIST),
+        strategy: z.enum(['vermeiden', 'vermindern', 'uebertragen']),
+      }),
+    )
+    .max(MAX_LIST)
+    .default([]),
 });
 
 const levelProgressSchema = z.strictObject({
