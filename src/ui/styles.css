@@ -1494,3 +1494,108 @@ h1 {
 #app[data-looking='true']:not([data-renderer='none']) .panel {
   height: auto;
 }
+
+/*
+ * N2: the celebration. While the sequence plays there is no text panel: the banner stands
+ * at the top of the picture, the stars large in its middle, and only the button to move on
+ * waits at the bottom. This overrides the earlier, smaller banner card.
+ */
+#app[data-presenting='true']:not([data-renderer='none']) .panel {
+  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  padding: 0;
+  transform: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#app[data-presenting='true']:not([data-renderer='none']) .screen-sequence {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  justify-items: center;
+  padding: 84px 16px max(22px, env(safe-area-inset-bottom));
+  animation: none;
+}
+
+#app[data-presenting='true']:not([data-renderer='none']) .banner {
+  font-size: clamp(1.3rem, 4.2vw, 2.4rem);
+  box-shadow: 0 6px 0 var(--dark);
+}
+
+#app[data-presenting='true']:not([data-renderer='none']) .banner-stars {
+  align-self: center;
+  margin: 0;
+  font-size: clamp(4rem, 16vw, 9rem);
+  color: rgb(255 255 255 / 55%);
+  text-shadow: 0 4px 0 rgb(38 51 77 / 45%);
+}
+
+#app[data-presenting='true']:not([data-renderer='none']) .banner-star-on {
+  color: #ffd23f;
+  text-shadow:
+    0 5px 0 #b8860b,
+    0 0 26px rgb(255 210 63 / 75%);
+}
+
+#app[data-presenting='true']:not([data-renderer='none']) .sequence-lead {
+  margin: 0 0 8px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: rgb(243 248 252 / 92%);
+}
+
+#app[data-presenting='true']:not([data-renderer='none']) .actions {
+  margin: 0;
+  pointer-events: auto;
+}
+
+#app[data-presenting='true']:not([data-renderer='none']) .actions .btn {
+  flex: none;
+  min-width: 220px;
+}
+
+/* Stars that are not earned stay away while the earned ones arrive, then show faintly. */
+.sequence-animated .banner-star:not(.banner-star-on) {
+  animation: arrive 0.3s ease-out 1.9s both;
+}
+
+.confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -24px;
+  width: 14px;
+  height: 14px;
+  animation: confetti-fall 2.4s linear infinite both;
+}
+
+@keyframes confetti-fall {
+  from {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  to {
+    transform: translateY(110vh) rotate(540deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
+}

@@ -4,14 +4,12 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 import type { Level, OptionId } from '../../src/content/schema.ts';
 import { replay } from '../../src/core/game.ts';
-import type { LevelRun } from '../../src/core/game.ts';
 import { criticalGauges } from '../../src/core/gauges.ts';
-import { step } from '../../src/core/game.ts';
-import type { Progress } from '../../src/core/progress.ts';
 import { starsFor } from '../../src/core/scoring.ts';
+import type { LastStep } from './support/progress.ts';
 import {
-  LEVELS,
   longestSituation,
+  oneBefore,
   openWith,
   progressAtSituation,
   progressInLevel,
@@ -581,35 +579,11 @@ test('runs the 3D view with reduced motion: no error, and the decoration stands 
   expect(await page.getByTestId('report').inputValue()).toContain('"reducedMotion":true');
 });
 
-interface LastStep {
-  progress: Progress;
-  /** Text of the option that ends the level in the wanted way. */
-  option: string;
-}
-
 async function playLastDecision(page: Page, url: string, last: LastStep): Promise<void> {
   await openWith(page, url, last.progress);
   await expect(screen(page, 'situation')).toBeVisible();
   await page.locator('.option', { hasText: last.option }).click();
   await page.getByTestId('next').click();
-}
-
-/** A state one decision before the level ends in the wanted way, and the option that does it. */
-function oneBefore(wanted: (run: LevelRun) => boolean, nummer = 1): LastStep {
-  let option = '';
-  const level = LEVELS[nummer - 1] as Level;
-  const progress = progressWhere(nummer, (run) => {
-    if (run.phase !== 'situation') return false;
-    const situation = level.situationen.find((s) => s.id === run.situationIds[run.step]);
-    const ending = situation?.optionen.find((candidate) => {
-      let after = step(run, level, { type: 'choose', optionId: candidate.id });
-      after = step(after, level, { type: 'continue' });
-      return after.phase === 'result' && wanted(after);
-    });
-    if (ending) option = ending.text;
-    return ending !== undefined;
-  });
-  return { progress, option };
 }
 
 test('shows «Bauabnahme bestanden» with the right number of stars, then the evaluation (B5)', async ({
@@ -622,6 +596,13 @@ test('shows «Bauabnahme bestanden» with the right number of stars, then the ev
   await expect(page.getByTestId('banner')).toHaveText('Bauabnahme bestanden');
   await expect(page.getByTestId('banner')).toBeFocused();
   await expect(page.getByTestId('banner-stars')).toHaveAttribute('data-stars', '3');
+  // N2: the banner comes before the button in the page, not after it.
+  const order = await page
+    .locator('[data-screen="sequence"]')
+    .evaluate((node) =>
+      [...node.querySelectorAll('[data-testid]')].map((n) => n.getAttribute('data-testid')),
+    );
+  expect(order.indexOf('banner')).toBeLessThan(order.indexOf('skip'));
 
   // Nothing holds the player up for more than four seconds: the evaluation comes by itself.
   await expect(screen(page, 'result')).toBeVisible({ timeout: 4500 });
@@ -659,6 +640,64 @@ test('shows «Baustopp» after a collapse and tapes off a building that was not 
   await skipSequence(page);
   await expect(screen(page, 'result')).toHaveAttribute('data-outcome', 'collapsed');
   await expect(screen(page, 'error')).toHaveCount(0);
+});
+
+test('celebrates in the picture: banner at once, large stars within two seconds, no text panel (N2)', async ({
+  page,
+}) => {
+  test.slow();
+  const size = page.viewportSize();
+  if (!size) throw new Error('No viewport');
+  await playLastDecision(
+    page,
+    '/?quality=0',
+    oneBefore((run) => run.outcome === 'completed' && starsFor(run) === 3),
+  );
+  const banner = page.getByTestId('banner');
+  await expect(banner).toBeVisible({ timeout: 1500 });
+  // The text panel is out of the way: nothing of it covers the picture. Checked first,
+  // because the sequence is over after a few seconds.
+  const background = await page
+    .locator('.panel')
+    .evaluate((n) => getComputedStyle(n).backgroundColor);
+  expect(background).toBe('rgba(0, 0, 0, 0)');
+  // Large and in the middle of the picture, not small inside a text field.
+  const row = await page.getByTestId('banner-stars').boundingBox();
+  if (!row) throw new Error('Stars not rendered');
+  expect(row.height).toBeGreaterThan(56);
+  expect(Math.abs(row.x + row.width / 2 - size.width / 2)).toBeLessThan(size.width * 0.12);
+  // All three stars have arrived two seconds in; a little room for a slow machine.
+  const stars = page.locator('.banner-star-on');
+  await expect
+    .poll(
+      () =>
+        stars.evaluateAll(
+          (nodes) =>
+            nodes.length === 3 && nodes.every((n) => Number(getComputedStyle(n).opacity) > 0.9),
+        ),
+      { timeout: 3200 },
+    )
+    .toBe(true);
+});
+
+test('rains confetti across the whole width for two stars and none for three (N2)', async ({
+  page,
+}) => {
+  test.slow();
+  const size = page.viewportSize();
+  if (!size) throw new Error('No viewport');
+  await playLastDecision(
+    page,
+    '/?quality=0',
+    oneBefore((run) => run.outcome === 'completed' && starsFor(run) === 2),
+  );
+  const pieces = page.locator('.confetti-piece');
+  await expect(pieces).toHaveCount(60);
+  const lefts = await pieces.evaluateAll((nodes) =>
+    nodes.map((n) => n.getBoundingClientRect().left),
+  );
+  expect(Math.min(...lefts)).toBeLessThan(size.width * 0.1);
+  expect(Math.max(...lefts)).toBeGreaterThan(size.width * 0.9);
 });
 
 test('shows the final picture at once with reduced motion (B0.6)', async ({ page }) => {

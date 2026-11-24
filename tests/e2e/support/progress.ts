@@ -141,3 +141,27 @@ export function longestSituation(nummer: number): string {
     s.situation.length + (s.aiAusgabe ? s.aiAusgabe.prompt.length + s.aiAusgabe.antwort.length : 0);
   return [...level.situationen].sort((a, b) => length(b) - length(a))[0]?.id ?? '';
 }
+
+export interface LastStep {
+  progress: Progress;
+  /** Text of the option that ends the level in the wanted way. */
+  option: string;
+}
+
+/** A state one decision before the level ends in the wanted way, and the option that does it. */
+export function oneBefore(wanted: (run: LevelRun) => boolean, nummer = 1): LastStep {
+  let option = '';
+  const level = LEVELS[nummer - 1] as Level;
+  const progress = progressWhere(nummer, (run) => {
+    if (run.phase !== 'situation') return false;
+    const situation = level.situationen.find((s) => s.id === run.situationIds[run.step]);
+    const ending = situation?.optionen.find((candidate) => {
+      let after = step(run, level, { type: 'choose', optionId: candidate.id });
+      after = step(after, level, { type: 'continue' });
+      return after.phase === 'result' && wanted(after);
+    });
+    if (ending) option = ending.text;
+    return ending !== undefined;
+  });
+  return { progress, option };
+}

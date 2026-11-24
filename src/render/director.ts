@@ -125,70 +125,97 @@ export function decorationFor(quality: Quality): Decoration {
 
 export type SequenceStep =
   | 'fertigstellung'
-  | 'kameraschwenk'
   | 'banner'
   | 'sterne'
+  | 'kameraschwenk'
+  | 'feier'
   | 'pruefer'
   | 'stempel'
   | 'einsturz'
   | 'endbild';
 
 export interface Sequence {
-  steps: { step: SequenceStep; seconds: number }[];
-  /** Sum of all steps; never more than the limit in TUNING. */
+  /** What happens when; steps may overlap. */
+  steps: { step: SequenceStep; at: number; seconds: number }[];
+  /** When the last step ends; never more than the limit in TUNING. */
   seconds: number;
   /** Second at which the banner or stamp appears. */
   bannerAt: number;
+  /** Second at which each earned star appears, one entry per star. */
+  starsAt: number[];
   cameraShake: boolean;
 }
 
 /**
- * B5: what plays when a level ends. With reduced motion there is no camera move and
- * no shake: the final picture simply fades in (B0.6).
+ * B5, N2: what plays when a level ends. A passed level opens with the banner; the stars
+ * follow at once and are all there within two seconds, while the roof lands, the camera
+ * swings and the celebration runs. With reduced motion there is no camera move and no
+ * shake: the final picture simply fades in (B0.6).
  */
 export function resultSequence(
   outcome: Exclude<Outcome, 'running'>,
   stars: Stars,
   reducedMotion: boolean,
 ): Sequence {
+  const earned = outcome === 'completed' ? stars : 0;
   if (reducedMotion) {
     return {
-      steps: [{ step: 'endbild', seconds: 0.2 }],
+      steps: [{ step: 'endbild', at: 0, seconds: 0.2 }],
       seconds: 0.2,
       bannerAt: 0,
+      starsAt: Array.from({ length: earned }, () => 0),
       cameraShake: false,
     };
   }
+  const T = TUNING.sequence;
   let steps: Sequence['steps'];
+  let bannerAt = 0;
+  let starsAt: number[] = [];
   if (outcome === 'completed') {
+    starsAt = Array.from(
+      { length: earned },
+      (_, i) => T.firstStarSeconds + i * T.starIntervalSeconds,
+    );
     steps = [
-      { step: 'fertigstellung', seconds: 1 },
-      { step: 'kameraschwenk', seconds: TUNING.sequence.panSeconds },
-      { step: 'banner', seconds: 0.5 },
-      { step: 'sterne', seconds: stars * TUNING.sequence.starIntervalSeconds },
+      { step: 'banner', at: 0, seconds: 0.4 },
+      { step: 'fertigstellung', at: 0, seconds: 1 },
+      { step: 'sterne', at: T.firstStarSeconds, seconds: earned * T.starIntervalSeconds },
+      { step: 'kameraschwenk', at: T.firstStarSeconds, seconds: T.panSeconds },
+      { step: 'feier', at: 0.3, seconds: T.celebrationSeconds },
     ];
   } else if (outcome === 'rejected') {
+    // The stamp follows the inspector's round.
+    bannerAt = 2;
     steps = [
-      { step: 'pruefer', seconds: 2 },
-      { step: 'stempel', seconds: 0.8 },
+      { step: 'pruefer', at: 0, seconds: 2 },
+      { step: 'stempel', at: 2, seconds: 0.8 },
     ];
   } else {
-    steps = [{ step: 'einsturz', seconds: 2.4 }];
+    // «Baustopp» appears while the floors are still coming down.
+    bannerAt = 1.2;
+    steps = [{ step: 'einsturz', at: 0, seconds: 2.4 }];
   }
-  const seconds = steps.reduce((sum, s) => sum + s.seconds, 0);
-  // The banner follows the finished building and the swing; the stamp follows the inspector's
-  // round; «Baustopp» appears while the floors are still coming down.
-  const before = (name: SequenceStep): number => {
-    const index = steps.findIndex((s) => s.step === name);
-    return steps.slice(0, Math.max(0, index)).reduce((sum, s) => sum + s.seconds, 0);
-  };
-  const bannerAt =
-    outcome === 'completed'
-      ? before('banner')
-      : outcome === 'rejected'
-        ? before('stempel')
-        : seconds / 2;
-  return { steps, seconds, bannerAt, cameraShake: outcome === 'collapsed' };
+  const seconds = Math.max(...steps.map((s) => s.at + s.seconds));
+  return { steps, seconds, bannerAt, starsAt, cameraShake: outcome === 'collapsed' };
+}
+
+/**
+ * N2: where spark `index` of the fireworks is, `seconds` into the celebration. Three bursts
+ * of the given size go off one after the other and repeat; null means the spark is not shown.
+ */
+export function fireworkSpark(
+  index: number,
+  seconds: number,
+): { burst: number; age: number; angle: number; lift: number } | null {
+  const F = TUNING.firework;
+  const burst = Math.floor(index / F.sparksPerBurst) % F.bursts;
+  const since = seconds - F.firstAt - burst * F.every;
+  if (since < 0) return null;
+  const age = since % F.repeatSeconds;
+  if (age > F.lifeSeconds) return null;
+  const k = index % F.sparksPerBurst;
+  // Spread evenly round the circle, with every other spark thrown higher.
+  return { burst, age, angle: (k / F.sparksPerBurst) * Math.PI * 2, lift: (k % 3) - 0.6 };
 }
 
 /** B3: a plane must not cross the middle of the picture while the player decides. */

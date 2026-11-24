@@ -620,16 +620,36 @@ const SEQUENCE_LEAD: Record<EndOutcome, string> = {
   collapsed: T.sequence.collapsedLead,
 };
 
+/** Colours of the paper that rains on a building passed with two stars; decoration only. */
+const CONFETTI = ['#e5534b', '#ffd23f', '#2ec4b6', '#3f8fd9', '#8e6bd1', '#7bc950'];
+
+/** N2: sixty pieces across the whole width. Placed by index, so every run looks the same. */
+function confetti(): HTMLElement {
+  return el(
+    'div',
+    { class: 'confetti', attrs: { 'aria-hidden': 'true', 'data-testid': 'confetti' } },
+    Array.from({ length: 60 }, (_, i) => {
+      const piece = el('span', { class: 'confetti-piece' });
+      piece.style.left = `${(i * 37) % 100}%`;
+      piece.style.background = CONFETTI[i % CONFETTI.length] ?? '#ffd23f';
+      piece.style.animationDelay = `${((i * 13) % 20) / 10}s`;
+      piece.style.animationDuration = `${1.8 + ((i * 7) % 10) / 10}s`;
+      return piece;
+    }),
+  );
+}
+
 /**
- * B5: the short moment between the last decision and the evaluation. With 3D it frames
- * what happens on the site; without, it says the same in words. `starDelays` gives the
- * second at which each star appears, or null to show everything at once.
+ * B5, N2: the short moment between the last decision and the evaluation. The banner comes
+ * first; the stars stand large in the middle of the picture. With 3D it frames what happens
+ * on the site; without, it says the same in words. `staging` gives the seconds at which
+ * banner and stars appear, or null to show everything at once.
  */
 export function sequenceScreen(
   outcome: EndOutcome,
   stars: Stars,
-  starDelays: readonly number[] | null,
-  bannerDelay: number,
+  staging: { bannerAt: number; starsAt: readonly number[] } | null,
+  withConfetti: boolean,
   skip: () => void,
 ): HTMLElement {
   const banner = el('h1', {
@@ -637,8 +657,7 @@ export function sequenceScreen(
     text: T.sequence[outcome],
     attrs: { tabindex: '-1', 'data-focus': 'true', 'data-testid': 'banner' },
   });
-  const animated = starDelays !== null;
-  if (animated) banner.style.animationDelay = `${bannerDelay}s`;
+  if (staging) banner.style.animationDelay = `${staging.bannerAt}s`;
   const starRow =
     outcome === 'completed'
       ? el(
@@ -648,6 +667,7 @@ export function sequenceScreen(
             attrs: {
               'data-testid': 'banner-stars',
               'data-stars': String(stars),
+              role: 'img',
               'aria-label': T.stars(stars),
             },
           },
@@ -657,8 +677,8 @@ export function sequenceScreen(
               text: i < stars ? '★' : '☆',
               attrs: { 'aria-hidden': 'true' },
             });
-            const delay = starDelays?.[i];
-            if (animated && delay !== undefined) star.style.animationDelay = `${delay}s`;
+            const delay = staging?.starsAt[i];
+            if (delay !== undefined) star.style.animationDelay = `${delay}s`;
             return star;
           }),
         )
@@ -666,13 +686,14 @@ export function sequenceScreen(
   return el(
     'div',
     {
-      class: `screen screen-sequence${animated ? ' sequence-animated' : ''}`,
+      class: `screen screen-sequence${staging ? ' sequence-animated' : ''}`,
       attrs: { 'data-screen': 'sequence', 'data-outcome': outcome },
     },
     [
+      withConfetti ? confetti() : null,
       banner,
       starRow,
-      el('p', { class: 'lead', text: SEQUENCE_LEAD[outcome] }),
+      el('p', { class: 'lead sequence-lead', text: SEQUENCE_LEAD[outcome] }),
       el('div', { class: 'actions' }, [
         button(T.sequence.skip, skip, { primary: true, testId: 'skip' }),
       ]),
