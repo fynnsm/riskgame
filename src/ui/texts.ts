@@ -5,6 +5,7 @@ import type { GoalStatus } from '../core/scoring.ts';
 export const T = {
   appTitle: 'Risk Tower',
   menu: 'Menü',
+  menuSymbol: '☰',
   back: 'Zurück',
   next: 'Weiter',
 
@@ -160,6 +161,18 @@ export const T = {
       'Dein Gerät unterstützt die 3D-Ansicht nicht. Du spielst im Einfach-Modus ohne Grafik, alle Inhalte sind vorhanden.',
     resetDone: 'Dein Fortschritt wurde gelöscht.',
     resetFailed: 'Der Fortschritt konnte nicht gelöscht werden.',
+  },
+
+  debug: {
+    heading: 'Debug',
+    fps: 'Bildrate',
+    drawCalls: 'Zeichenaufrufe',
+    triangles: 'Dreiecke',
+    quality: 'Qualitätsstufe',
+    level: 'Level',
+    seed: 'Seed',
+    gauges: 'Anzeigen',
+    jump: (n: number) => `Level ${n}`,
   },
 
   error: {

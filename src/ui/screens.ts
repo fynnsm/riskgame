@@ -1,11 +1,13 @@
 import { checkVideoUrl } from '../content/rules.ts';
 import type { GaugeKey, Level, Option, Rating, Situation, TheoryStep } from '../content/schema.ts';
 import { GAUGE_KEYS } from '../content/schema.ts';
+import { BALANCE } from '../core/balance.ts';
 import type { ChoiceRecord, LevelRun } from '../core/game.ts';
 import { findOption, findSituation } from '../core/game.ts';
 import type { Gauges } from '../core/gauges.ts';
 import type { Progress } from '../core/progress.ts';
 import { isUnlocked, levelProgress } from '../core/progress.ts';
+import type { RenderStats } from '../core/scene.ts';
 import type { Stars } from '../core/scoring.ts';
 import {
   acceptance,
@@ -20,7 +22,7 @@ import { theoryGraphic } from './graphics.ts';
 import { T } from './texts.ts';
 
 /** Below this value a gauge is also labelled in words, so colour is never the only signal (N-303). */
-const CRITICAL_BELOW = 25;
+const CRITICAL_BELOW = BALANCE.gauge.criticalBelow;
 
 export interface PlayableLevelView {
   level: Level;
@@ -674,6 +676,78 @@ export function confirmResetScreen(handlers: { yes(): void; no(): void }): HTMLE
       button(T.confirmReset.yes, handlers.yes, { class: 'btn-danger', testId: 'reset-yes' }),
     ]),
   ]);
+}
+
+export interface DebugInfo {
+  stats: RenderStats;
+  run: LevelRun | null;
+  levels: readonly { id: string; nummer: number }[];
+}
+
+function shown(value: number | null): string {
+  return value === null ? '–' : String(value);
+}
+
+/** L-09: the values of the debug overlay. Rebuilt often, so it holds nothing clickable. */
+export function debugValues(info: DebugInfo): HTMLElement {
+  const { stats, run } = info;
+  const rows: [string, string][] = [
+    [
+      T.debug.fps,
+      `${shown(stats.fps)} (Ø ${shown(stats.fpsAverage)}, min ${shown(stats.fpsMinimum)})`,
+    ],
+    [T.debug.drawCalls, shown(stats.drawCalls)],
+    [T.debug.triangles, shown(stats.triangles)],
+    [T.debug.quality, shown(stats.quality)],
+    [T.debug.level, run ? `${run.levelId} · ${run.phase} · ${run.step + 1}` : '–'],
+    [T.debug.seed, run ? String(run.seed) : '–'],
+    [
+      T.debug.gauges,
+      run ? GAUGE_KEYS.map((key) => `${T.gauges[key]} ${run.gauges[key]}`).join(' · ') : '–',
+    ],
+  ];
+  return el(
+    'dl',
+    {},
+    rows.flatMap(([label, value]) => [el('dt', { text: label }), el('dd', { text: value })]),
+  );
+}
+
+/**
+ * L-09: the frame of the debug overlay with the level jump. Built once: buttons that were
+ * replaced twice a second could not be clicked reliably.
+ */
+export function debugFrame(
+  levels: DebugInfo['levels'],
+  values: HTMLElement,
+  jump: (levelId: string) => void,
+): HTMLElement {
+  return el(
+    'aside',
+    { class: 'debug', attrs: { 'data-testid': 'debug', 'aria-label': T.debug.heading } },
+    [
+      el('strong', { text: T.debug.heading }),
+      values,
+      el(
+        'div',
+        { class: 'debug-jump' },
+        levels.map((level) =>
+          button(T.debug.jump(level.nummer), () => jump(level.id), {
+            class: 'btn-debug',
+            testId: `jump-${level.id}`,
+          }),
+        ),
+      ),
+    ],
+  );
+}
+
+export function debugAttributes(info: DebugInfo): Record<string, string> {
+  return {
+    'data-draw-calls': shown(info.stats.drawCalls),
+    'data-triangles': shown(info.stats.triangles),
+    'data-seed': info.run ? String(info.run.seed) : '',
+  };
 }
 
 /** L-08: what the player sees instead of a white page. */

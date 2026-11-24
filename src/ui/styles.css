@@ -769,3 +769,93 @@ h1 {
     transition: none;
   }
 }
+
+/* A5: on a narrow phone the three gauges must fit beside the menu button without spilling. */
+.gauge {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.menu-symbol {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .top-bar {
+    gap: 6px;
+  }
+
+  .btn-menu {
+    padding: 6px 10px;
+  }
+
+  .menu-symbol {
+    display: inline;
+  }
+
+  /* Hidden to the eye only: the button keeps its accessible name. */
+  .menu-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .gauges {
+    gap: 4px;
+  }
+
+  .gauge {
+    padding: 3px 5px 5px;
+    font-size: 0.72rem;
+  }
+}
+
+/* L-09: debug overlay, only with ?debug=1. */
+.debug-host {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 5;
+  max-width: min(320px, 70vw);
+}
+
+#app[data-renderer='none'] .debug-host {
+  position: fixed;
+}
+
+.debug {
+  padding: 8px 10px;
+  background: rgb(20 28 44 / 88%);
+  color: #e8f0ff;
+  border-radius: 8px;
+  font-family: var(--pixel);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.debug dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 8px;
+  margin: 4px 0;
+}
+
+.debug dd {
+  margin: 0;
+}
+
+.debug-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.btn-debug {
+  min-height: 32px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  box-shadow: none;
+}

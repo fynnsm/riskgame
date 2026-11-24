@@ -202,6 +202,58 @@ test('starts cleanly with a hint if the stored progress is damaged', async ({ pa
   await expect(page.getByTestId('notices')).toContainText('beschädigt');
 });
 
+test('shows the hint about a damaged progress exactly once (A4)', async ({ page }) => {
+  await page.goto(SIMPLE);
+  await page.evaluate(() => window.localStorage.setItem('risk-tower.progress', 'kaputt'));
+  await page.reload();
+  await expect(page.getByTestId('notices')).toContainText('beschädigt');
+  await page.reload();
+  await expect(screen(page, 'city')).toBeVisible();
+  await expect(page.getByTestId('notices')).toHaveCount(0);
+});
+
+for (const width of [360, 390, 430]) {
+  for (const mode of ['/', SIMPLE]) {
+    test(`keeps menu button and all three gauges inside a ${width}px window (${mode}) (A5)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(mode);
+      await startLevel1(page);
+      await throughBriefingAndTheory(page);
+      // Feedback after a risky choice shows the longest gauge texts: value, change and «kritisch».
+      for (let i = 0; i < 2; i++) {
+        await choose(page, 'riskant');
+        if (i === 0) await page.getByTestId('next').click();
+      }
+      const boxes = [
+        page.getByTestId('menu'),
+        gauge(page, 'budget'),
+        gauge(page, 'zeit'),
+        gauge(page, 'stabilitaet'),
+      ];
+      for (const locator of boxes) {
+        const box = await locator.boundingBox();
+        if (!box) throw new Error('Element not rendered');
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.y).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(width);
+      }
+      // The box may fit while its text spills out of it; that is what was seen on the phone.
+      const spilling = await page
+        .locator('[data-testid^="gauge-"], [data-testid="menu"]')
+        .evaluateAll((nodes) =>
+          nodes.filter((n) => n.scrollWidth > n.clientWidth + 1).map((n) => n.textContent),
+        );
+      expect(spilling).toEqual([]);
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      );
+      expect(overflow).toBe(false);
+    });
+  }
+}
+
 test('shows the error report and copies it to the clipboard', async ({ page }) => {
   await page.goto(SIMPLE);
   await startLevel1(page);
@@ -307,6 +359,42 @@ test('uses the whole window: panel at the side when wide, at the bottom when tal
     expect(panel.y).toBeGreaterThan(size.height * 0.35);
     expect(panel.width).toBeGreaterThan(size.width * 0.9);
   }
+});
+
+test('shows the debug overlay only with ?debug=1 and lets it jump to a locked level (A7)', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.getByTestId('debug')).toHaveCount(0);
+
+  await page.goto('/?debug=1');
+  const debug = page.getByTestId('debug');
+  await expect(debug).toBeVisible();
+  await expect(debug).toContainText('Zeichenaufrufe');
+  await expect(debug).toContainText('Dreiecke');
+  await expect
+    .poll(async () => Number(await debug.getAttribute('data-draw-calls')))
+    .toBeGreaterThan(0);
+  expect(Number(await debug.getAttribute('data-triangles'))).toBeGreaterThan(1000);
+
+  await expect(page.getByTestId('start-level-3')).toHaveCount(0);
+  await page.getByTestId('jump-level-3').click();
+  await expect(screen(page, 'briefing')).toContainText('Level 3');
+  await expect(debug).toHaveAttribute('data-seed', /^\d+$/);
+});
+
+test('names the frame rate in the error report (A8)', async ({ page }) => {
+  await page.goto(SIMPLE);
+  await page.getByTestId('menu').click();
+  expect(await page.getByTestId('report').inputValue()).toContain('Bildrate: nicht gemessen');
+
+  await page.goto('/');
+  // Two full seconds, so the view has at least one completed second to report.
+  await page.waitForTimeout(2200);
+  await page.getByTestId('menu').click();
+  expect(await page.getByTestId('report').inputValue()).toMatch(
+    /Bildrate \(letzte 30 s\): Durchschnitt \d+, Minimum \d+, Qualitätsstufe \d/,
+  );
 });
 
 test('ignores invalid URL parameters', async ({ page }) => {

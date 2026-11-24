@@ -3,7 +3,13 @@
  * Values are starting points from REQUIREMENTS.md chapter 4.2 and are meant to be tuned.
  */
 export const BALANCE = {
-  gauge: { min: 0, max: 100, start: 60 },
+  gauge: {
+    min: 0,
+    max: 100,
+    start: 60,
+    /** Below this a gauge counts as critical: the label says so and the site shows a warning sign. */
+    criticalBelow: 30,
+  },
 
   /** F-203: content states step sizes, this table turns them into points. */
   effectPoints: { klein: 6, mittel: 14, gross: 26 },

@@ -33,11 +33,23 @@ export interface SceneInsets {
   left: number;
 }
 
+/** What a view can tell about its own performance. All null where it does not draw. */
+export interface RenderStats {
+  fps: number | null;
+  fpsAverage: number | null;
+  fpsMinimum: number | null;
+  drawCalls: number | null;
+  triangles: number | null;
+  quality: number | null;
+}
+
 /** The contract between the HTML app and any renderer, including the one that draws nothing. */
 export interface SceneView {
   render(model: SceneModel): void;
   /** Tells the view which part of the canvas is covered by HTML, so it can frame the scene beside it. */
   setInsets(insets: SceneInsets): void;
+  /** Frame rate of the last 30 seconds and the cost of the last frame (L-05, L-09). */
+  stats(): RenderStats;
   dispose(): void;
 }
 

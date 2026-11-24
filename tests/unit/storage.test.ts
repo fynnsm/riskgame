@@ -62,8 +62,9 @@ describe('LocalStorageStore (F-701 to F-704)', () => {
     mutate(data);
     const { store, logger } = setup(memoryStorage({ [PROGRESS_KEY]: JSON.stringify(data) }));
     expect(store.load()).toEqual({ status: 'invalid', progress: emptyProgress() });
-    expect(logger.entries().at(-1)).toMatchObject({
-      event: 'storage.load.invalid',
+    // The warning is followed by the entry about the replacement (A4), so look it up by name.
+    expect(logger.entries().find((e) => e.event === 'storage.load.invalid')).toMatchObject({
+      level: 'warn',
       data: { reason: 'schema' },
     });
   });
@@ -79,7 +80,10 @@ describe('LocalStorageStore (F-701 to F-704)', () => {
     const old = JSON.stringify({ version: 0, levels: {}, done: [1, 2] });
     const { store, logger } = setup(memoryStorage({ [PROGRESS_KEY]: old }));
     expect(store.load()).toEqual({ status: 'outdated', progress: emptyProgress() });
-    expect(logger.entries().at(-1)?.data).toEqual({ found: 0, expected: 2 });
+    expect(logger.entries().find((e) => e.event === 'storage.load.outdated')?.data).toEqual({
+      found: 0,
+      expected: 2,
+    });
   });
 
   it('treats a progress saved before the balance change as outdated', () => {
@@ -124,6 +128,44 @@ describe('LocalStorageStore (F-701 to F-704)', () => {
     expect(store.clear()).toBe(true);
     expect(storage.getItem(PROGRESS_KEY)).toBeNull();
     expect(store.load().status).toBe('empty');
+  });
+});
+
+describe('replacing a broken progress (A4)', () => {
+  it.each([
+    ['damaged', '{"version":2,'],
+    ['of the wrong shape', '{"version":2,"levels":"x","currentRun":null,"playTimeMs":0}'],
+    ['outdated', '{"version":1,"levels":{},"currentRun":null,"playTimeMs":0}'],
+  ])('writes a fresh progress at once when the stored one is %s', (_name, stored) => {
+    const storage = memoryStorage({ [PROGRESS_KEY]: stored });
+    const { store, events } = setup(storage);
+    expect(store.load().status).not.toBe('ok');
+    expect(JSON.parse(storage.getItem(PROGRESS_KEY) ?? '')).toEqual(emptyProgress());
+    // The next visit finds a valid state: no second hint, no second warning in the log.
+    expect(store.load()).toEqual({ status: 'ok', progress: emptyProgress() });
+    expect(
+      events()
+        .filter((e) => e.startsWith('storage.load.'))
+        .slice(-1),
+    ).toEqual(['storage.load.ok']);
+    expect(events()).toContain('storage.load.replaced');
+  });
+
+  it('still reports the broken state if the replacement cannot be written', () => {
+    const storage = memoryStorage({ [PROGRESS_KEY]: 'kaputt' });
+    storage.setItem = () => {
+      throw new DOMException('Quota exceeded', 'QuotaExceededError');
+    };
+    const { store, events } = setup(storage);
+    expect(store.load()).toEqual({ status: 'invalid', progress: emptyProgress() });
+    expect(events()).toContain('storage.save.failed');
+    expect(events()).not.toContain('storage.load.replaced');
+  });
+
+  it('leaves an untouched storage untouched', () => {
+    const storage = memoryStorage();
+    setup(storage).store.load();
+    expect(storage.getItem(PROGRESS_KEY)).toBeNull();
   });
 });
 

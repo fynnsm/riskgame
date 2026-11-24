@@ -158,6 +158,7 @@ describe('error report (L-05 to L-07)', () => {
     userAgent: 'TestBrowser/1.0 (Phone)',
     viewport: { width: 390, height: 844 },
     renderer: '3d',
+    render: { fpsAverage: 57, fpsMinimum: 41, quality: 2 },
     playTimeMs: 754_000,
     levels: [{ id: 'level-1', completed: true, stars: 2, attempts: 3 }],
     run: {
@@ -184,6 +185,7 @@ describe('error report (L-05 to L-07)', () => {
       'Browser: TestBrowser/1.0 (Phone)',
       'Fenster: 390x844',
       'Grafikmodus: 3d',
+      'Bildrate (letzte 30 s): Durchschnitt 57, Minimum 41, Qualitätsstufe 2',
       'Spielzeit: 12 min 34 s',
       'level-1: abgeschlossen, Sterne 2, Versuche 3',
       'Aktueller Durchgang: level-1, Phase situation, Ergebnis running',
@@ -211,6 +213,13 @@ describe('error report (L-05 to L-07)', () => {
     expect(report).toContain('(noch nichts gespielt)');
     expect(report).toContain('Letzte Log-Einträge (0):');
     expect(extractReplay(report)).toBeNull();
+  });
+
+  it('says so when no frame rate was measured, as in the simple mode (A8)', () => {
+    const none = { fpsAverage: null, fpsMinimum: null, quality: null };
+    expect(buildErrorReport({ ...input, render: none })).toContain('Bildrate: nicht gemessen');
+    const partial = { fpsAverage: 30, fpsMinimum: 28, quality: null };
+    expect(buildErrorReport({ ...input, render: partial })).toContain('Qualitätsstufe unbekannt');
   });
 
   it('marks an open level as open', () => {
