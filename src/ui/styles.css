@@ -987,3 +987,307 @@ h1 {
 #app[data-looking='true'] .canvas-host {
   cursor: grab;
 }
+
+/* --- B6: polish of the interface --- */
+
+/* G-62: one set of radii and shadows for cards and dialogs, and a short entrance for each screen. */
+.card,
+.notice,
+.ai-output,
+.graphic,
+.report {
+  border-radius: var(--radius);
+}
+
+.screen {
+  animation: screen-in 0.2s ease-out both;
+}
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* G-60: a symbol per gauge, drawn with CSS: a coin, a clock, a building. */
+.gauge {
+  position: relative;
+}
+
+.gauge-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.gauge-icon {
+  flex: none;
+  position: relative;
+  width: 14px;
+  height: 14px;
+}
+
+.gauge-icon-budget {
+  border-radius: 50%;
+  background: #ffd23f;
+  border: 2px solid #b8860b;
+}
+
+.gauge-icon-zeit {
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid var(--dark);
+}
+
+/* The two hands of the clock. */
+.gauge-icon-zeit::before,
+.gauge-icon-zeit::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  background: var(--dark);
+}
+
+.gauge-icon-zeit::before {
+  top: 1px;
+  width: 2px;
+  height: 5px;
+}
+
+.gauge-icon-zeit::after {
+  top: 4px;
+  width: 4px;
+  height: 2px;
+}
+
+.gauge-icon-stabilitaet {
+  background:
+    linear-gradient(var(--dark), var(--dark)) 0 0 / 100% 2px no-repeat,
+    linear-gradient(#ffffff, #ffffff) 3px 4px / 3px 3px no-repeat,
+    linear-gradient(#ffffff, #ffffff) 8px 4px / 3px 3px no-repeat,
+    linear-gradient(#ffffff, #ffffff) 3px 9px / 3px 3px no-repeat,
+    linear-gradient(#ffffff, #ffffff) 8px 9px / 3px 3px no-repeat,
+    #3f8fd9;
+}
+
+/* The change floats beside the gauge for a moment and then fades. */
+.gauge-delta {
+  position: absolute;
+  top: -6px;
+  right: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: #ffffff;
+  font-weight: 800;
+  animation: delta-float 1.6s ease-out both;
+}
+
+.gauge-delta-up {
+  background: var(--good);
+}
+
+.gauge-delta-down {
+  background: var(--risky);
+}
+
+@keyframes delta-float {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  20% {
+    opacity: 1;
+    transform: none;
+  }
+
+  75% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* Below 30 the frame pulses calmly; the word «kritisch» says the same. */
+.gauge-critical {
+  animation: calm-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes calm-pulse {
+  50% {
+    box-shadow: 0 0 0 5px rgb(155 34 38 / 45%);
+  }
+}
+
+/* G-61: the newest decision pops into the row of steps. */
+.step-new {
+  animation: arrive 0.3s ease-out both;
+}
+
+.btn-mute {
+  min-width: 44px;
+}
+
+/* G-63, G-64: the text panel can be folded away to see the building. */
+.btn-sheet {
+  position: absolute;
+  z-index: 2;
+  right: 16px;
+  bottom: calc(54dvh + max(8px, env(safe-area-inset-bottom)) - 14px);
+  min-height: 36px;
+  padding: 2px 12px;
+  border: 2px solid var(--dark);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: var(--pixel);
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-sheet:focus-visible {
+  outline: 3px solid #f2a900;
+  outline-offset: 2px;
+}
+
+.panel {
+  transition:
+    height 0.22s ease,
+    transform 0.22s ease;
+}
+
+/* Phone: folded to about a third of its height; the text stays reachable by scrolling. */
+#app[data-sheet='collapsed']:not([data-renderer='none']) .panel {
+  height: 18dvh;
+}
+
+#app[data-sheet='collapsed'] .btn-sheet {
+  bottom: calc(18dvh + max(8px, env(safe-area-inset-bottom)) - 14px);
+}
+
+@media (min-width: 900px) and (min-aspect-ratio: 5/4) {
+  .btn-sheet {
+    top: 22px;
+    bottom: auto;
+    right: calc(var(--panel-width) + 2px);
+  }
+
+  /* Laptop: the column slides out of the picture; the button stays to bring it back. */
+  #app[data-sheet='collapsed']:not([data-renderer='none']) .panel {
+    height: auto;
+    transform: translateX(calc(100% + 20px));
+  }
+
+  #app[data-sheet='collapsed'] .btn-sheet {
+    bottom: auto;
+    right: 16px;
+  }
+
+  #app[data-sheet='collapsed'] .top-bar {
+    right: 14px;
+  }
+}
+
+/* Without a picture there is nothing to uncover, and during a sequence or a look round the panel has its own place. */
+#app[data-renderer='none'] .btn-sheet,
+#app[data-presenting='true'] .btn-sheet,
+#app[data-looking='true'] .btn-sheet {
+  display: none;
+}
+
+/* G-65: the theory graphics in the look of the game. */
+.graphic {
+  border: 3px solid var(--dark);
+  box-shadow: 0 4px 0 var(--dark);
+}
+
+.graphic figcaption,
+.process li,
+.strategies strong,
+.matrix th,
+.register th {
+  font-family: var(--pixel);
+}
+
+.process li,
+.strategies li {
+  border: 2px solid var(--dark);
+  background: #ffffff;
+}
+
+.process li:nth-child(1),
+.strategies li:nth-child(1) {
+  background: #fde2e0;
+}
+
+.process li:nth-child(2),
+.strategies li:nth-child(2) {
+  background: #fff3c4;
+}
+
+.process li:nth-child(3),
+.strategies li:nth-child(3) {
+  background: #dff3d6;
+}
+
+.process li:nth-child(4),
+.strategies li:nth-child(4) {
+  background: #dbeafc;
+}
+
+.matrix th,
+.matrix td,
+.register th,
+.register td {
+  border: 2px solid var(--dark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen,
+  .gauge-delta,
+  .gauge-critical,
+  .step-new {
+    animation: none;
+  }
+
+  .panel {
+    transition: none;
+  }
+}
+
+/* On a narrow phone the symbol shrinks so «Stabilität» still fits on one line. */
+@media (max-width: 480px) {
+  .gauge-label {
+    gap: 2px;
+    font-size: 0.66rem;
+  }
+
+  .gauge-icon {
+    transform: scale(0.72);
+    margin: 0 -2px;
+  }
+}
+
+/* Laptop: the fold button sits below the gauges' row, clear of them, beside the panel's foot. */
+@media (min-width: 900px) and (min-aspect-ratio: 5/4) {
+  .btn-sheet {
+    top: auto;
+    bottom: 22px;
+    right: calc(var(--panel-width) + 26px);
+  }
+
+  #app[data-sheet='collapsed'] .btn-sheet {
+    bottom: 22px;
+    right: 16px;
+  }
+}

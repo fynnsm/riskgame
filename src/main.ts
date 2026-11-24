@@ -13,6 +13,8 @@ import {
   createLocalStorageStore,
   createLogPersistence,
 } from './storage/local-storage-store.ts';
+import { createSound } from './audio/sound.ts';
+import { createSettingsStore } from './storage/settings-store.ts';
 import { createApp } from './ui/app.ts';
 import { T } from './ui/texts.ts';
 
@@ -97,6 +99,21 @@ async function boot(): Promise<void> {
   }
   logger.info('render.mode', { renderer: rendererName });
 
+  const settingsStore = createSettingsStore(browserLocalStorage, logger);
+  const sound = createSound({
+    muted: settingsStore.load().muted,
+    log: (event, data) => logger.info(event, data),
+    createContext: () => {
+      try {
+        return typeof AudioContext === 'undefined' ? null : new AudioContext();
+      } catch (cause) {
+        // No audio device or a browser that refuses: the game stays silent and carries on.
+        logger.warn('sound.context.failed', errorData(cause));
+        return null;
+      }
+    },
+  });
+
   let fixedSeed = params.seed;
   const app = createApp({
     root,
@@ -108,6 +125,8 @@ async function boot(): Promise<void> {
     rendererName,
     createView,
     startupNotices,
+    sound,
+    settings: settingsStore,
     debug: params.debug === '1',
     showDraftLabels: import.meta.env.DEV || params.debug === '1',
     env: {

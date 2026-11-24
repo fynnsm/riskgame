@@ -6,6 +6,16 @@ export const T = {
   appTitle: 'Risk Tower',
   menu: 'Menü',
   menuSymbol: '☰',
+  sound: {
+    on: 'Ton an',
+    off: 'Ton aus',
+    symbolOn: '♪',
+    symbolOff: '×',
+  },
+  sheet: {
+    collapse: 'Text einklappen',
+    expand: 'Text ausklappen',
+  },
   back: 'Zurück',
   next: 'Weiter',
 
