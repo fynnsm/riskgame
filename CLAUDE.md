@@ -30,7 +30,8 @@ Neue Abhängigkeiten nur nach Rückfrage, mit Begründung und Grösse.
 | `npm run test:e2e` | Playwright (Handy- und Laptop-Grösse) |
 | `npm run validate:content` | Inhaltsdateien gegen Schema und Regeln prüfen |
 | `npm run simulate:balance` | Balance pro Level simulieren |
-| `npm run check` | typecheck, lint, test, validate:content, simulate:balance, build |
+| `npm run content:report` | Zahlen zu den Inhalten, schreibt `docs/CONTENT-REPORT.md` |
+| `npm run check` | typecheck, lint, test, validate:content, content:report (nur Vergleich), simulate:balance, build |
 | `npm run check:all` | `check` plus `test:e2e` |
 
 Fehlt einer dieser Befehle, richte ihn ein, bevor du Features baust.

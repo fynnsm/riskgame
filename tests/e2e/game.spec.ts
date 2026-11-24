@@ -57,7 +57,7 @@ test('plays a whole level and keeps the finished building', async ({ page }) => 
   await startLevel1(page);
   await expect(page.getByTestId('skip-theory')).toHaveCount(0);
   await throughBriefingAndTheory(page);
-  await expect(gauge(page, 'budget')).toHaveAttribute('data-value', '60');
+  await expect(gauge(page, 'budget')).toHaveAttribute('data-value', '76');
   await expect(page.getByTestId('stepper').locator('li')).toHaveCount(STEPS);
 
   for (let i = 0; i < STEPS; i++) {
@@ -101,7 +101,7 @@ test('collapses, explains why and restarts the level, not the game', async ({ pa
 
   await page.getByTestId('restart').click();
   await expect(screen(page, 'briefing')).toBeVisible();
-  await expect(gauge(page, 'stabilitaet')).toHaveAttribute('data-value', '60');
+  await expect(gauge(page, 'stabilitaet')).toHaveAttribute('data-value', '76');
 
   await page.getByTestId('menu').click();
   await page.getByTestId('abort').click();
@@ -217,6 +217,8 @@ for (const width of [360, 390, 430]) {
     test(`keeps menu button and all three gauges inside a ${width}px window (${mode}) (A5)`, async ({
       page,
     }) => {
+      // The 3D view renders in software on CI machines; that alone can take most of the default time.
+      if (mode === '/') test.slow();
       await page.setViewportSize({ width, height: 800 });
       await page.goto(mode);
       await startLevel1(page);
@@ -330,6 +332,7 @@ test('shows an error page with the report instead of a white page', async ({ pag
 });
 
 test('renders the 3D view without errors and stays playable', async ({ page }) => {
+  test.slow();
   await page.goto('/');
   await expect(page.locator('#app')).toHaveAttribute('data-renderer', '3d');
   await expect(page.locator('.canvas-host canvas')).toBeVisible();
@@ -367,6 +370,7 @@ test('shows the debug overlay only with ?debug=1 and lets it jump to a locked le
   await page.goto('/');
   await expect(page.getByTestId('debug')).toHaveCount(0);
 
+  test.slow();
   await page.goto('/?debug=1');
   const debug = page.getByTestId('debug');
   await expect(debug).toBeVisible();
@@ -395,6 +399,17 @@ test('names the frame rate in the error report (A8)', async ({ page }) => {
   expect(await page.getByTestId('report').inputValue()).toMatch(
     /Bildrate \(letzte 30 s\): Durchschnitt \d+, Minimum \d+, Qualitätsstufe \d/,
   );
+});
+
+test('hides the label «Entwurf» from players and shows it in debug mode (A3)', async ({ page }) => {
+  await page.goto(SIMPLE);
+  await startLevel1(page);
+  await throughBriefingAndTheory(page);
+  await expect(page.getByTestId('draft')).toHaveCount(0);
+
+  await page.goto(`${SIMPLE}&debug=1`);
+  await expect(screen(page, 'situation')).toBeVisible();
+  await expect(page.getByTestId('draft')).toHaveText('Entwurf');
 });
 
 test('ignores invalid URL parameters', async ({ page }) => {

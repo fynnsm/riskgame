@@ -1,6 +1,6 @@
 # Risk Tower (Arbeitstitel) – Requirements
 
-Version 0.5 · Stand 24.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
+Version 0.7 · Stand 24.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
 
 ## 1. Zweck
 
@@ -69,9 +69,9 @@ Bewertungsraster und Abgabetermine liegen noch nicht vor (siehe `later/BRAINSTOR
 | F-210 | Jede Option trägt eine Einstufung (gut, vertretbar, riskant) für Auswertung und Lernerfolg; vor der Wahl ist sie nicht sichtbar | S | V |
 | F-211 | Bauabnahme: Ein Gebäude, das stehen bleibt, gilt nur als bestanden, wenn mindestens 65 % der möglichen Punkte erreicht sind (gut = 2, vertretbar = 1, riskant = 0). Sonst ist das Level nicht bestanden und wird wiederholt. Die Regel steht im Briefing | M | E |
 
-Werte der Balance (am 23.11.2026 verschärft, weil das Spiel ohne Lesen zu bestehen war): Anzeigen beginnen bei 60; klein = 6, mittel = 14, gross = 26 Punkte. Mit den alten Werten (Start 70, 6/12/20, 6 Situationen, keine Bauabnahme) bestand blindes Klicken in 98 % der Durchgänge, mit den neuen in 11 bis 16 %.
+Werte der Balance: Anzeigen beginnen bei 76; klein = 6, mittel = 14, gross = 26 Punkte. Verlauf: Am 23.11.2026 verschärft (Start 60, 6/14/26, 8 Situationen, Bauabnahme), weil das Spiel ohne Lesen zu bestehen war. Am 24.11.2026 Startwert auf 76 gehoben (Entscheid Fynn), weil sonst perfektes Spiel rechnerisch nie über 36 enden kann: Jede gute Option kostet mindestens 6 Punkte, acht Entscheide also mindestens 48 auf Budget und Zeit zusammen.
 
-Regel zu F-205 (Vorschlag von Claude, in `src/core/balance.ts` einstellbar): Die Neigung beginnt, sobald die schwächste Anzeige unter 60 fällt, und wächst bis 0. Sie zählt zu 70 %, der Abstand zwischen höchster und tiefster Anzeige zu 30 %. Das Wackeln beginnt unter 45. Das Gebäude neigt sich in die Richtung der schwächsten Anzeige (Budget nach links, Zeit nach rechts, Stabilität nach vorn). Jedes Stockwerk wird um die Neigung des Moments versetzt aufgesetzt. Zusätzlich sieht man jedem Stockwerk den Entscheid an, der es gebaut hat: Nach einem vertretbaren sitzen die Module leicht schief, nach einem riskanten deutlich und mit einem Loch statt einem Fenster.
+Regel zu F-205 (in `src/core/balance.ts` einstellbar, am 24.11.2026 angepasst): Die Neigung beginnt, sobald die schwächste Anzeige unter 40 fällt, und wächst bis 0. Sie zählt zu 85 %, der Abstand zwischen höchster und tiefster Anzeige zu 15 %. Das Wackeln beginnt unter 30, zusammen mit der Warnung (F-212). Wer gut entscheidet, endet bei mindestens 40 und hat damit ein gerades Gebäude. Das Gebäude neigt sich in die Richtung der schwächsten Anzeige (Budget nach links, Zeit nach rechts, Stabilität nach vorn). Jedes Stockwerk wird um die Neigung des Moments versetzt aufgesetzt. Zusätzlich sieht man jedem Stockwerk den Entscheid an, der es gebaut hat: Nach einem vertretbaren sitzen die Module leicht schief, nach einem riskanten deutlich und mit einem Loch statt einem Fenster.
 
 ### 4.3 AI-Bezug
 
@@ -158,10 +158,13 @@ Regeln zu F-602 und F-603 (Vorschlag von Claude, in `src/core/balance.ts` einste
 | F-905 | Inhaltliche Regeln werden automatisch geprüft: genau drei Optionen, Textlängen, eindeutige IDs, jede Option mit mindestens einer negativen Wirkung, pro Situation mindestens eine gute und eine riskante Option, Pool gross genug | M | V |
 | F-906 | Jede Situation hat einen Status (`entwurf`, `freigegeben`); die veröffentlichte Version zeigt nur freigegebene, lokal sind alle sichtbar | S | V |
 | F-907 | Ein Skript simuliert die Balance pro Level: Wer nur gute Optionen wählt, besteht jede Ziehung; wer nur riskante wählt, scheitert in jeder | S | V |
+| F-910 | Das Balance-Skript prüft pro Level über alle Ziehungen und schlägt bei jedem Verstoss fehl: Nur gute Optionen: kein Einsturz, jede Anzeige endet bei mindestens 40, Neigung am Schluss höchstens 10 % des Maximums. Nur vertretbare: kein Einsturz, Bauabnahme nicht bestanden. Nur riskante: Einsturz spätestens beim fünften Entscheid. Zufällige Wahl (5000 Läufe): 60 bis 90 % scheitern | M | E |
+| F-911 | Die Inhaltsprüfung lehnt ein Level ab, wenn weniger als 40 % der Optionen eine Budgetwirkung haben oder mehr als 60 % der Kosten der guten Optionen auf dieselbe Anzeige entfallen. Sie warnt, ohne abzulehnen, wenn die gute Option der längste Text ist (ab 50 % der Situationen mit Nennung der Grenze) oder der längste Optionstext über 30 % länger ist als der kürzeste; die Texte gehören der Gruppe | M | E |
+| F-912 | `npm run content:report` schreibt `docs/CONTENT-REPORT.md` mit diesen Zahlen pro Level; die CI schlägt fehl, wenn der Bericht nicht aktuell ist | S | E |
 | F-909 | Dasselbe Skript spielt jedes Level 2000-mal mit zufälligen Entscheiden. Besteht blindes Klicken in mehr als 20 % der Durchgänge, schlägt die Prüfung fehl | M | E |
 | F-908 | Ein Skript erzeugt aus den JSON-Dateien eine Inhaltsdokumentation als Markdown (für das Lieferobjekt «Dokumentation der Inhalte») | K | V |
 
-Ergänzung zu F-906 (entschieden am 23.11.2026): Ein Build mit der Variable `VITE_SHOW_DRAFTS=1` zeigt auch Entwürfe. Im Spiel tragen sie die Marke «Entwurf». So lässt sich eine Version mit Platzhalter-Fällen online testen. Ohne die Variable gilt F-906 unverändert; ein Level mit zu wenigen freigegebenen Fällen erscheint dann als «noch nicht verfügbar».
+Ergänzung zu F-906 (entschieden am 23.11.2026, angepasst am 24.11.2026): Ein Build mit der Variable `VITE_SHOW_DRAFTS=1` zeigt auch Entwürfe. Die Marke «Entwurf» sehen nur Autorinnen und Autoren, nämlich mit `?debug=1` und im lokalen Entwicklungsmodus. Solange Entwürfe veröffentlicht werden, gibt die CI beim Veröffentlichen eine Warnung mit ihrer Anzahl aus. So lässt sich eine Version mit Platzhalter-Fällen online testen. Ohne die Variable gilt F-906 unverändert; ein Level mit zu wenigen freigegebenen Fällen erscheint dann als «noch nicht verfügbar».
 
 Ergänzung zu F-504: Erlaubte Video-Hosts sind `www.youtube-nocookie.com` und `player.vimeo.com` (Vorschlag von Claude, Liste in `src/content/schema.ts` und in der CSP von `index.html`).
 
@@ -373,3 +376,55 @@ Was bis zur Abgabe noch zu tun ist, in der Reihenfolge, in der es sinnvoll ist. 
 - [ ] Evaluation: festlegen, wie das Feedback der Mitstudierenden zur Gruppe kommt, und auswerten (R-05, F-605)
 - [ ] Sicherstellen, dass die Seite mindestens 60 Tage online bleibt (R-02)
 - [ ] Bewertungsraster und Abgabetermine beim Dozenten einholen (O-10)
+
+## 11. Grafik-Update
+
+Aus dem Auftrag «Update 2», Teil B. Ziel: Das Spiel soll sich fertig und belohnend anfühlen. Es ändert sich keine Spielregel. Entschieden am 24.11.2026: Die fünf Level bekommen unterschiedliche Tageszeiten.
+
+Stand: **U** = umgesetzt, **O** = offen.
+
+| ID | Anforderung | Prio | Stand |
+|---|---|---|---|
+| G-01 | Änderungen des Grafik-Updates liegen nur in `src/render`, `src/ui`, `src/audio`. Braucht die Darstellung eine neue Information, liefert `core` sie als Zustand | M | U |
+| G-02 | Nur Klötze mit flachen Farben: keine Texturen, Bilddateien oder externen Modelle; eigene Formen und Figuren | M | U |
+| G-03 | Zufall für Dekoration kommt aus einem eigenen Generator in `render`; der Generator des Spiels läuft dadurch nie weiter | M | U |
+| G-04 | Jede Animation ist überspringbar (Klick, Enter, Escape) und hält die Bedienung höchstens 4 Sekunden auf | M | O |
+| G-05 | Bei «Bewegung reduzieren»: keine Kamerafahrten, kein Kamerawackeln, kein Blitzen; stattdessen Überblendung auf das Endbild | M | O |
+| G-06 | `?renderer=none` bleibt vollständig spielbar; jeder neue Bildschirm hat dort eine Text-Entsprechung | M | O |
+| G-07 | Alle Farben stehen in `src/render/palette.ts`, alle Zeiten und Mengen in `src/render/tuning.ts` | M | U |
+| G-08 | Leistungsgrenzen gemäss `docs/PERFORMANCE.md`: Zeichenaufrufe höchstens das 1.5-Fache des Ist-Zustands, höchstens 80 kB zusätzliche Übertragung, mindestens 30 Bilder pro Sekunde auf einem Mittelklasse-Handy | M | U (Messung und Test), Bildrate nur auf echten Geräten prüfbar |
+| G-09 | Jede neue Darstellung nennt, was sie auf Qualitätsstufe 0, 1 und 2 zeigt; Stufe 0 zeigt keine Dekoration ausser Wolken | M | U (Regel in `director.ts`) |
+| G-10 | Regie-Schicht `src/render/director.ts`: reine Funktionen ohne Three.js, die aus dem Spielzustand Anweisungen für die Szene berechnen; vollständig unit-getestet | M | U |
+| G-20 | Himmel als Farbverlauf passend zur Tageszeit; ein gerichtetes Licht und ein Umgebungslicht; weiche Schatten nur auf Stufe 2; leichter Dunst zum Stadtrand | M | O |
+| G-21 | Tageszeiten: Level 1 Morgen, 2 Mittag, 3 Nachmittag, 4 Abendlicht, 5 Nacht mit leuchtenden Fenstern und Strassenlampen; Startseite Mittag; Schlussansicht Abend mit Übergang zur Nacht | M | O (Zuordnung und Paletten sind definiert) |
+| G-30 | Wolken: 6 bis 10 Klotz-Wolken in zwei Höhen, ziehen langsam, mit Schatten auf der Stadt (alle Stufen) | S | O |
+| G-31 | Flugzeug quert alle 20 bis 40 Sekunden, mit Schatten; nie über der Bildmitte während einer Entscheidung (Stufe 1, 2) | S | O |
+| G-32 | Heissluftballon und Vogelschwarm (Stufe 2) | K | O |
+| G-33 | Verkehr mit Bus, Lieferwagen und Tram; Fahrzeuge fahren an Kreuzungen nicht ineinander (Stufe 1, 2) | S | O |
+| G-34 | Fussgänger auf Trottoirs mit einfacher Lauf-Animation (Stufe 2) | K | O |
+| G-35 | Bäume wiegen leicht, Wasserflächen schimmern, Rauch aus einzelnen Kaminen (Stufe 1, 2) | K | O |
+| G-36 | Nachts leuchten Fenster zufällig, Fahrzeuge haben Lichter (Stufe 1, 2) | S | O |
+| G-40 | Gebäudetypen: `projekt.gebaeude` bestimmt Fassade, Fensterraster, Farben und Dachaufbau; die fünf Gebäude sind in der Stadtansicht auf einen Blick unterscheidbar | M | O |
+| G-41 | Stockwerk setzen: Kran schwenkt ein, Stockwerk senkt sich ab und federt, Staub, Arbeiter reagieren; höchstens 1.2 Sekunden | S | O |
+| G-42 | Reaktion auf die Wahl am neuen Stockwerk (gut: grüner Schein; riskant: versetzt, Risse, ein Brocken fällt); die Einstufung steht immer auch als Text da | S | O (versetzte Module und Loch sind vorhanden) |
+| G-43 | Wackeln und Neigung bewegen sich weich; im kritischen Bereich lösen sich kleine Teile, die Arbeiter treten zurück | S | O |
+| G-44 | Fertigstellung: Dach wird aufgesetzt, Gerüst und Kran verschwinden, der Bauzaun weicht einem Vorplatz mit Bäumen | S | O |
+| G-45 | Einsturz: Stockwerke kippen nacheinander in Neigungsrichtung, Staubwolke, Trümmer bleiben liegen, Schild «Baustopp», kurzes Kamerawackeln | S | O |
+| G-50 | Bildschirm «Level bestanden»: Fertigstellung, Kameraschwenk im Viertelkreis, Banner «Bauabnahme bestanden», Sterne einzeln, dann die Auswertung; Feier nach Sternen (3: Feuerwerk, Fahne, Jubel; 2: Konfetti, Fahne; 1: nur Banner) | M | O (Ablauf und Zuordnung sind definiert) |
+| G-51 | Bildschirm «Bauabnahme nicht bestanden»: Figur mit Klemmbrett, Stempel «Nicht abgenommen», Absperrband; kein Jubel, kein Einsturz | M | O |
+| G-52 | Bildschirm «Einsturz»: Sequenz aus G-45, dann die Auswertung | M | O |
+| G-53 | Eigener Schlussbildschirm nach fünf Leveln: Kameraflug, Flugzeug mit Banner, Übergang zur Nacht, Feuerwerk, Titel nach Sternen (15: Goldene Stadt; 11 bis 14: Solide Stadt; 5 bis 10: Stadt mit Baustellen), Gesamtauswertung als eigene Seite | M | O (Titel-Zuordnung ist definiert) |
+| G-54 | Schlussbildschirm: «Stadt ansehen» (Oberfläche aus, Kamera frei), «Bild speichern» (PNG, nichts wird hochgeladen), «Nochmals spielen» | S | O |
+| G-55 | Startseite: Schriftzug, langsamer Kameraflug, ein Hauptknopf («Spielen» oder «Weiterspielen»), Bauplätze zeigen den Zustand; Einleitungstext nur, solange kein Level abgeschlossen ist | M | O |
+| G-56 | Levelstart: Die Kamera fliegt von der Stadtansicht zum Bauplatz | S | O |
+| G-57 | Jeder Bildschirm setzt beim Erscheinen den Fokus auf seine Überschrift | M | U |
+| G-60 | Anzeigen mit Symbol (Münze, Uhr, Gebäude); Wertänderung zählt sichtbar, die Differenz schwebt kurz daneben; unter 30 pulsiert der Rahmen ruhig | S | O |
+| G-61 | Fortschrittspunkte zeigen das Symbol der Einstufung mit kurzer Animation | K | O (Symbole sind vorhanden) |
+| G-62 | Karten und Dialoge einheitlich; Übergänge zwischen Bildschirmen 150 bis 250 ms | S | O |
+| G-63 | Handy: Das Textfeld lässt sich auf etwa ein Drittel einklappen und klappt beim Setzen eines Stockwerks kurz von selbst ein | S | O |
+| G-64 | Laptop: Ein Knopf blendet die Spalte aus | S | O |
+| G-65 | Theorie-Grafiken im selben Stil wie das Spiel | K | O |
+| G-70 | Ton: Geräusche für Fertigstellung, Sterne, Feuerwerk, Stempel und Flugzeug, leise Stadt-Atmosphäre; alles über den Stumm-Schalter; keine Information nur über Ton | S | O (auch der Ton aus F-801 fehlt noch) |
+| G-80 | E2E-Tests für die neuen Bildschirme, für reduzierte Bewegung, für `?renderer=none` und für die Zeichenaufrufe; ein Lauf speichert Bildschirmfotos als Artefakt der CI | M | O (Zeichenaufrufe sind getestet) |
+| G-81 | `docs/CHECKLIST-VISUAL.md`: was auf echten Geräten zu prüfen ist, inklusive Ton und Bildrate | S | O |
+

@@ -79,7 +79,7 @@
           "text": "Du nutzt die Liste als Start und prüfst sie in einem kurzen Workshop mit dem Team.",
           "wirkung": {
             "budget": "-klein",
-            "zeit": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -214,8 +214,8 @@
           "id": "B",
           "text": "Du nimmst das Risiko auf und fragst auch die anderen Abteilungen nach Lücken.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -227,7 +227,7 @@
           "wirkung": {
             "budget": "0",
             "zeit": "0",
-            "stabilitaet": "-mittel"
+            "stabilitaet": "-gross"
           },
           "einstufung": "riskant",
           "erklaerung": "Du vertraust der AI mehr als dem Menschen, der das Lager kennt. Ein Risiko, das nicht im Register steht, wird weder bewertet noch behandelt."
@@ -273,8 +273,8 @@
           "id": "C",
           "text": "Du formulierst jeden Eintrag mit dem Team als Ursache, Ereignis und Auswirkung.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -306,7 +306,7 @@
           "id": "B",
           "text": "Du behältst alle Einträge. Lieber ein Risiko zu viel als eines zu wenig.",
           "wirkung": {
-            "budget": "0",
+            "budget": "-klein",
             "zeit": "-klein",
             "stabilitaet": "-mittel"
           },
@@ -350,7 +350,7 @@
           "id": "B",
           "text": "Du schickst die Liste per Mail herum und bittest um Ergänzungen.",
           "wirkung": {
-            "budget": "0",
+            "budget": "-klein",
             "zeit": "-klein",
             "stabilitaet": "+klein"
           },
@@ -362,7 +362,7 @@
           "text": "Du hältst den Workshop kürzer und nutzt die AI-Liste als vorbereitete Grundlage.",
           "wirkung": {
             "budget": "-klein",
-            "zeit": "-klein",
+            "zeit": "0",
             "stabilitaet": "+gross"
           },
           "einstufung": "gut",
@@ -387,7 +387,7 @@
           "id": "A",
           "text": "Du nimmst die Antworten als Meinung der Abteilungen und sparst dir die Gespräche.",
           "wirkung": {
-            "budget": "0",
+            "budget": "+klein",
             "zeit": "+klein",
             "stabilitaet": "-gross"
           },
@@ -486,7 +486,7 @@
           "id": "B",
           "text": "Du lässt die AI «CRM» durch «ERP» ersetzen und übernimmst das Ergebnis.",
           "wirkung": {
-            "budget": "0",
+            "budget": "+klein",
             "zeit": "+klein",
             "stabilitaet": "-gross"
           },
@@ -497,7 +497,7 @@
           "id": "C",
           "text": "Du lehnst dankend ab und beginnst bei null.",
           "wirkung": {
-            "budget": "0",
+            "budget": "-klein",
             "zeit": "-mittel",
             "stabilitaet": "+klein"
           },
@@ -524,7 +524,7 @@
           "text": "Du hörst auf, die AI zu fragen, und überlegst dir die anderen Bereiche allein.",
           "wirkung": {
             "budget": "0",
-            "zeit": "-mittel",
+            "zeit": "-klein",
             "stabilitaet": "+klein"
           },
           "einstufung": "vertretbar",
@@ -578,7 +578,7 @@
           "id": "B",
           "text": "Du verschickst die Tabelle jede Woche per Mail an alle.",
           "wirkung": {
-            "budget": "0",
+            "budget": "-klein",
             "zeit": "-klein",
             "stabilitaet": "0"
           },

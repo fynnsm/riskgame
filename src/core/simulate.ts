@@ -1,7 +1,9 @@
 import type { Level, Option, Rating, Situation } from '../content/schema.ts';
 import { BALANCE } from './balance.ts';
 import type { ChoiceRecord, Outcome } from './game.ts';
+import type { Gauges } from './gauges.ts';
 import { applyEffects, isCollapsed, lowestValue, startGauges } from './gauges.ts';
+import { computeLean } from './lean.ts';
 import type { Rng } from './rng.ts';
 import { createRng, shuffle } from './rng.ts';
 import type { Stars } from './scoring.ts';
@@ -9,27 +11,48 @@ import { scoreRatio, starsFor } from './scoring.ts';
 
 export interface StrategyResult {
   outcome: Exclude<Outcome, 'running'>;
+  /** Number of decisions taken; smaller than the run length after a collapse. */
+  steps: number;
+  gauges: Gauges;
   lowest: number;
+  /** Tilt of the building at the end, 0 to 1. */
+  tilt: number;
   stars: Stars;
 }
 
 export interface BalanceReport {
   levelId: string;
-  /** Number of draws checked for the two fixed strategies. */
+  /** Number of draws checked for each fixed strategy. */
   runs: number;
-  /** Draws in which choosing only good options did not pass. Must be 0 (F-907). */
-  goodFailures: number;
-  /** Draws in which choosing only risky options passed. Must be 0 (F-907). */
-  riskyPasses: number;
-  /** Lowest gauge value any all-good run ended with. */
-  goodLowest: number;
-  /** Fewest stars any all-good run earned. */
-  goodMinStars: Stars;
-  /** Share of runs a player passes who picks at random. Must stay low (F-909). */
-  randomPassRate: number;
-  /** Share of random runs that end in a collapse. */
-  randomCollapseRate: number;
+  good: {
+    /** Draws that did not end in an accepted building. */
+    failures: number;
+    /** Lowest gauge value any draw ended with. */
+    lowest: number;
+    /** Strongest final tilt of any draw, 0 to 1. */
+    maxTilt: number;
+    minStars: Stars;
+  };
+  /** Only "vertretbar" options. */
+  okay: { collapses: number; passes: number };
+  risky: {
+    passes: number;
+    /** The latest decision at which any draw collapsed; null if a draw never collapsed. */
+    latestCollapse: number | null;
+  };
+  random: { passRate: number; collapseRate: number; failRate: number };
 }
+
+export type BalanceProblem =
+  | 'good-fails'
+  | 'good-low'
+  | 'good-tilt'
+  | 'okay-collapses'
+  | 'okay-passes'
+  | 'risky-passes'
+  | 'risky-late'
+  | 'random-passes'
+  | 'random-range';
 
 /** Plays the given situations in order with the option the chooser returns. */
 export function playRun(
@@ -49,17 +72,32 @@ export function playRun(
       delta: applied.delta,
       gaugesAfter: gauges,
     });
-    if (isCollapsed(gauges)) return { outcome: 'collapsed', lowest: 0, stars: 0 };
+    if (isCollapsed(gauges)) {
+      return { outcome: 'collapsed', steps: history.length, gauges, lowest: 0, tilt: 1, stars: 0 };
+    }
   }
   const accepted = scoreRatio(history) >= BALANCE.acceptance.minScoreRatio;
   const outcome = accepted ? 'completed' : 'rejected';
-  return { outcome, lowest: lowestValue(gauges), stars: starsFor({ outcome, history, gauges }) };
+  return {
+    outcome,
+    steps: history.length,
+    gauges,
+    lowest: lowestValue(gauges),
+    tilt: computeLean(gauges).tilt,
+    stars: starsFor({ outcome, history, gauges }),
+  };
 }
 
-/** Always takes the first option with the given rating. */
+/**
+ * Always takes the first option with the given rating. A situation need not have a
+ * "vertretbar" option; the cautious player then takes the good one.
+ */
 export function playStrategy(situations: readonly Situation[], rating: Rating): StrategyResult {
   return playRun(situations, (situation) => {
-    const option = situation.optionen.find((o) => o.einstufung === rating);
+    const wanted = situation.optionen.find((o) => o.einstufung === rating);
+    const fallback =
+      rating === 'vertretbar' ? situation.optionen.find((o) => o.einstufung === 'gut') : undefined;
+    const option = wanted ?? fallback;
     if (!option) throw new Error(`${situation.id} has no option rated ${rating}`);
     return option;
   });
@@ -84,28 +122,38 @@ export function playRandom(level: Level, rng: Rng): StrategyResult {
 }
 
 /**
- * F-907: checks every possible draw, each in pool order and reversed, because clamping
- * at 100 makes the result depend on the order. F-909: estimates how a random player fares.
+ * Checks every possible draw, each in pool order and reversed, because clamping at 100
+ * makes the result depend on the order. The random player is estimated from seeded runs.
  */
 export function simulateLevel(level: Level): BalanceReport {
   const report: BalanceReport = {
     levelId: level.id,
     runs: 0,
-    goodFailures: 0,
-    riskyPasses: 0,
-    goodLowest: 100,
-    goodMinStars: 3,
-    randomPassRate: 0,
-    randomCollapseRate: 0,
+    good: { failures: 0, lowest: 100, maxTilt: 0, minStars: 3 },
+    okay: { collapses: 0, passes: 0 },
+    risky: { passes: 0, latestCollapse: 0 },
+    random: { passRate: 0, collapseRate: 0, failRate: 0 },
   };
   for (const draw of combinations(level.situationen, level.situationenProDurchgang)) {
     for (const order of [draw, [...draw].reverse()]) {
       report.runs += 1;
+
       const good = playStrategy(order, 'gut');
-      if (good.outcome !== 'completed') report.goodFailures += 1;
-      report.goodLowest = Math.min(report.goodLowest, good.lowest);
-      if (good.stars < report.goodMinStars) report.goodMinStars = good.stars;
-      if (playStrategy(order, 'riskant').outcome === 'completed') report.riskyPasses += 1;
+      if (good.outcome !== 'completed') report.good.failures += 1;
+      report.good.lowest = Math.min(report.good.lowest, good.lowest);
+      report.good.maxTilt = Math.max(report.good.maxTilt, good.tilt);
+      if (good.stars < report.good.minStars) report.good.minStars = good.stars;
+
+      const okay = playStrategy(order, 'vertretbar');
+      if (okay.outcome === 'collapsed') report.okay.collapses += 1;
+      if (okay.outcome === 'completed') report.okay.passes += 1;
+
+      const risky = playStrategy(order, 'riskant');
+      if (risky.outcome === 'completed') report.risky.passes += 1;
+      if (risky.outcome !== 'collapsed') report.risky.latestCollapse = null;
+      else if (report.risky.latestCollapse !== null) {
+        report.risky.latestCollapse = Math.max(report.risky.latestCollapse, risky.steps);
+      }
     }
   }
 
@@ -118,17 +166,35 @@ export function simulateLevel(level: Level): BalanceReport {
     if (result.outcome === 'completed') passes += 1;
     if (result.outcome === 'collapsed') collapses += 1;
   }
-  report.randomPassRate = passes / randomRuns;
-  report.randomCollapseRate = collapses / randomRuns;
+  report.random = {
+    passRate: passes / randomRuns,
+    collapseRate: collapses / randomRuns,
+    failRate: 1 - passes / randomRuns,
+  };
   return report;
 }
 
-/** The balance holds if careful play always passes and careless play almost never does. */
+/** Every rule the level breaks. Empty means: the balance holds. */
+export function balanceProblems(report: BalanceReport): BalanceProblem[] {
+  const c = BALANCE.checks;
+  const problems: BalanceProblem[] = [];
+  if (report.runs === 0 || report.good.failures > 0) problems.push('good-fails');
+  if (report.good.lowest < c.goodMinGauge) problems.push('good-low');
+  if (report.good.maxTilt > c.goodMaxTilt) problems.push('good-tilt');
+  if (report.okay.collapses > 0) problems.push('okay-collapses');
+  if (report.okay.passes > 0) problems.push('okay-passes');
+  if (report.risky.passes > 0) problems.push('risky-passes');
+  if (report.risky.latestCollapse === null || report.risky.latestCollapse > c.riskyCollapseBy) {
+    problems.push('risky-late');
+  }
+  if (report.random.passRate > c.maxRandomPassRate) problems.push('random-passes');
+  if (report.random.failRate < c.randomFailMin || report.random.failRate > c.randomFailMax) {
+    problems.push('random-range');
+  }
+  return problems;
+}
+
+/** True if the level breaks none of the rules. */
 export function isBalanced(report: BalanceReport): boolean {
-  return (
-    report.runs > 0 &&
-    report.goodFailures === 0 &&
-    report.riskyPasses === 0 &&
-    report.randomPassRate <= BALANCE.checks.maxRandomPassRate
-  );
+  return balanceProblems(report).length === 0;
 }

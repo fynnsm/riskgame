@@ -67,6 +67,8 @@ export interface AppOptions {
   startupNotices?: string[];
   /** L-09: `?debug=1` shows the overlay and allows jumping to any level. */
   debug?: boolean;
+  /** A3: the label «Entwurf» is for authors, not for players. */
+  showDraftLabels?: boolean;
 }
 
 export interface App {
@@ -372,6 +374,7 @@ export function createApp(options: AppOptions): App {
           currentSituation(run, level),
           currentOptions(run, level),
           handlers,
+          options.showDraftLabels ?? false,
         );
       case 'feedback':
         return feedbackScreen(level, run, handlers);

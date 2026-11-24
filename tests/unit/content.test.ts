@@ -4,6 +4,7 @@ import { loadLevels, selectPlayable } from '../../src/content/load.ts';
 import { checkVideoUrl } from '../../src/content/rules.ts';
 import type { Level } from '../../src/content/schema.ts';
 import { EFFECT_LEVELS } from '../../src/content/schema.ts';
+import { contentReport, levelStats } from '../../src/content/stats.ts';
 import { formatPath, validateLevel, validateLevelJson } from '../../src/content/validate.ts';
 import { readLevelFiles } from '../../scripts/read-levels.ts';
 import { clone, GOOD, makeLevel, POINTS, RISKY } from './fixtures.ts';
@@ -276,6 +277,113 @@ describe('validateLevel: every rule of IMPORT.md rejects a broken file with a cl
       if (s) s.titel = '';
     });
     expect(errors).toEqual(['test.json, Feld «situationen[4].titel»: darf nicht leer sein']);
+  });
+});
+
+describe('content statistics and pattern warnings (A1, A2)', () => {
+  const warningsFor = (mutate: (level: Level) => void): string => {
+    const level = clone(makeLevel());
+    mutate(level);
+    const result = validateLevel(level, 'test.json', POINTS);
+    expect(result.ok).toBe(true);
+    return result.warnings.join('\n');
+  };
+  const lengthen = (level: Level, count: number, rating: string, factor = 1.2): void => {
+    for (const s of level.situationen.slice(0, count)) {
+      const option = s.optionen.find((o) => o.einstufung === rating);
+      if (option) option.text = option.text.padEnd(Math.ceil(option.text.length * factor), '.');
+    }
+  };
+
+  it('counts drafts, AI outputs and the spread of costs', () => {
+    const level = makeLevel();
+    for (const s of level.situationen.slice(0, 3)) s.status = 'entwurf';
+    expect(levelStats(level, POINTS)).toEqual({
+      levelId: 'level-1',
+      nummer: 1,
+      situations: 8,
+      drafts: 3,
+      released: 5,
+      withAi: 2,
+      goodIsLongest: [],
+      unevenLength: [],
+      budgetShare: 2 / 3,
+      goodCostShare: { budget: 0.5, zeit: 0.5, stabilitaet: 0 },
+    });
+  });
+
+  it('counts a good option as longest only if it clearly is', () => {
+    const level = makeLevel();
+    lengthen(level, 2, 'gut');
+    lengthen(level, 1, 'riskant');
+    // In the first situation good and risky are now equally long: no clear case.
+    expect(levelStats(level, POINTS).goodIsLongest).toEqual(['L1-S02']);
+  });
+
+  it('handles a level without situations or costs without dividing by zero', () => {
+    const empty = { ...makeLevel(), situationen: [] };
+    expect(levelStats(empty, POINTS)).toMatchObject({
+      situations: 0,
+      budgetShare: 0,
+      goodCostShare: { budget: 0, zeit: 0, stabilitaet: 0 },
+    });
+  });
+
+  it('warns softly while the good option is the longest in a few situations', () => {
+    const text = warningsFor((l) => lengthen(l, 4, 'gut'));
+    expect(text).toContain(
+      'die gute Option ist der längste Text in: L1-S01, L1-S02, L1-S03, L1-S04',
+    );
+    expect(text).not.toContain('erlaubt höchstens');
+  });
+
+  it('warns with the limit once the good option is the longest in more than half', () => {
+    expect(warningsFor((l) => lengthen(l, 5, 'gut'))).toContain(
+      'in 5 von 8 Situationen ist die gute Option der längste Text (erlaubt höchstens 50 %)',
+    );
+  });
+
+  it('warns if the longest option text is more than 30 % longer than the shortest', () => {
+    expect(warningsFor((l) => lengthen(l, 1, 'riskant', 1.5))).toContain(
+      'mehr als 30 % länger als der kürzeste in: L1-S01',
+    );
+    expect(warningsFor((l) => lengthen(l, 1, 'riskant', 1.25))).not.toContain('30 %');
+  });
+
+  it('rejects a level in which too few options touch the budget', () => {
+    const errors = errorsFor((l) => {
+      for (const s of l.situationen) {
+        for (const o of s.optionen) if (o.einstufung !== 'gut') o.wirkung.budget = '0';
+      }
+    });
+    expect(errors.join('\n')).toContain(
+      'nur 33 % der Optionen haben eine Budgetwirkung (nötig mindestens 40 %)',
+    );
+  });
+
+  it('rejects a level whose good options cost almost only one gauge', () => {
+    const errors = errorsFor((l) => {
+      for (const s of l.situationen) {
+        const good = s.optionen.find((o) => o.einstufung === 'gut');
+        if (good) good.wirkung = { budget: '0', zeit: '-klein', stabilitaet: '+mittel' };
+      }
+    });
+    expect(errors.join('\n')).toContain('100 % der Kosten der guten Optionen entfallen auf «zeit»');
+  });
+
+  it('writes a report with one row per level and the affected situations', () => {
+    const level = makeLevel();
+    lengthen(level, 1, 'gut');
+    const report = contentReport([levelStats(level, POINTS), levelStats(makeLevel(2), POINTS)]);
+    expect(report).toContain(
+      'Stand: 16 Situationen in 2 Leveln, davon 0 im Entwurf und 16 freigegeben.',
+    );
+    expect(report).toContain(
+      '| Level 1 | 8 | 0 | 8 | 2 (25 %) | 1 (13 %) | 0 | 67 % | 50 % / 50 % / 0 % |',
+    );
+    expect(report).toContain('- Gute Option ist die längste: L1-S01');
+    expect(report).toContain('- Längenunterschied über 30 %: keine');
+    expect(contentReport([])).toContain('Stand: 0 Situationen in 0 Leveln');
   });
 });
 

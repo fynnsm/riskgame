@@ -1,5 +1,7 @@
 import type { Part } from './boxes.ts';
 import { box, hash } from './boxes.ts';
+import { C } from './palette.ts';
+import { TUNING } from './tuning.ts';
 
 /**
  * The backdrop (F-410, F-411): a grid of city blocks with houses, trees and roads.
@@ -9,13 +11,22 @@ import { box, hash } from './boxes.ts';
 /** Distance from one block centre to the next: 12 of block plus 4 of road. */
 export const PITCH = 16;
 const BLOCK = 12;
-const REACH = 7;
+const REACH = TUNING.city.reach;
 const GROUND_TOP = 0.4;
-export const CAR_COUNT = 26;
+export const CAR_COUNT = TUNING.city.cars;
 
-const WALLS = [0xd9534f, 0xf0c05a, 0x6fa8dc, 0xf2e2c4, 0xe58a5e, 0x9ccc65, 0xb39ddb, 0xf7a8b8];
-const ROOFS = [0x8d4a3b, 0x5b6470, 0xb5443a, 0x7a5c3e, 0x4f6d7a];
-const AWNINGS = [0xe63946, 0xffd23f, 0x2ec4b6, 0xf77f00];
+const WALLS = [
+  C.wallRed,
+  C.wallYellow,
+  C.wallBlue,
+  C.wallCream,
+  C.wallTerracotta,
+  C.wallGreen,
+  C.wallLilac,
+  C.wallPink,
+];
+const ROOFS = [C.roofBrick, C.slate, C.roofRed, C.roofBrown, C.roofTeal];
+const AWNINGS = [C.red, C.yellow, C.teal, C.orange];
 
 /** With an even number of lots the grid shifts by half a block so lots still sit on blocks. */
 function gridShift(lotCount: number): number {
@@ -29,11 +40,11 @@ export function lotPosition(index: number, count: number): { x: number; z: numbe
 
 function addTree(parts: Part[], x: number, z: number, seed: number): void {
   const size = 1.1 + hash(seed) * 0.5;
-  const dark = hash(seed + 1) > 0.5 ? 0x3f8f4f : 0x2f7d46;
+  const dark = hash(seed + 1) > 0.5 ? C.treeMid : C.treeDark;
   parts.push(
-    box(0x7a5a3a, 0.36, 0.8, 0.36, x, GROUND_TOP + 0.4, z),
+    box(C.trunk, 0.36, 0.8, 0.36, x, GROUND_TOP + 0.4, z),
     box(dark, size, 0.8, size, x, GROUND_TOP + 1.1, z),
-    box(0x57b05f, size * 0.72, 0.7, size * 0.72, x, GROUND_TOP + 1.8, z),
+    box(C.treeLight, size * 0.72, 0.7, size * 0.72, x, GROUND_TOP + 1.8, z),
   );
 }
 
@@ -48,15 +59,15 @@ function addHouse(
   const w = 3.3 + hash(seed + 1) * 1.3;
   const d = 3.3 + hash(seed + 2) * 1.3;
   const h = 2.2 + hash(seed + 3) * (maxHeight - 2.2);
-  const wall = WALLS[Math.floor(hash(seed + 4) * WALLS.length)] ?? 0xffffff;
-  const roof = ROOFS[Math.floor(hash(seed + 5) * ROOFS.length)] ?? 0x5b6470;
+  const wall = WALLS[Math.floor(hash(seed + 4) * WALLS.length)] ?? C.white;
+  const roof = ROOFS[Math.floor(hash(seed + 5) * ROOFS.length)] ?? C.slate;
   const y0 = GROUND_TOP;
   parts.push(box(wall, w, h, d, x, y0 + h / 2, z));
   parts.push(box(roof, w + 0.3, 0.3, d + 0.3, x, y0 + h + 0.15, z));
   if (hash(seed + 6) > 0.55) {
     parts.push(box(roof, w * 0.55, 0.5, d * 0.55, x, y0 + h + 0.55, z));
   } else if (hash(seed + 6) > 0.3) {
-    parts.push(box(0xc9d1d9, 0.7, 0.4, 0.7, x + w * 0.2, y0 + h + 0.5, z - d * 0.2));
+    parts.push(box(C.roofUnit, 0.7, 0.4, 0.7, x + w * 0.2, y0 + h + 0.5, z - d * 0.2));
   }
   if (detail === 'none') return;
 
@@ -68,16 +79,16 @@ function addHouse(
     const y = y0 + 0.95 + r * 1.25;
     for (let c = 0; c < columnsX; c++) {
       const offset = (c - (columnsX - 1) / 2) * 1.3;
-      if (detail === 'full') parts.push(box(0xffffff, 0.06, 0.78, 0.7, x + w / 2, y, z + offset));
-      parts.push(box(0x8fd3f4, 0.1, 0.62, 0.54, x + w / 2, y, z + offset));
+      if (detail === 'full') parts.push(box(C.white, 0.06, 0.78, 0.7, x + w / 2, y, z + offset));
+      parts.push(box(C.houseGlass, 0.1, 0.62, 0.54, x + w / 2, y, z + offset));
     }
     for (let c = 0; c < columnsZ; c++) {
       const offset = (c - (columnsZ - 1) / 2) * 1.3;
       const door = r === 0 && c === 0;
-      if (detail === 'full') parts.push(box(0xffffff, 0.7, 0.78, 0.06, x + offset, y, z + d / 2));
+      if (detail === 'full') parts.push(box(C.white, 0.7, 0.78, 0.06, x + offset, y, z + d / 2));
       parts.push(
         box(
-          door ? 0x7a4a2b : 0x8fd3f4,
+          door ? C.door : C.houseGlass,
           0.54,
           door ? 0.95 : 0.62,
           0.1,
@@ -89,7 +100,7 @@ function addHouse(
     }
   }
   if (detail === 'full' && hash(seed + 7) > 0.5) {
-    const awning = AWNINGS[Math.floor(hash(seed + 8) * AWNINGS.length)] ?? 0xe63946;
+    const awning = AWNINGS[Math.floor(hash(seed + 8) * AWNINGS.length)] ?? C.red;
     parts.push(box(awning, w * 0.8, 0.12, 0.7, x, y0 + 1.55, z + d / 2 + 0.3));
   }
 }
@@ -103,8 +114,8 @@ function addBlock(
   isLot: boolean,
 ): void {
   const seed = (column + 50) * 131 + (row + 50) * 17;
-  parts.push(box(0xcfd6dd, BLOCK, 0.3, BLOCK, cx, 0.15, cz));
-  parts.push(box(0x8fd16a, BLOCK - 1.2, 0.1, BLOCK - 1.2, cx, 0.35, cz));
+  parts.push(box(C.pavement, BLOCK, 0.3, BLOCK, cx, 0.15, cz));
+  parts.push(box(C.grass, BLOCK - 1.2, 0.1, BLOCK - 1.2, cx, 0.35, cz));
 
   if (isLot) {
     // Only a few trees at the back corners, so nothing hides the tower.
@@ -120,7 +131,7 @@ function addBlock(
   const maxHeight = row >= 1 ? 3.6 : row === 0 ? 5 : 5 + hash(seed + 9) * 5;
 
   if (hash(seed) < 0.14) {
-    parts.push(box(0x6ec6f5, 4.6, 0.08, 3.4, cx + 0.6, GROUND_TOP + 0.04, cz + 0.4));
+    parts.push(box(C.water, 4.6, 0.08, 3.4, cx + 0.6, GROUND_TOP + 0.04, cz + 0.4));
     for (let t = 0; t < 9; t++) {
       addTree(
         parts,
@@ -156,7 +167,7 @@ export function buildCity(lotCount: number): Part[] {
   const shift = gridShift(lotCount);
   const span = (REACH * 2 + 1) * PITCH;
   // Asphalt under everything; the blocks sit on top and leave the roads showing.
-  parts.push(box(0x565c66, span + 4, 0.2, span + 4, shift, -0.1, 0));
+  parts.push(box(C.asphalt, span + 4, 0.2, span + 4, shift, -0.1, 0));
 
   const firstLot = -Math.floor(lotCount / 2);
   for (let column = -REACH; column <= REACH; column++) {
@@ -173,8 +184,8 @@ export function buildCity(lotCount: number): Part[] {
     for (let along = -half; along <= half; along += 3.2) {
       const cell = (((along - PITCH / 2) % PITCH) + PITCH) % PITCH;
       if (cell < 2.4 || cell > PITCH - 2.4) continue;
-      parts.push(box(0xf2f2f2, 1.3, 0.02, 0.16, along + shift, 0.02, across));
-      parts.push(box(0xf2f2f2, 0.16, 0.02, 1.3, across + shift, 0.02, along));
+      parts.push(box(C.roadMark, 1.3, 0.02, 0.16, along + shift, 0.02, across));
+      parts.push(box(C.roadMark, 0.16, 0.02, 1.3, across + shift, 0.02, along));
     }
   }
   return parts;

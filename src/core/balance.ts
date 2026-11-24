@@ -6,7 +6,7 @@ export const BALANCE = {
   gauge: {
     min: 0,
     max: 100,
-    start: 60,
+    start: 76,
     /** Below this a gauge counts as critical: the label says so and the site shows a warning sign. */
     criticalBelow: 30,
   },
@@ -29,8 +29,25 @@ export const BALANCE = {
     two: { minScoreRatio: 0.8, minGauge: 5 },
   },
 
-  /** F-909: how often a player who picks at random may pass a level, at most. */
-  checks: { maxRandomPassRate: 0.2, randomRuns: 2000, randomSeed: 20261123 },
+  /**
+   * What `npm run simulate:balance` demands of every level (F-907, F-909, F-910).
+   * Careful play must be rewarded with a building that stands straight, careless play must fail.
+   */
+  checks: {
+    /** F-909: how often a player who picks at random may pass a level, at most. */
+    maxRandomPassRate: 0.2,
+    randomRuns: 5000,
+    randomSeed: 20261123,
+    /** Only good options: every gauge ends at least here ... */
+    goodMinGauge: 40,
+    /** ... and the building leans at most this share of the maximum. */
+    goodMaxTilt: 0.1,
+    /** Only risky options: the building has collapsed by this decision at the latest. */
+    riskyCollapseBy: 5,
+    /** Random choice: share of runs that must end in a collapse or a failed inspection. */
+    randomFailMin: 0.6,
+    randomFailMax: 0.9,
+  },
 
   /** F-602: share of the possible rating points needed for a learning goal to count as reached. */
   goalReachedRatio: 0.75,
@@ -38,11 +55,11 @@ export const BALANCE = {
   /** F-205: how gauges turn into tilt and wobble. */
   lean: {
     /** The weakest gauge starts to tilt the building below this value. */
-    tiltStartsBelow: 60,
+    tiltStartsBelow: 40,
     /** Wobble sets in later than tilt, as a warning that collapse is close. */
-    wobbleStartsBelow: 45,
-    weakestWeight: 0.7,
-    imbalanceWeight: 0.3,
+    wobbleStartsBelow: 30,
+    weakestWeight: 0.85,
+    imbalanceWeight: 0.15,
     maxTiltDegrees: 11,
     /** Sideways shift of a new floor at full tilt, in floor widths. */
     maxFloorShift: 0.16,

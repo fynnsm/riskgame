@@ -17,8 +17,9 @@
     "test:e2e": "playwright test",
     "validate:content": "node scripts/validate-content.ts",
     "simulate:balance": "node scripts/simulate-balance.ts",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run validate:content && npm run simulate:balance && npm run build",
-    "check:all": "npm run check && npm run test:e2e"
+    "check": "npm run typecheck && npm run lint && npm run test && npm run validate:content && npm run content:report -- --check && npm run simulate:balance && npm run build",
+    "check:all": "npm run check && npm run test:e2e",
+    "content:report": "node scripts/content-report.ts"
   },
   "dependencies": {
     "three": "^0.187.0",

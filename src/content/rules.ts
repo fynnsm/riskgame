@@ -2,6 +2,7 @@ import type { EffectPoints } from './effects.ts';
 import { effectSum, hasNegativeEffect } from './effects.ts';
 import type { Level } from './schema.ts';
 import { OPTION_IDS, PROCESS_STEPS, VIDEO_HOST_ALLOWLIST } from './schema.ts';
+import { levelStats } from './stats.ts';
 
 export interface RuleIssue {
   path: string;
@@ -16,6 +17,12 @@ export const LIMITS = {
   poolSurplus: 2,
   /** F-304: situations with an AI output per pool. */
   minAiSituations: 2,
+  /** A2: above this share, "always pick the longest text" passes the level. */
+  maxGoodLongestShare: 0.5,
+  /** A1: below this share of options with a budget effect, budget never decides anything. */
+  minBudgetShare: 0.4,
+  /** A1: above this share on one gauge, the level punishes exactly those who decide well. */
+  maxGoodCostShare: 0.6,
 } as const;
 
 function findDuplicates(ids: readonly string[]): string[] {
@@ -160,6 +167,47 @@ export function checkLevelRules(level: Level, points: EffectPoints): RuleIssue[]
       message: `nur ${withAi} Situation(en) mit aiAusgabe; empfohlen sind mindestens ${LIMITS.minAiSituations} (F-304)`,
       severity: 'warning',
     });
+  }
+
+  // Patterns in the content (A1, A2). Text lengths only warn, because the texts belong to the
+  // group. The spread of the effects is binding, because it decides whether the balance works.
+  const warn = (path: string, message: string) =>
+    issues.push({ path, message, severity: 'warning' });
+  const stats = levelStats(level, points);
+  const percent = (share: number) => `${Math.round(share * 100)} %`;
+  if (pool.length > 0) {
+    const share = stats.goodIsLongest.length / pool.length;
+    if (share > LIMITS.maxGoodLongestShare) {
+      warn(
+        'situationen',
+        `in ${stats.goodIsLongest.length} von ${pool.length} Situationen ist die gute Option der längste Text (erlaubt höchstens ${percent(LIMITS.maxGoodLongestShare)}): ${stats.goodIsLongest.join(', ')}`,
+      );
+    } else if (stats.goodIsLongest.length > 0) {
+      warn(
+        'situationen',
+        `die gute Option ist der längste Text in: ${stats.goodIsLongest.join(', ')}`,
+      );
+    }
+    if (stats.unevenLength.length > 0) {
+      warn(
+        'situationen',
+        `der längste Optionstext ist mehr als 30 % länger als der kürzeste in: ${stats.unevenLength.join(', ')}`,
+      );
+    }
+    if (stats.budgetShare < LIMITS.minBudgetShare) {
+      error(
+        'situationen',
+        `nur ${percent(stats.budgetShare)} der Optionen haben eine Budgetwirkung (nötig mindestens ${percent(LIMITS.minBudgetShare)})`,
+      );
+    }
+    for (const [gauge, costShare] of Object.entries(stats.goodCostShare)) {
+      if (costShare > LIMITS.maxGoodCostShare) {
+        error(
+          'situationen',
+          `${percent(costShare)} der Kosten der guten Optionen entfallen auf «${gauge}» (erlaubt höchstens ${percent(LIMITS.maxGoodCostShare)})`,
+        );
+      }
+    }
   }
 
   return issues;
