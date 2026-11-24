@@ -12,7 +12,14 @@ import { TUNING } from './tuning.ts';
 /** Distance from one block centre to the next: 12 of block plus 4 of road. */
 export const PITCH = 16;
 const BLOCK = 12;
-const REACH = TUNING.city.reach;
+/** Set by buildCity for the quality step it builds. */
+let REACH: number = TUNING.city.reach[2];
+let DETAIL_REACH: number = TUNING.city.detailReach[2];
+
+/** How far the city reaches on a quality step, in blocks from the centre. */
+export function cityReach(quality: 0 | 1 | 2): number {
+  return TUNING.city.reach[quality];
+}
 const GROUND_TOP = 0.4;
 
 const WALLS = [
@@ -57,6 +64,8 @@ let ponds: { x: number; z: number }[] = [];
 let chimneys: { x: number; y: number; z: number }[] = [];
 /** True while a block near the centre is laid out. */
 let near = false;
+/** True while the block being laid out is close enough for lamps and shadow patches (N1). */
+let detailed = true;
 
 /** A window, and for some of them the copy that glows at night. */
 function addWindow(
@@ -92,9 +101,15 @@ export function lotPosition(index: number, count: number): { x: number; z: numbe
 function addTree(parts: Part[], x: number, z: number, seed: number): void {
   const size = 1.1 + hash(seed) * 0.5;
   const dark = hash(seed + 1) > 0.5 ? C.treeMid : C.treeDark;
-  blobs.push(
-    box(C.blobOnGrass, size * 1.2, 0.02, size * 1.2, x - 0.3, GROUND_TOP + 0.012, z - 0.25),
-  );
+  if (detailed) {
+    blobs.push(
+      box(C.blobOnGrass, size * 1.2, 0.02, size * 1.2, x - 0.3, GROUND_TOP + 0.012, z - 0.25),
+    );
+  } else {
+    // N1: a tree far from the centre is a single green block; trunk and second crown are not missed there.
+    parts.push(box(dark, size, 1.5, size, x, GROUND_TOP + 0.95, z));
+    return;
+  }
   parts.push(box(C.trunk, 0.36, 0.8, 0.36, x, GROUND_TOP + 0.4, z));
   if (near) {
     swayTrees.push({ x, z, size, color: dark });
@@ -120,7 +135,8 @@ function addHouse(
   const wall = WALLS[Math.floor(hash(seed + 4) * WALLS.length)] ?? C.white;
   const roof = ROOFS[Math.floor(hash(seed + 5) * ROOFS.length)] ?? C.slate;
   const y0 = GROUND_TOP;
-  blobs.push(box(C.blobOnGrass, w + 0.5, 0.02, d + 0.5, x - 0.5, y0 + 0.012, z - 0.4));
+  if (detailed)
+    blobs.push(box(C.blobOnGrass, w + 0.5, 0.02, d + 0.5, x - 0.5, y0 + 0.012, z - 0.4));
   parts.push(box(wall, w, h, d, x, y0 + h / 2, z));
   parts.push(box(roof, w + 0.3, 0.3, d + 0.3, x, y0 + h + 0.15, z));
   if (hash(seed + 6) > 0.55) {
@@ -170,11 +186,15 @@ function addBlock(
   const seed = (column + 50) * 131 + (row + 50) * 17;
   parts.push(box(C.pavement, BLOCK, 0.3, BLOCK, cx, 0.15, cz));
   parts.push(box(C.grass, BLOCK - 1.2, 0.1, BLOCK - 1.2, cx, 0.35, cz));
+  const fromCentre = Math.max(Math.abs(column), Math.abs(row));
+  detailed = fromCentre <= DETAIL_REACH;
   // Street lamps at the two corners that face the camera; they glow at night.
-  addLamp(parts, cx + 5.7, cz + 5.7);
-  addLamp(parts, cx - 5.7, cz + 5.7);
+  if (detailed) {
+    addLamp(parts, cx + 5.7, cz + 5.7);
+    addLamp(parts, cx - 5.7, cz + 5.7);
+  }
 
-  near = Math.max(Math.abs(column), Math.abs(row)) <= 3;
+  near = fromCentre <= 3 && detailed;
   if (isLot) {
     // Only a few trees at the back corners, so nothing hides the tower.
     addTree(parts, cx - 5, cz - 5, seed);
@@ -184,8 +204,9 @@ function addBlock(
   }
 
   const distance = Math.max(Math.abs(column), Math.abs(row));
-  near = distance <= 3;
-  const detail = distance <= 2 ? 'full' : distance <= 5 ? 'glass' : 'none';
+  near = distance <= 3 && detailed;
+  const detail =
+    distance <= 2 ? 'full' : distance <= Math.min(5, DETAIL_REACH + 1) ? 'glass' : 'none';
   // Blocks in front of the lots stay low; the camera looks across them at the towers.
   const maxHeight = row >= 1 ? 3.6 : row === 0 ? 5 : 5 + hash(seed + 9) * 5;
 
@@ -222,8 +243,10 @@ function addBlock(
   }
 }
 
-export function buildCity(lotCount: number): CityParts {
+export function buildCity(lotCount: number, quality: 0 | 1 | 2 = 2): CityParts {
   const parts: Part[] = [];
+  REACH = TUNING.city.reach[quality];
+  DETAIL_REACH = TUNING.city.detailReach[quality];
   lights = [];
   blobs = [];
   swayTrees = [];

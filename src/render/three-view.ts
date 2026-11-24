@@ -29,12 +29,13 @@ import {
   finaleProgress,
   momentFor,
   resultSequence,
+  startQuality,
   timeOfDay,
 } from './director.ts';
 import type { Lighting, TimeOfDay } from './palette.ts';
 import { C, LIGHTING } from './palette.ts';
 import { TUNING } from './tuning.ts';
-import { buildCity, gridShift, lotPosition, PITCH } from './city.ts';
+import { buildCity, cityReach, gridShift, lotPosition, PITCH } from './city.ts';
 import type { Life } from './life.ts';
 import { createLife } from './life.ts';
 import { createFrameStats } from './frame-stats.ts';
@@ -291,6 +292,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   let lotCount = 5;
   let cityMesh: InstancedMesh | null = null;
   let life: Life | null = null;
+  /** The quality step the city was built for; a change of step rebuilds it (N1). */
+  let cityQuality: Quality = 2;
   let lightsMesh: InstancedMesh | null = null;
   let blobsMesh: InstancedMesh | null = null;
   // Unlit, so lamps and windows glow however dark the night is.
@@ -303,7 +306,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       for (const mesh of life.meshes) mesh.removeFromParent();
       life.dispose();
     }
-    const city = buildCity(lotCount);
+    cityQuality = quality as Quality;
+    const city = buildCity(lotCount, cityQuality);
     cityMesh = buildMesh(city.parts);
     lightsMesh = buildMesh(city.lights, glow);
     lightsMesh.castShadow = false;
@@ -314,7 +318,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       unitBox,
       lit: material,
       glow,
-      grid: { pitch: PITCH, reach: TUNING.city.reach, shift: gridShift(lotCount) },
+      grid: { pitch: PITCH, reach: cityReach(cityQuality), shift: gridShift(lotCount) },
       swayTrees: city.swayTrees,
       ponds: city.ponds,
       chimneys: city.chimneys,
@@ -1176,7 +1180,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
 
   // --- Quality steps (N-203): 2 = shadows, 1 = no shadows, 0 = also half the resolution ---
   let quality: number =
-    options.fixedQuality ?? (window.matchMedia('(pointer: coarse)').matches ? 1 : 2);
+    options.fixedQuality ?? startQuality(window.matchMedia('(pointer: coarse)').matches);
 
   /** B3, G-09: what the current quality step and time of day show. */
   function applyDecoration(): void {
@@ -1188,6 +1192,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   }
 
   function applyQuality(): void {
+    // A lower step means a smaller and simpler city, not only fewer effects.
+    if (cityMesh && cityQuality !== quality) rebuildCity();
     const shadows = quality >= 2;
     renderer.shadowMap.enabled = shadows;
     sun.castShadow = shadows;

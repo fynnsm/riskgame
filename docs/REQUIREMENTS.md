@@ -434,7 +434,7 @@ Aus dem Auftrag «Nachtest zu Update 2» vom 24.11.2026. Stand: **U** = umgesetz
 
 | ID | Anforderung | Prio | Stand |
 |---|---|---|---|
-| T-01 | Dreiecke: höchstens 150’000 auf Qualitätsstufe 1 und 80’000 auf Stufe 0, als Grenzen in `tuning.ts` und per E2E-Test geprüft; am Handy startet das Spiel auf Stufe 1 | M | O |
+| T-01 | Dreiecke: höchstens 150’000 auf Qualitätsstufe 1 und 80’000 auf Stufe 0, als Grenzen in `tuning.ts` und per E2E-Test geprüft; am Handy startet das Spiel auf Stufe 1 | M | U (verdeckte Flächen werden nicht weggelassen, siehe `docs/PERFORMANCE.md`; die Bildrate ist auf keinem echten Gerät gemessen) |
 | T-02 | Feier bei bestandenem Level: Banner zuerst, Sterne gross über dem Bild und nach spätestens 2 Sekunden alle sichtbar, bei 3 Sternen mindestens drei Explosionen mit je 30 bis 60 Klötzen, bei 2 Sternen Konfetti über die ganze Bildbreite; das Textfeld bleibt währenddessen eingeklappt. Dasselbe sinngemäss im Schlussbildschirm | M | O |
 | T-03 | Level 5: Die Baustelle hat eigene Scheinwerfer; Stockwerke, Neigung und Warnzeichen sind nachts so gut lesbar wie am Tag | M | O |
 | T-04 | Anzeigen brechen kein Wort um. Unter 430 px zeigen sie nur Symbol und Wert; die Beschriftung bleibt als `aria-label` | M | U |

@@ -4,8 +4,13 @@
  */
 export const TUNING = {
   city: {
-    /** Blocks from the centre to the edge of the city. */
-    reach: 7,
+    /**
+     * Blocks from the centre to the edge of the city, per quality step 0, 1, 2 (N1).
+     * A smaller city is the main lever on the number of triangles.
+     */
+    reach: [4, 5, 7],
+    /** Street lamps and shadow patches only stand within this many blocks of the centre, per step. */
+    detailReach: [2, 3, 7],
     cars: 26,
   },
 
@@ -111,6 +116,8 @@ export const TUNING = {
   /** B0: limits measured against docs/PERFORMANCE.md. */
   budget: {
     drawCallFactor: 1.5,
+    /** N1: most triangles a scene may draw, per quality step 0, 1, 2. Step 2 is for strong devices and has no limit. */
+    triangles: [80_000, 150_000, null],
     extraTransferKb: 80,
     minFps: 30,
   },

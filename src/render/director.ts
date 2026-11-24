@@ -85,6 +85,14 @@ export function cityTitle(totalStars: number, maxStars: number): CityTitle {
   return totalStars > (maxStars * 2) / 3 ? 'solide' : 'baustellen';
 }
 
+/**
+ * N1: the quality step a device starts on. A phone (coarse pointer) starts without real
+ * shadows; from there the view only ever steps down, when frames come too slowly.
+ */
+export function startQuality(coarsePointer: boolean): Quality {
+  return coarsePointer ? 1 : 2;
+}
+
 export interface Decoration {
   clouds: number;
   planes: boolean;
