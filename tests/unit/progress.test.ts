@@ -53,31 +53,49 @@ describe('stars (F-603)', () => {
   const rated = (ratings: string): ChoiceRecord[] =>
     [...ratings].map((r) => choice(r === 'g' ? 'gut' : r === 'v' ? 'vertretbar' : 'riskant'));
 
+  /** A run of six decisions without a tour, as far as scoring looks at it. */
+  const scored = (
+    outcome: LevelRun['outcome'],
+    history: ChoiceRecord[],
+    gauges: LevelRun['gauges'],
+  ) => ({
+    outcome,
+    history,
+    gauges,
+    situationIds: ['1', '2', '3', '4', '5', '6'],
+    tour: null,
+  });
+
   it('gives two stars for a mostly good run', () => {
-    expect(starsFor({ outcome: 'completed', history: rated('ggggvv'), gauges: even })).toBe(2);
+    expect(starsFor(scored('completed', rated('ggggvv'), even))).toBe(2);
   });
 
   it('gives one star for a level that was only just accepted', () => {
-    expect(starsFor({ outcome: 'completed', history: rated('gggvvv'), gauges: even })).toBe(1);
+    expect(starsFor(scored('completed', rated('gggvvv'), even))).toBe(1);
   });
 
   it('caps the stars if a gauge ends too low, however good the decisions were', () => {
     const history = rated('gggggg');
-    expect(starsFor({ outcome: 'completed', history, gauges: { ...even, zeit: 10 } })).toBe(3);
-    expect(starsFor({ outcome: 'completed', history, gauges: { ...even, zeit: 9 } })).toBe(2);
-    expect(starsFor({ outcome: 'completed', history, gauges: { ...even, zeit: 4 } })).toBe(1);
+    expect(starsFor(scored('completed', history, { ...even, zeit: 10 }))).toBe(3);
+    expect(starsFor(scored('completed', history, { ...even, zeit: 9 }))).toBe(2);
+    expect(starsFor(scored('completed', history, { ...even, zeit: 4 }))).toBe(1);
   });
 
   it('gives no star for a collapsed, rejected or unfinished level', () => {
     expect(starsFor(finished(['B', 'B', 'B']))).toBe(0);
-    expect(starsFor({ outcome: 'rejected', history: rated('gggggg'), gauges: even })).toBe(0);
-    expect(starsFor({ outcome: 'running', history: [], gauges: even })).toBe(0);
+    expect(starsFor(scored('rejected', rated('gggggg'), even))).toBe(0);
+    expect(starsFor(scored('running', [], even))).toBe(0);
     expect(scoreRatio([])).toBe(0);
   });
 
   it('states the points reached and the points needed for the inspection (F-211)', () => {
-    expect(acceptance(rated('ggvr'), 8)).toEqual({ points: 5, max: 16, required: 11 });
-    expect(acceptance([], 6)).toEqual({ points: 0, max: 12, required: 8 });
+    const eight = ['1', '2', '3', '4', '5', '6', '7', '8'];
+    expect(acceptance({ history: rated('ggvr'), situationIds: eight, tour: null })).toEqual({
+      points: 5,
+      max: 16,
+      required: 11,
+    });
+    expect(acceptance(scored('running', [], even))).toEqual({ points: 0, max: 12, required: 8 });
   });
 });
 

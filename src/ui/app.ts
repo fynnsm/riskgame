@@ -15,6 +15,7 @@ import {
 import type { RenderStats, SceneView } from '../core/scene.ts';
 import { sceneModel } from '../core/scene.ts';
 import { starsFor } from '../core/scoring.ts';
+import { registeredRisks } from '../core/tour.ts';
 import type { Logger } from '../logging/logger.ts';
 import { errorData } from '../logging/logger.ts';
 import { buildErrorReport } from '../logging/report.ts';
@@ -394,6 +395,7 @@ export function createApp(options: AppOptions): App {
             seed: run.seed,
             recentIds: run.recentIds,
             choices: run.history.map((c) => c.optionId),
+            tour: registeredRisks(run.tour),
             phase: run.phase,
             outcome: run.outcome,
             gauges: { ...run.gauges },
@@ -598,6 +600,10 @@ export function createApp(options: AppOptions): App {
         return briefingScreen(level, run, handlers);
       case 'theory':
         return theoryScreen(level, run, handlers);
+      case 'tour':
+      case 'tourResult':
+        // Unreachable while the tour is held back at loading; a stored run in this phase is reported.
+        throw new Error(`No screen for phase ${run.phase}`);
       case 'situation':
         return situationScreen(
           level,

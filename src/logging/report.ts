@@ -6,6 +6,8 @@ export interface ReplayData {
   seed: number;
   recentIds: string[];
   choices: string[];
+  /** Places put into the risk register on the site tour; null if no tour was finished. */
+  tour: string[] | null;
 }
 
 export interface ReportRun extends ReplayData {
@@ -77,13 +79,13 @@ export function buildErrorReport(input: ReportInput): string {
   }
   lines.push('');
   if (input.run) {
-    const { levelId, seed, recentIds, choices, phase, outcome, gauges } = input.run;
+    const { levelId, seed, recentIds, choices, tour, phase, outcome, gauges } = input.run;
     const gaugeText = Object.entries(gauges)
       .map(([key, value]) => `${key}=${value}`)
       .join(', ');
     lines.push(`Aktueller Durchgang: ${levelId}, Phase ${phase}, Ergebnis ${outcome}`);
     lines.push(`Anzeigen: ${gaugeText}`);
-    const replay: ReplayData = { levelId, seed, recentIds, choices };
+    const replay: ReplayData = { levelId, seed, recentIds, choices, tour };
     lines.push(REPLAY_PREFIX + JSON.stringify(replay));
   } else {
     lines.push('Aktueller Durchgang: keiner');
@@ -120,5 +122,7 @@ export function extractReplay(report: string): ReplayData | null {
     seed: data.seed,
     recentIds: data.recentIds,
     choices: data.choices,
+    // Reports written before the tour existed have no such field.
+    tour: isStringArray(data.tour) ? data.tour : null,
   };
 }

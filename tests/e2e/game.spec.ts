@@ -8,6 +8,7 @@ import { criticalGauges } from '../../src/core/gauges.ts';
 import { starsFor } from '../../src/core/scoring.ts';
 import type { LastStep } from './support/progress.ts';
 import {
+  LEVELS,
   longestSituation,
   oneBefore,
   openWith,
@@ -19,9 +20,7 @@ import {
 
 type Rating = 'gut' | 'vertretbar' | 'riskant';
 
-const level1 = JSON.parse(
-  readFileSync(join(import.meta.dirname, '..', '..', 'content', 'levels', 'level-1.json'), 'utf8'),
-) as Level;
+const level1: Level = LEVELS[0] as Level;
 const STEPS = level1.situationenProDurchgang;
 
 /** The simple mode is the basis of these tests (CLAUDE.md, rule 8). */

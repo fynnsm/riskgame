@@ -386,7 +386,7 @@ function eyebrow(level: Level, extra?: string): HTMLElement {
 }
 
 export function briefingScreen(level: Level, run: LevelRun, handlers: RunHandlers): HTMLElement {
-  const rules = acceptance([], run.situationIds.length);
+  const rules = acceptance({ ...run, history: [] });
   return el('div', { class: 'screen', attrs: { 'data-screen': 'briefing' } }, [
     eyebrow(level),
     heading(level.projekt.titel),
@@ -717,7 +717,7 @@ function causeItem(level: Level, choice: ChoiceRecord, note: string): HTMLElemen
 
 export function resultScreen(level: Level, run: LevelRun, handlers: ResultHandlers): HTMLElement {
   const failed = run.outcome !== 'completed';
-  const score = acceptance(run.history, run.situationIds.length);
+  const score = acceptance(run);
   const children: (HTMLElement | null)[] = [eyebrow(level)];
 
   if (run.outcome === 'collapsed') {

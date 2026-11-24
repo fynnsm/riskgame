@@ -6,7 +6,7 @@ Stand: 60 Situationen in 5 Leveln, davon 60 im Entwurf und 0 freigegeben.
 
 | Level | Situationen | Entwurf | Freigegeben | Rundgang-Stellen | Ereignisse | Mit AI-Ausgabe | Gute Option ist die längste | Längenunterschied über 30 % | Optionen mit Budgetwirkung | Kosten der guten Optionen: Budget / Zeit / Stabilität |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Level 1 | 12 | 12 | 0 | – | – | 5 (42 %) | 11 (92 %) | 6 | 42 % | 50 % / 50 % / 0 % |
+| Level 1 | 12 | 12 | 0 | 12 (12 Entwurf) | – | 5 (42 %) | 11 (92 %) | 6 | 42 % | 50 % / 50 % / 0 % |
 | Level 2 | 12 | 12 | 0 | – | – | 4 (33 %) | 10 (83 %) | 8 | 42 % | 50 % / 50 % / 0 % |
 | Level 3 | 12 | 12 | 0 | – | – | 4 (33 %) | 10 (83 %) | 10 | 47 % | 50 % / 50 % / 0 % |
 | Level 4 | 12 | 12 | 0 | – | – | 4 (33 %) | 9 (75 %) | 8 | 42 % | 50 % / 50 % / 0 % |
@@ -25,6 +25,7 @@ Diese Inhalte hat nicht die Gruppe geschrieben. «CC» steht für die Beispielin
 
 **Level 1**
 
+- Von Claude Code (CC), Rundgang: L1-R01, L1-R02, L1-R03, L1-R04, L1-R05, L1-R06, L1-R07, L1-R08, L1-R09, L1-R10, L1-R11, L1-R12
 - Erste Fassung von Claude (CL), Situationen: L1-S01, L1-S02, L1-S03, L1-S04, L1-S05, L1-S06, L1-S07, L1-S08, L1-S09, L1-S10, L1-S11, L1-S12
 
 **Level 2**

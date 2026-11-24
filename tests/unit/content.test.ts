@@ -482,15 +482,15 @@ describe('selectPlayable and loadLevels', () => {
   it('hides drafts in a published build and shows them when switched on (F-906)', () => {
     const level = makeLevel();
     for (const s of level.situationen.slice(0, 2)) s.status = 'entwurf';
-    expect(selectPlayable(level, false).level.situationen).toHaveLength(6);
-    expect(selectPlayable(level, false).available).toBe(true);
-    expect(selectPlayable(level, true).level.situationen).toHaveLength(8);
+    expect(selectPlayable(level, false, RULES).level.situationen).toHaveLength(6);
+    expect(selectPlayable(level, false, RULES).available).toBe(true);
+    expect(selectPlayable(level, true, RULES).level.situationen).toHaveLength(8);
   });
 
   it('marks a level as unavailable if too few released situations remain', () => {
     const level = makeLevel();
     for (const s of level.situationen.slice(0, 3)) s.status = 'entwurf';
-    expect(selectPlayable(level, false).available).toBe(false);
+    expect(selectPlayable(level, false, RULES).available).toBe(false);
   });
 
   it('returns valid levels in order and reports a broken file without dropping the others', () => {

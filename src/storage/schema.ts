@@ -29,12 +29,25 @@ const choiceSchema = z.strictObject({
   gaugesAfter: gaugesSchema,
 });
 
+const tourSchema = z.strictObject({
+  siteIds: z.array(id).max(MAX_LIST),
+  judgements: z.record(id, z.boolean()),
+  result: z
+    .strictObject({
+      correct: z.number().int().min(0).max(MAX_LIST),
+      grade: z.enum(['good', 'fair', 'poor']),
+      points: z.number().int().min(0).max(MAX_LIST),
+      delta: deltaSchema,
+    })
+    .nullable(),
+});
+
 export const runSchema = z.strictObject({
   levelId: id,
   seed: z.number().int().min(0).max(0xffffffff),
   recentIds: z.array(id).max(MAX_LIST),
   canSkipTheory: z.boolean(),
-  phase: z.enum(['briefing', 'theory', 'situation', 'feedback', 'result']),
+  phase: z.enum(['briefing', 'theory', 'tour', 'tourResult', 'situation', 'feedback', 'result']),
   theoryIndex: z.number().int().min(0).max(MAX_LIST),
   situationIds: z.array(id).max(MAX_LIST),
   optionOrders: z.array(z.array(optionId).max(OPTION_IDS.length)).max(MAX_LIST),
@@ -42,6 +55,7 @@ export const runSchema = z.strictObject({
   gauges: gaugesSchema,
   history: z.array(choiceSchema).max(MAX_LIST),
   outcome: z.enum(['running', 'completed', 'collapsed', 'rejected']),
+  tour: tourSchema.nullable(),
 });
 
 const bestSchema = z.strictObject({
