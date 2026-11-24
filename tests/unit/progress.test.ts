@@ -105,7 +105,7 @@ describe('learning goals (F-602)', () => {
 
 describe('collapse analysis (F-209)', () => {
   it('names the failed gauge and the decisions that lowered it, heaviest first', () => {
-    const run = finished(['C', 'B', 'B', 'B', 'A', 'A']);
+    const run = finished(['C', 'B', 'B', 'B', 'B', 'A']);
     expect(run.outcome).toBe('collapsed');
     const failed = collapsedGauges(run.gauges);
     expect(failed).toEqual(['stabilitaet']);
@@ -114,7 +114,7 @@ describe('collapse analysis (F-209)', () => {
       true,
     );
     expect(causes.map((c) => c.loss)).toEqual([...causes.map((c) => c.loss)].sort((a, b) => b - a));
-    expect(causes.map((c) => c.loss)).toEqual([26, 26, 14]);
+    expect(causes.map((c) => c.loss)).toEqual([26, 26, 26, 4]);
   });
 
   it('picks the harder hit gauge if two failed at once and finds nothing for a standing building', () => {
@@ -200,7 +200,7 @@ describe('progress (F-103, F-106, F-107, F-108, F-702)', () => {
     weaker.gauges = { budget: 12, zeit: 12, stabilitaet: 100 };
     let other = finishRun(emptyProgress(), weaker, level);
     other = finishRun(other, finished(ALL_GOOD), level);
-    expect(levelProgress(other, 'level-1').best?.gauges.budget).toBe(24);
+    expect(levelProgress(other, 'level-1').best?.gauges.budget).toBe(40);
   });
 
   it('remembers played situations oldest first, so the next draw prefers fresh ones (F-106)', () => {
@@ -292,13 +292,14 @@ describe('balance simulation (F-907, F-909, F-910)', () => {
     expect(report).toMatchObject({
       levelId: 'level-1',
       runs: 56,
-      good: { failures: 0, lowest: 24, minStars: 3 },
+      good: { failures: 0, lowest: 40, minStars: 3 },
       // Six times "-mittel" on time is more than the gauge holds: collapse in every draw.
       okay: { collapses: 56, passes: 0 },
       // Three times "-gross" on stability empties the gauge.
       risky: { passes: 0, latestCollapse: 3 },
     });
-    expect(report.good.maxTilt).toBeCloseTo(0.648, 3);
+    // Budget and time at 40, stability at 100: no weakness, only a slight lean for one-sidedness.
+    expect(report.good.maxTilt).toBeCloseTo(0.09, 5);
     expect(report.random.passRate + report.random.failRate).toBeCloseTo(1, 10);
     expect(report.random.collapseRate).toBeLessThanOrEqual(report.random.failRate);
   });
@@ -310,7 +311,7 @@ describe('balance simulation (F-907, F-909, F-910)', () => {
 
   it('finds nothing wrong with a report in which every rule holds exactly', () => {
     expect(balanceProblems(clean)).toEqual([]);
-    expect(isBalanced(clean, true)).toBe(true);
+    expect(isBalanced(clean)).toBe(true);
   });
 
   it.each<[string, Partial<BalanceReport>, BalanceProblem]>([
@@ -340,24 +341,23 @@ describe('balance simulation (F-907, F-909, F-910)', () => {
     ],
   ])('names the broken rule when %s', (_name, change, problem) => {
     expect(balanceProblems({ ...clean, ...change })).toContain(problem);
-    expect(isBalanced({ ...clean, ...change }, true)).toBe(false);
+    expect(isBalanced({ ...clean, ...change })).toBe(false);
   });
 
-  it('stops the build only for binding rules unless strict is asked for', () => {
-    const tilted = { ...clean, good: { ...clean.good, lowest: 12, maxTilt: 0.8 } };
-    expect(isBalanced(tilted)).toBe(true);
-    expect(isBalanced(tilted, true)).toBe(false);
-    expect(isBalanced({ ...clean, risky: { passes: 1, latestCollapse: 5 } })).toBe(false);
-  });
-
-  it('holds the binding rules in every level that ships', () => {
+  it('holds every rule in every level that ships', () => {
     for (const [name, json] of Object.entries(readLevelFiles())) {
       const result = validateLevelJson(json, name, POINTS);
       if (!result.ok) throw new Error(result.errors.join('\n'));
       const report = simulateLevel(result.level);
-      expect(isBalanced(report), name).toBe(true);
+      expect(balanceProblems(report), name).toEqual([]);
+      expect(report.good.lowest, name).toBeGreaterThanOrEqual(40);
       expect(report.random.passRate, name).toBeLessThanOrEqual(0.2);
     }
+  });
+
+  it('finds the fixture level wanting: its acceptable options alone bring the building down', () => {
+    expect(balanceProblems(simulateLevel(level))).toContain('okay-collapses');
+    expect(isBalanced(simulateLevel(level))).toBe(false);
   });
 
   it('notices risky options that are too harmless to bring the building down', () => {
@@ -387,7 +387,7 @@ describe('balance simulation (F-907, F-909, F-910)', () => {
     const situation = clone(level.situationen[0]!);
     situation.optionen = situation.optionen.filter((o) => o.einstufung !== 'vertretbar');
     const result = playStrategy([situation], 'vertretbar');
-    expect(result).toMatchObject({ steps: 1, gauges: { budget: 54, zeit: 54, stabilitaet: 74 } });
+    expect(result).toMatchObject({ steps: 1, gauges: { budget: 70, zeit: 70, stabilitaet: 90 } });
   });
 
   it('refuses a situation that lacks the requested rating', () => {

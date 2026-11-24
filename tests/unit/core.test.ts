@@ -98,7 +98,7 @@ describe('drawSituations (F-105, F-106)', () => {
 
 describe('gauges (F-201, F-203, F-204)', () => {
   it('starts every gauge at the configured value', () => {
-    expect(startGauges()).toEqual({ budget: 60, zeit: 60, stabilitaet: 60 });
+    expect(startGauges()).toEqual({ budget: 76, zeit: 76, stabilitaet: 76 });
   });
 
   it('applies step sizes as points', () => {
@@ -107,8 +107,9 @@ describe('gauges (F-201, F-203, F-204)', () => {
       zeit: '-mittel',
       stabilitaet: '+gross',
     });
-    expect(gauges).toEqual({ budget: 54, zeit: 46, stabilitaet: 86 });
-    expect(delta).toEqual({ budget: -6, zeit: -14, stabilitaet: 26 });
+    expect(gauges).toEqual({ budget: 70, zeit: 62, stabilitaet: 100 });
+    // Stability was at 76, so "+gross" (26) only had room for 24.
+    expect(delta).toEqual({ budget: -6, zeit: -14, stabilitaet: 24 });
   });
 
   it('never exceeds 100 and reports what really changed', () => {
@@ -163,13 +164,19 @@ describe('lean (F-205, F-206)', () => {
   });
 
   it('tilts more for one-sided gauges than for evenly low ones', () => {
-    const even = computeLean({ budget: 40, zeit: 40, stabilitaet: 40 });
-    const lopsided = computeLean({ budget: 100, zeit: 100, stabilitaet: 40 });
+    const even = computeLean({ budget: 30, zeit: 30, stabilitaet: 30 });
+    const lopsided = computeLean({ budget: 100, zeit: 100, stabilitaet: 30 });
     expect(lopsided.tilt).toBeGreaterThan(even.tilt);
   });
 
+  it('stays upright while every gauge is at 40 or more, apart from a slight lean for one-sidedness', () => {
+    expect(computeLean({ budget: 40, zeit: 40, stabilitaet: 40 }).tilt).toBe(0);
+    expect(computeLean({ budget: 40, zeit: 40, stabilitaet: 100 }).tilt).toBeCloseTo(0.09, 5);
+    expect(computeLean({ budget: 39, zeit: 40, stabilitaet: 40 }).tilt).toBeGreaterThan(0);
+  });
+
   it('wobbles only below its own, lower threshold', () => {
-    expect(computeLean({ budget: 50, zeit: 70, stabilitaet: 70 }).wobble).toBe(0);
+    expect(computeLean({ budget: 30, zeit: 70, stabilitaet: 70 }).wobble).toBe(0);
     expect(computeLean({ budget: 20, zeit: 70, stabilitaet: 70 }).wobble).toBeGreaterThan(0);
   });
 
@@ -245,7 +252,7 @@ describe('game flow (F-104, F-202, F-207, F-208)', () => {
       run = step(run, level, { type: 'continue' });
     }
     expect(run).toMatchObject({ phase: 'result', outcome: 'completed' });
-    expect(run.gauges).toEqual({ budget: 24, zeit: 24, stabilitaet: 100 });
+    expect(run.gauges).toEqual({ budget: 40, zeit: 40, stabilitaet: 100 });
   });
 
   it('records rating, real change and gauges for each choice', () => {
@@ -254,7 +261,7 @@ describe('game flow (F-104, F-202, F-207, F-208)', () => {
       optionId: 'B',
       rating: 'riskant',
       delta: { budget: 0, zeit: 6, stabilitaet: -26 },
-      gaugesAfter: { budget: 60, zeit: 66, stabilitaet: 34 },
+      gaugesAfter: { budget: 76, zeit: 82, stabilitaet: 50 },
     });
   });
 
@@ -275,7 +282,7 @@ describe('game flow (F-104, F-202, F-207, F-208)', () => {
     let run = atFirstSituation();
     run = play(run, ['B', 'B']);
     expect(run).toMatchObject({ phase: 'situation', outcome: 'running' });
-    expect(run.gauges.stabilitaet).toBe(8);
+    expect(run.gauges.stabilitaet).toBe(24);
     run = step(run, level, { type: 'choose', optionId: 'B' });
     expect(run).toMatchObject({ phase: 'feedback', outcome: 'collapsed' });
     expect(run.gauges.stabilitaet).toBe(0);
@@ -288,7 +295,7 @@ describe('game flow (F-104, F-202, F-207, F-208)', () => {
     // 6 of 12 points: below the 65 % the final inspection asks for, and no gauge at zero.
     const run = play(atFirstSituation(), ['B', 'C', 'B', 'C', 'A', 'A']);
     expect(run).toMatchObject({ phase: 'result', outcome: 'rejected' });
-    expect(run.gauges).toEqual({ budget: 36, zeit: 32, stabilitaet: 48 });
+    expect(run.gauges).toEqual({ budget: 52, zeit: 48, stabilitaet: 64 });
   });
 
   it('accepts a building at exactly the required share of points', () => {

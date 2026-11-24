@@ -116,7 +116,7 @@
           "wirkung": {
             "budget": "-mittel",
             "zeit": "-klein",
-            "stabilitaet": "-mittel"
+            "stabilitaet": "-gross"
           },
           "einstufung": "riskant",
           "erklaerung": "Wenn alles wichtig ist, ist nichts wichtig. Das Team verzettelt sich, das Budget schmilzt, und die wirklich kritischen Risiken bekommen zu wenig Aufmerksamkeit."
@@ -126,7 +126,7 @@
           "text": "Du legst mit dem Team fest, was «hoch» in Franken und Wochen heisst, und bewertest neu.",
           "wirkung": {
             "budget": "-klein",
-            "zeit": "-klein",
+            "zeit": "0",
             "stabilitaet": "+gross"
           },
           "einstufung": "gut",
@@ -202,8 +202,8 @@
           "id": "A",
           "text": "Du lässt zuerst alle für sich schätzen und besprichst dann die Unterschiede.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -215,7 +215,7 @@
           "wirkung": {
             "budget": "0",
             "zeit": "+klein",
-            "stabilitaet": "-mittel"
+            "stabilitaet": "-gross"
           },
           "einstufung": "riskant",
           "erklaerung": "Er kennt die Technik, aber nicht den Schulalltag. Wenn eine Person alles bewertet, fliessen ihre blinden Flecken direkt ins Register."
@@ -224,7 +224,7 @@
           "id": "C",
           "text": "Du brichst ab und verschiebst die Bewertung auf eine spätere Sitzung.",
           "wirkung": {
-            "budget": "0",
+            "budget": "-klein",
             "zeit": "-mittel",
             "stabilitaet": "+klein"
           },
@@ -246,7 +246,7 @@
           "id": "A",
           "text": "Du streichst es von der Liste. Es ist zu unwahrscheinlich, um Zeit darauf zu verwenden.",
           "wirkung": {
-            "budget": "0",
+            "budget": "+klein",
             "zeit": "+klein",
             "stabilitaet": "-gross"
           },
@@ -338,8 +338,8 @@
           "id": "A",
           "text": "Du bewertest die Risiken neu, die vom Wechsel und vom Termin betroffen sind.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -362,7 +362,7 @@
           "wirkung": {
             "budget": "0",
             "zeit": "0",
-            "stabilitaet": "-mittel"
+            "stabilitaet": "-gross"
           },
           "einstufung": "riskant",
           "erklaerung": "Abgenommen heisst nicht aktuell. Ihr steuert nun nach einer Einschätzung, die zur alten Lage gehört."
@@ -384,7 +384,7 @@
           "wirkung": {
             "budget": "0",
             "zeit": "+klein",
-            "stabilitaet": "-mittel"
+            "stabilitaet": "-gross"
           },
           "einstufung": "riskant",
           "erklaerung": "Es gleicht sich nicht aus. Die Bewertungen sind nicht vergleichbar, und die Rangliste der Risiken hängt davon ab, wer gerade bewertet hat."
@@ -404,8 +404,8 @@
           "id": "C",
           "text": "Du legst mit dem Team die Stufen mit Beispielen in Franken und Wochen fest.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -474,8 +474,8 @@
           "id": "A",
           "text": "Du nimmst die Argumente aus beiden Antworten und bewertest mit dem Team nach eurer Skala.",
           "wirkung": {
-            "budget": "0",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -575,7 +575,7 @@
           "wirkung": {
             "budget": "0",
             "zeit": "+klein",
-            "stabilitaet": "-mittel"
+            "stabilitaet": "-gross"
           },
           "einstufung": "riskant",
           "erklaerung": "Wer am lautesten oder am höchsten ist, bestimmt nun die Reihenfolge. Die Matrix verliert ihren Wert, und ein wichtiges Risiko bleibt unbehandelt."

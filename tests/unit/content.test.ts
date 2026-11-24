@@ -350,25 +350,25 @@ describe('content statistics and pattern warnings (A1, A2)', () => {
     expect(warningsFor((l) => lengthen(l, 1, 'riskant', 1.25))).not.toContain('30 %');
   });
 
-  it('warns if too few options touch the budget', () => {
-    const text = warningsFor((l) => {
+  it('rejects a level in which too few options touch the budget', () => {
+    const errors = errorsFor((l) => {
       for (const s of l.situationen) {
         for (const o of s.optionen) if (o.einstufung !== 'gut') o.wirkung.budget = '0';
       }
     });
-    expect(text).toContain(
+    expect(errors.join('\n')).toContain(
       'nur 33 % der Optionen haben eine Budgetwirkung (nötig mindestens 40 %)',
     );
   });
 
-  it('warns if the good options cost almost only one gauge', () => {
-    const text = warningsFor((l) => {
+  it('rejects a level whose good options cost almost only one gauge', () => {
+    const errors = errorsFor((l) => {
       for (const s of l.situationen) {
         const good = s.optionen.find((o) => o.einstufung === 'gut');
         if (good) good.wirkung = { budget: '0', zeit: '-klein', stabilitaet: '+mittel' };
       }
     });
-    expect(text).toContain('100 % der Kosten der guten Optionen entfallen auf «zeit»');
+    expect(errors.join('\n')).toContain('100 % der Kosten der guten Optionen entfallen auf «zeit»');
   });
 
   it('writes a report with one row per level and the affected situations', () => {

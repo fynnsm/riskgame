@@ -6,7 +6,7 @@ export const BALANCE = {
   gauge: {
     min: 0,
     max: 100,
-    start: 60,
+    start: 76,
     /** Below this a gauge counts as critical: the label says so and the site shows a warning sign. */
     criticalBelow: 30,
   },
@@ -55,11 +55,11 @@ export const BALANCE = {
   /** F-205: how gauges turn into tilt and wobble. */
   lean: {
     /** The weakest gauge starts to tilt the building below this value. */
-    tiltStartsBelow: 60,
+    tiltStartsBelow: 40,
     /** Wobble sets in later than tilt, as a warning that collapse is close. */
-    wobbleStartsBelow: 45,
-    weakestWeight: 0.7,
-    imbalanceWeight: 0.3,
+    wobbleStartsBelow: 30,
+    weakestWeight: 0.85,
+    imbalanceWeight: 0.15,
     maxTiltDegrees: 11,
     /** Sideways shift of a new floor at full tilt, in floor widths. */
     maxFloorShift: 0.16,

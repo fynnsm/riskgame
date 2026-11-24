@@ -54,16 +54,6 @@ export type BalanceProblem =
   | 'random-passes'
   | 'random-range';
 
-/**
- * Rules that already hold and stop the build. The others were added with finding A1 and
- * become binding once the effect values of the content have been corrected.
- */
-export const BINDING_PROBLEMS: readonly BalanceProblem[] = [
-  'good-fails',
-  'risky-passes',
-  'random-passes',
-];
-
 /** Plays the given situations in order with the option the chooser returns. */
 export function playRun(
   situations: readonly Situation[],
@@ -204,10 +194,7 @@ export function balanceProblems(report: BalanceReport): BalanceProblem[] {
   return problems;
 }
 
-/** True if no binding rule is broken; with `strict`, if no rule at all is broken. */
-export function isBalanced(report: BalanceReport, strict = false): boolean {
-  const problems = balanceProblems(report);
-  return strict
-    ? problems.length === 0
-    : problems.every((problem) => !BINDING_PROBLEMS.includes(problem));
+/** True if the level breaks none of the rules. */
+export function isBalanced(report: BalanceReport): boolean {
+  return balanceProblems(report).length === 0;
 }

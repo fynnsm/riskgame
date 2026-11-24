@@ -6,11 +6,11 @@ Stand: 60 Situationen in 5 Leveln, davon 60 im Entwurf und 0 freigegeben.
 
 | Level | Situationen | Entwurf | Freigegeben | Mit AI-Ausgabe | Gute Option ist die längste | Längenunterschied über 30 % | Optionen mit Budgetwirkung | Kosten der guten Optionen: Budget / Zeit / Stabilität |
 |---|---|---|---|---|---|---|---|---|
-| Level 1 | 12 | 12 | 0 | 5 (42 %) | 11 (92 %) | 6 | 19 % | 29 % / 71 % / 0 % |
-| Level 2 | 12 | 12 | 0 | 4 (33 %) | 10 (83 %) | 8 | 25 % | 15 % / 85 % / 0 % |
-| Level 3 | 12 | 12 | 0 | 4 (33 %) | 10 (83 %) | 10 | 50 % | 40 % / 60 % / 0 % |
-| Level 4 | 12 | 12 | 0 | 4 (33 %) | 9 (75 %) | 8 | 11 % | 8 % / 92 % / 0 % |
-| Level 5 | 12 | 12 | 0 | 3 (25 %) | 9 (75 %) | 8 | 11 % | 20 % / 80 % / 0 % |
+| Level 1 | 12 | 12 | 0 | 5 (42 %) | 11 (92 %) | 6 | 42 % | 50 % / 50 % / 0 % |
+| Level 2 | 12 | 12 | 0 | 4 (33 %) | 10 (83 %) | 8 | 42 % | 50 % / 50 % / 0 % |
+| Level 3 | 12 | 12 | 0 | 4 (33 %) | 10 (83 %) | 10 | 47 % | 50 % / 50 % / 0 % |
+| Level 4 | 12 | 12 | 0 | 4 (33 %) | 9 (75 %) | 8 | 42 % | 50 % / 50 % / 0 % |
+| Level 5 | 12 | 12 | 0 | 3 (25 %) | 9 (75 %) | 8 | 42 % | 50 % / 50 % / 0 % |
 
 ## Was die Spalten bedeuten
 

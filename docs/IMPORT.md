@@ -74,6 +74,10 @@ Leite die Wirkungen aus dem Text ab:
 - Braucht Zeit oder verzögert: `zeit` negativ. Spart Zeit: `zeit` positiv.
 - Senkt oder kontrolliert Risiken: `stabilitaet` positiv. Lässt Risiken unbehandelt, übernimmt AI-Ergebnisse ungeprüft oder schafft neue Risiken: `stabilitaet` negativ.
 - Im Zweifel die kleinere Stufe wählen. `gross` nur für klar einschneidende Folgen.
+- `budget` steht für Geld und für Arbeitsstunden anderer (Workshop, Beratung, Team). `zeit` steht für den Terminplan: Du machst etwas allein oder nacheinander, oder es wird gewartet.
+- Eine gute Option kostet **entweder** `-klein` Budget **oder** `-klein` Zeit, nicht beides und nicht mehr. Sonst steht am Schluss auch bei lauter guten Entscheiden ein schiefes Gebäude.
+- Eine riskante Option wirkt fast immer `-gross` auf `stabilitaet`, höchstens in einem Drittel der Fälle `-mittel`.
+- Eine vertretbare Option kostet spürbar Zeit oder Budget (oft `-mittel`), aber nie so viel, dass acht davon ein Gebäude zum Einsturz bringen.
 
 ### Regeln, die geprüft werden
 
@@ -84,7 +88,10 @@ Leite die Wirkungen aus dem Text ab:
 5. Die Position sagt nichts über die Qualität: Verteile die gute Option zufällig auf A, B oder C. Die App mischt zusätzlich.
 6. `lernziel` muss eine ID aus den `lernziele` des Levels sein. Kennst du sie nicht, frag nach.
 7. IDs sind eindeutig und folgen dem Muster unten.
-8. Maximale Längen (Zeichen inklusive Leerzeichen):
+8. Pro Level haben mindestens 40 % aller Optionen eine Budgetwirkung ungleich `"0"`.
+9. Pro Level entfallen höchstens 60 % der Kosten der guten Optionen auf dieselbe Anzeige. Verteile sie also etwa hälftig auf Budget und Zeit.
+10. `npm run simulate:balance` muss bestehen: lauter gute Entscheide enden in jeder Anzeige bei mindestens 40, lauter vertretbare führen nie zum Einsturz, lauter riskante spätestens beim fünften Entscheid.
+11. Maximale Längen (Zeichen inklusive Leerzeichen):
 
 | Feld | Maximum |
 |---|---|
@@ -98,6 +105,8 @@ Leite die Wirkungen aus dem Text ab:
 | Lernziel `text` | 160 |
 
 Ist ein Text zu lang, kürze ihn, ohne die Aussage zu ändern.
+
+Zusätzlich gibt die Prüfung Hinweise aus, ohne abzulehnen: wenn die gute Option der längste der drei Texte ist und wenn der längste Optionstext mehr als 30 % länger ist als der kürzeste. Schreibe die drei Optionen deshalb etwa gleich lang, sonst erkennt man die richtige Antwort an der Länge.
 
 ### Format «Situation»
 
@@ -225,6 +234,8 @@ Gekürzt auf eine Karte und eine Situation. Eine echte Level-Datei braucht minde
 
 - Drei Optionen, jede mit mindestens einer negativen Wirkung?
 - Mindestens eine gute und eine riskante Option?
+- Gute Option kostet nur `-klein`, entweder Budget oder Zeit?
+- Die drei Optionstexte etwa gleich lang?
 - Alle Wirkungen als Stufe, keine Zahlen?
 - Kein ß, keine echten Namen, kein HTML oder Markdown in den Feldern?
 - Alle Texte innerhalb der Maximallängen?

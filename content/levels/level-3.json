@@ -68,7 +68,7 @@
           "wirkung": {
             "budget": "0",
             "zeit": "+klein",
-            "stabilitaet": "-mittel"
+            "stabilitaet": "-gross"
           },
           "einstufung": "riskant",
           "erklaerung": "Die Reihenfolge einer AI-Liste sagt nichts über die Wichtigkeit für dein Projekt. Du wählst ungeprüft und weisst nicht, ob die drei bei euch überhaupt wirken."
@@ -77,8 +77,8 @@
           "id": "B",
           "text": "Du setzt alle zwanzig um. Bei Asbest darf man nichts riskieren.",
           "wirkung": {
-            "budget": "-gross",
-            "zeit": "-mittel",
+            "budget": "-mittel",
+            "zeit": "-klein",
             "stabilitaet": "+klein"
           },
           "einstufung": "vertretbar",
@@ -89,7 +89,7 @@
           "text": "Du wählst mit der Bauleitung die zwei oder drei aus, die machbar sind und am meisten wirken.",
           "wirkung": {
             "budget": "-klein",
-            "zeit": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -110,7 +110,7 @@
           "id": "A",
           "text": "Du bestellst das zweite Team. Sicher ist sicher.",
           "wirkung": {
-            "budget": "-gross",
+            "budget": "-mittel",
             "zeit": "0",
             "stabilitaet": "+mittel"
           },
@@ -156,7 +156,7 @@
           "wirkung": {
             "budget": "0",
             "zeit": "+klein",
-            "stabilitaet": "-mittel"
+            "stabilitaet": "-gross"
           },
           "einstufung": "riskant",
           "erklaerung": "Wenn alle zuständig sind, ist es niemand. Die Massnahmen bleiben liegen, bis das Risiko eintritt und alle überrascht sind."
@@ -242,8 +242,8 @@
           "id": "A",
           "text": "Du schliesst vorsorglich einen Vertrag mit einem zweiten Lieferanten ab.",
           "wirkung": {
-            "budget": "-mittel",
-            "zeit": "-klein",
+            "budget": "-klein",
+            "zeit": "0",
             "stabilitaet": "+klein"
           },
           "einstufung": "vertretbar",
@@ -347,7 +347,7 @@
           "wirkung": {
             "budget": "0",
             "zeit": "+klein",
-            "stabilitaet": "-mittel"
+            "stabilitaet": "-gross"
           },
           "einstufung": "riskant",
           "erklaerung": "Vorbeugung senkt die Wahrscheinlichkeit, nicht die Auswirkung. Tritt der Fall ein, beginnt ihr unter Zeitdruck bei null."
@@ -357,7 +357,7 @@
           "text": "Du legst einen Notfallplan mit Auslöser, Ersatzlieferant und Reserve fest.",
           "wirkung": {
             "budget": "-klein",
-            "zeit": "-klein",
+            "zeit": "0",
             "stabilitaet": "+gross"
           },
           "einstufung": "gut",
@@ -448,7 +448,7 @@
           "id": "C",
           "text": "Du bleibst beim Spezialelement, bestellst sehr früh und mietest ein Lager.",
           "wirkung": {
-            "budget": "-mittel",
+            "budget": "-klein",
             "zeit": "0",
             "stabilitaet": "+klein"
           },
@@ -470,8 +470,8 @@
           "id": "A",
           "text": "Du verschickst den Brief künftig zweimal pro Woche.",
           "wirkung": {
-            "budget": "-klein",
-            "zeit": "0",
+            "budget": "0",
+            "zeit": "-klein",
             "stabilitaet": "0"
           },
           "einstufung": "vertretbar",
@@ -493,7 +493,7 @@
           "text": "Du klärst, warum es nicht wirkt, passt die Massnahme an und setzt einen Termin zur Überprüfung.",
           "wirkung": {
             "budget": "-klein",
-            "zeit": "-klein",
+            "zeit": "0",
             "stabilitaet": "+mittel"
           },
           "einstufung": "gut",
@@ -540,7 +540,7 @@
           "id": "C",
           "text": "Du verdreifachst die Zahl der AI, um sicher zu sein.",
           "wirkung": {
-            "budget": "-mittel",
+            "budget": "-klein",
             "zeit": "0",
             "stabilitaet": "+klein"
           },

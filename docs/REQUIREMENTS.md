@@ -1,6 +1,6 @@
 # Risk Tower (Arbeitstitel) – Requirements
 
-Version 0.5 · Stand 24.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
+Version 0.6 · Stand 24.11.2026 · HWZ BDA-A25, Project Management, Projekt 1 (Gruppe Jess), Thema «Risikomanagement mit AI»
 
 ## 1. Zweck
 
@@ -69,9 +69,9 @@ Bewertungsraster und Abgabetermine liegen noch nicht vor (siehe `later/BRAINSTOR
 | F-210 | Jede Option trägt eine Einstufung (gut, vertretbar, riskant) für Auswertung und Lernerfolg; vor der Wahl ist sie nicht sichtbar | S | V |
 | F-211 | Bauabnahme: Ein Gebäude, das stehen bleibt, gilt nur als bestanden, wenn mindestens 65 % der möglichen Punkte erreicht sind (gut = 2, vertretbar = 1, riskant = 0). Sonst ist das Level nicht bestanden und wird wiederholt. Die Regel steht im Briefing | M | E |
 
-Werte der Balance (am 23.11.2026 verschärft, weil das Spiel ohne Lesen zu bestehen war): Anzeigen beginnen bei 60; klein = 6, mittel = 14, gross = 26 Punkte. Mit den alten Werten (Start 70, 6/12/20, 6 Situationen, keine Bauabnahme) bestand blindes Klicken in 98 % der Durchgänge, mit den neuen in 11 bis 16 %.
+Werte der Balance: Anzeigen beginnen bei 76; klein = 6, mittel = 14, gross = 26 Punkte. Verlauf: Am 23.11.2026 verschärft (Start 60, 6/14/26, 8 Situationen, Bauabnahme), weil das Spiel ohne Lesen zu bestehen war. Am 24.11.2026 Startwert auf 76 gehoben (Entscheid Fynn), weil sonst perfektes Spiel rechnerisch nie über 36 enden kann: Jede gute Option kostet mindestens 6 Punkte, acht Entscheide also mindestens 48 auf Budget und Zeit zusammen.
 
-Regel zu F-205 (Vorschlag von Claude, in `src/core/balance.ts` einstellbar): Die Neigung beginnt, sobald die schwächste Anzeige unter 60 fällt, und wächst bis 0. Sie zählt zu 70 %, der Abstand zwischen höchster und tiefster Anzeige zu 30 %. Das Wackeln beginnt unter 45. Das Gebäude neigt sich in die Richtung der schwächsten Anzeige (Budget nach links, Zeit nach rechts, Stabilität nach vorn). Jedes Stockwerk wird um die Neigung des Moments versetzt aufgesetzt. Zusätzlich sieht man jedem Stockwerk den Entscheid an, der es gebaut hat: Nach einem vertretbaren sitzen die Module leicht schief, nach einem riskanten deutlich und mit einem Loch statt einem Fenster.
+Regel zu F-205 (in `src/core/balance.ts` einstellbar, am 24.11.2026 angepasst): Die Neigung beginnt, sobald die schwächste Anzeige unter 40 fällt, und wächst bis 0. Sie zählt zu 85 %, der Abstand zwischen höchster und tiefster Anzeige zu 15 %. Das Wackeln beginnt unter 30, zusammen mit der Warnung (F-212). Wer gut entscheidet, endet bei mindestens 40 und hat damit ein gerades Gebäude. Das Gebäude neigt sich in die Richtung der schwächsten Anzeige (Budget nach links, Zeit nach rechts, Stabilität nach vorn). Jedes Stockwerk wird um die Neigung des Moments versetzt aufgesetzt. Zusätzlich sieht man jedem Stockwerk den Entscheid an, der es gebaut hat: Nach einem vertretbaren sitzen die Module leicht schief, nach einem riskanten deutlich und mit einem Loch statt einem Fenster.
 
 ### 4.3 AI-Bezug
 
@@ -158,8 +158,8 @@ Regeln zu F-602 und F-603 (Vorschlag von Claude, in `src/core/balance.ts` einste
 | F-905 | Inhaltliche Regeln werden automatisch geprüft: genau drei Optionen, Textlängen, eindeutige IDs, jede Option mit mindestens einer negativen Wirkung, pro Situation mindestens eine gute und eine riskante Option, Pool gross genug | M | V |
 | F-906 | Jede Situation hat einen Status (`entwurf`, `freigegeben`); die veröffentlichte Version zeigt nur freigegebene, lokal sind alle sichtbar | S | V |
 | F-907 | Ein Skript simuliert die Balance pro Level: Wer nur gute Optionen wählt, besteht jede Ziehung; wer nur riskante wählt, scheitert in jeder | S | V |
-| F-910 | Das Balance-Skript prüft pro Level über alle Ziehungen: Nur gute Optionen: kein Einsturz, jede Anzeige endet bei mindestens 40, Neigung am Schluss höchstens 10 % des Maximums. Nur vertretbare: kein Einsturz, Bauabnahme nicht bestanden. Nur riskante: Einsturz spätestens beim fünften Entscheid. Zufällige Wahl (5000 Läufe): 60 bis 90 % scheitern. Verbindlich, sobald die `wirkung`-Werte korrigiert sind; bis dahin meldet das Skript die Verstösse als «offen» | M | E |
-| F-911 | Die Inhaltsprüfung warnt bei Mustern, die das Level verraten oder verzerren: gute Option ist der längste Text (ab 50 % der Situationen mit Nennung der Grenze), längster Optionstext über 30 % länger als der kürzeste, weniger als 40 % der Optionen mit Budgetwirkung, mehr als 60 % der Kosten der guten Optionen auf derselben Anzeige | M | E |
+| F-910 | Das Balance-Skript prüft pro Level über alle Ziehungen und schlägt bei jedem Verstoss fehl: Nur gute Optionen: kein Einsturz, jede Anzeige endet bei mindestens 40, Neigung am Schluss höchstens 10 % des Maximums. Nur vertretbare: kein Einsturz, Bauabnahme nicht bestanden. Nur riskante: Einsturz spätestens beim fünften Entscheid. Zufällige Wahl (5000 Läufe): 60 bis 90 % scheitern | M | E |
+| F-911 | Die Inhaltsprüfung lehnt ein Level ab, wenn weniger als 40 % der Optionen eine Budgetwirkung haben oder mehr als 60 % der Kosten der guten Optionen auf dieselbe Anzeige entfallen. Sie warnt, ohne abzulehnen, wenn die gute Option der längste Text ist (ab 50 % der Situationen mit Nennung der Grenze) oder der längste Optionstext über 30 % länger ist als der kürzeste; die Texte gehören der Gruppe | M | E |
 | F-912 | `npm run content:report` schreibt `docs/CONTENT-REPORT.md` mit diesen Zahlen pro Level; die CI schlägt fehl, wenn der Bericht nicht aktuell ist | S | E |
 | F-909 | Dasselbe Skript spielt jedes Level 2000-mal mit zufälligen Entscheiden. Besteht blindes Klicken in mehr als 20 % der Durchgänge, schlägt die Prüfung fehl | M | E |
 | F-908 | Ein Skript erzeugt aus den JSON-Dateien eine Inhaltsdokumentation als Markdown (für das Lieferobjekt «Dokumentation der Inhalte») | K | V |
