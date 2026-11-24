@@ -404,12 +404,12 @@ Stand: **U** = umgesetzt, **O** = offen.
 | G-34 | Fussgänger auf Trottoirs mit einfacher Lauf-Animation (Stufe 2) | K | U |
 | G-35 | Bäume wiegen leicht, Wasserflächen schimmern, Rauch aus einzelnen Kaminen (Stufe 1, 2) | K | U |
 | G-36 | Nachts leuchten Fenster zufällig, Fahrzeuge haben Lichter (Stufe 1, 2) | S | U |
-| G-40 | Gebäudetypen: `projekt.gebaeude` bestimmt Fassade, Fensterraster, Farben und Dachaufbau; die fünf Gebäude sind in der Stadtansicht auf einen Blick unterscheidbar | M | O |
-| G-41 | Stockwerk setzen: Kran schwenkt ein, Stockwerk senkt sich ab und federt, Staub, Arbeiter reagieren; höchstens 1.2 Sekunden | S | O |
-| G-42 | Reaktion auf die Wahl am neuen Stockwerk (gut: grüner Schein; riskant: versetzt, Risse, ein Brocken fällt); die Einstufung steht immer auch als Text da | S | O (versetzte Module und Loch sind vorhanden) |
-| G-43 | Wackeln und Neigung bewegen sich weich; im kritischen Bereich lösen sich kleine Teile, die Arbeiter treten zurück | S | O |
-| G-44 | Fertigstellung: Dach wird aufgesetzt, Gerüst und Kran verschwinden, der Bauzaun weicht einem Vorplatz mit Bäumen | S | O |
-| G-45 | Einsturz: Stockwerke kippen nacheinander in Neigungsrichtung, Staubwolke, Trümmer bleiben liegen, Schild «Baustopp», kurzes Kamerawackeln | S | O |
+| G-40 | Gebäudetypen: `projekt.gebaeude` bestimmt Fassade, Fensterraster, Farben und Dachaufbau; die fünf Gebäude sind in der Stadtansicht auf einen Blick unterscheidbar | M | U |
+| G-41 | Stockwerk setzen: Kran schwenkt ein, Stockwerk senkt sich ab und federt, Staub, Arbeiter reagieren; höchstens 1.2 Sekunden | S | U (Kran schwenkt, Stockwerk federt, Staub; die Arbeiter reagieren noch nicht auf das Setzen) |
+| G-42 | Reaktion auf die Wahl am neuen Stockwerk (gut: grüner Schein; riskant: versetzt, Risse, ein Brocken fällt); die Einstufung steht immer auch als Text da | S | U (grüner Rahmen statt Schein, weil die Klötze nicht leuchten können; Risse und ein fallender Brocken) |
+| G-43 | Wackeln und Neigung bewegen sich weich; im kritischen Bereich lösen sich kleine Teile, die Arbeiter treten zurück | S | U (Neigung folgt weich; im kritischen Bereich treten die Arbeiter zurück, lose Teile fallen nur nach riskanten Entscheiden) |
+| G-44 | Fertigstellung: Dach wird aufgesetzt, Gerüst und Kran verschwinden, der Bauzaun weicht einem Vorplatz mit Bäumen | S | U |
+| G-45 | Einsturz: Stockwerke kippen nacheinander in Neigungsrichtung, Staubwolke, Trümmer bleiben liegen, Schild «Baustopp», kurzes Kamerawackeln | S | U (das Wort «Baustopp» steht in der Auswertung, weil Klötze keine Schrift tragen) |
 | G-50 | Bildschirm «Level bestanden»: Fertigstellung, Kameraschwenk im Viertelkreis, Banner «Bauabnahme bestanden», Sterne einzeln, dann die Auswertung; Feier nach Sternen (3: Feuerwerk, Fahne, Jubel; 2: Konfetti, Fahne; 1: nur Banner) | M | O (Ablauf und Zuordnung sind definiert) |
 | G-51 | Bildschirm «Bauabnahme nicht bestanden»: Figur mit Klemmbrett, Stempel «Nicht abgenommen», Absperrband; kein Jubel, kein Einsturz | M | O |
 | G-52 | Bildschirm «Einsturz»: Sequenz aus G-45, dann die Auswertung | M | O |

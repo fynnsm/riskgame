@@ -22,7 +22,7 @@ import type { Logger } from '../logging/logger.ts';
 import type { Part } from './boxes.ts';
 import { box, hash, shade } from './boxes.ts';
 import type { Quality } from './director.ts';
-import { decorationFor, momentFor, timeOfDay } from './director.ts';
+import { decorationFor, momentFor, resultSequence, timeOfDay } from './director.ts';
 import type { Lighting, TimeOfDay } from './palette.ts';
 import { C, LIGHTING } from './palette.ts';
 import { TUNING } from './tuning.ts';
@@ -44,31 +44,66 @@ const FLOOR_HEIGHT = 1.5;
 const PLOT_TOP = 0.42;
 const HANG_HEIGHT = TUNING.tower.hangHeight;
 
-/** The bright container colours of the sketch. Every kind uses all of them, starting elsewhere. */
-const VIVID = [
-  C.vividRed,
-  C.vividOrange,
-  C.vividYellow,
-  C.green,
-  C.blue,
-  C.purple,
-  C.teal,
-  C.paleBlue,
-];
-
-/** Each kind leans towards two colours, so the five towers stay recognisable in the city. */
-const ACCENTS: Record<BuildingKind, [number, number]> = {
-  wohnhaus: [C.vividRed, C.vividYellow],
-  buero: [C.blue, C.paleBlue],
-  schule: [C.vividOrange, C.green],
-  spital: [C.offWhite, C.teal],
-  turm: [C.purple, C.pink],
-};
-
-function paletteFor(kind: BuildingKind): number[] {
-  const [first, second] = ACCENTS[kind];
-  return [...VIVID, first, first, second];
+/**
+ * G-40: each kind of building has its own wall colours, window pattern and trim, so the five
+ * towers can be told apart at a glance in the city. All stay in the bright block style.
+ */
+interface Facade {
+  walls: readonly number[];
+  /** Colour of the band on top of each module; null means a darker shade of the wall. */
+  trim: number | null;
+  /** Window centres along a face, and the size of each window. */
+  slots: readonly number[];
+  width: number;
+  height: number;
+  /** A small slab under each window, as on a block of flats. */
+  balcony: boolean;
 }
+
+const FACADES: Record<BuildingKind, Facade> = {
+  wohnhaus: {
+    walls: [C.vividRed, C.vividOrange, C.vividYellow, C.wallCream],
+    trim: null,
+    slots: [-0.46, 0.46],
+    width: 0.46,
+    height: 0.74,
+    balcony: true,
+  },
+  buero: {
+    walls: [C.blue, C.paleBlue, C.carBlue],
+    trim: C.steel,
+    // One wide band of glass per face.
+    slots: [0],
+    width: 1.5,
+    height: 0.66,
+    balcony: false,
+  },
+  schule: {
+    walls: [C.vividOrange, C.green, C.vividYellow],
+    trim: C.wood,
+    slots: [-0.6, 0, 0.6],
+    width: 0.34,
+    height: 0.5,
+    balcony: false,
+  },
+  spital: {
+    walls: [C.offWhite, C.white, C.paleBlue],
+    trim: C.teal,
+    slots: [-0.46, 0.46],
+    width: 0.42,
+    height: 0.6,
+    balcony: false,
+  },
+  turm: {
+    walls: [C.purple, C.pink, C.ink],
+    trim: C.yellow,
+    // Tall, narrow slits.
+    slots: [-0.55, 0, 0.55],
+    width: 0.2,
+    height: 1,
+    balcony: false,
+  },
+};
 
 const GLASS = C.glass;
 const FRAME = C.white;
@@ -83,7 +118,20 @@ export interface ThreeViewOptions {
   fixedQuality?: 0 | 1 | 2;
 }
 
-type ChunkKind = 'fixed' | 'module' | 'top' | 'hang' | 'bubble';
+type ChunkKind =
+  | 'fixed'
+  | 'module'
+  | 'top'
+  | 'hang'
+  | 'bubble'
+  /** Puffs that rise where a new floor has just landed (G-41). */
+  | 'dust'
+  /** A green frame that flashes around a floor built on a good decision (G-42). */
+  | 'flash'
+  /** A piece that breaks off a floor built on a risky decision (G-42). */
+  | 'debris'
+  /** The cloud that billows up when the tower comes down (G-45). */
+  | 'collapseDust';
 
 /** A group of boxes that moves as one: a module of the tower, a crane, a warning sign. */
 interface Chunk {
@@ -117,6 +165,14 @@ interface LotVisual {
   dropStart: number | null;
   /** Time the collapse started; -Infinity shows the rubble at once. Null while standing. */
   collapseStart: number | null;
+  /** Time the newest floor was set; drives dust, flash and falling debris. Null when over. */
+  effectStart: number | null;
+  /** Time the roof started to come down, or null. */
+  roofStart: number | null;
+  roofed: boolean;
+  /** The lean as currently shown; it follows the base values instead of jumping (G-43). */
+  rotX: number;
+  rotZ: number;
   /** True while matrices must be recomputed every frame. */
   animated: boolean;
   dirty: boolean;
@@ -258,6 +314,8 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   // --- Lots and towers ---
   /** True while lights are on; towers are rebuilt when this flips, because their windows change. */
   let night = false;
+  /** Time a collapse started to shake the camera, or null (G-45). */
+  let shakeStart: number | null = null;
   const lotsGroup = new Group();
   scene.add(lotsGroup);
   let visuals: LotVisual[] = [];
@@ -268,6 +326,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   function addModule(
     parts: TowerPart[],
     chunk: number,
+    kind: BuildingKind,
     color: number,
     mx: number,
     mz: number,
@@ -276,38 +335,65 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     seed: number,
   ): void {
     const push = (part: Part) => parts.push({ ...part, chunk });
+    const facade = FACADES[kind];
     push(box(color, MODULE - 0.06, FLOOR_HEIGHT - 0.22, MODULE - 0.06, 0, -0.11, 0));
     push(
-      box(shade(color, 0.68), MODULE + 0.04, 0.22, MODULE + 0.04, 0, FLOOR_HEIGHT / 2 - 0.11, 0),
+      box(
+        facade.trim ?? shade(color, 0.68),
+        MODULE + 0.04,
+        0.22,
+        MODULE + 0.04,
+        0,
+        FLOOR_HEIGHT / 2 - 0.11,
+        0,
+      ),
     );
     const face = MODULE / 2 - 0.03;
-    const slots = [-0.46, 0.46];
+    // The ground floor has a door and one window on every kind of building.
+    const slots = ground ? [-0.46, 0.46] : facade.slots;
+    const width = ground ? 0.46 : facade.width;
     // A badly built module is missing a window and shows a hole instead.
-    const broken = damage >= 1 ? Math.floor(hash(seed + 7) * 2) : -1;
+    const broken = damage >= 1 ? Math.floor(hash(seed + 7) * slots.length) : -1;
     slots.forEach((slot, s) => {
       const door = ground && s === 0;
-      const height = door ? 0.98 : 0.74;
+      const height = door ? 0.98 : ground ? 0.74 : facade.height;
       const y = door ? -0.38 : -0.08;
       // At night some windows of the tower are lit, like those of the houses around it.
       const lit = night && hash(seed + 11 + s) < TUNING.litWindowShare + 0.2;
       const glass = door ? C.door : lit ? C.nightGlass : GLASS;
+      const sill = facade.balcony && !ground;
       if (mx === 1) {
         if (s === broken) {
-          push(box(C.hole, 0.1, 0.56, 0.7, face, y, slot));
+          push(box(C.hole, 0.1, 0.56, width + 0.24, face, y, slot));
         } else {
-          push(box(FRAME, 0.08, height + 0.14, 0.62, face, y, slot));
-          push(box(glass, 0.12, height, 0.46, face + 0.01, y, slot));
+          push(box(FRAME, 0.08, height + 0.14, width + 0.16, face, y, slot));
+          push(box(glass, 0.12, height, width, face + 0.01, y, slot));
+          if (sill)
+            push(box(C.steel, 0.3, 0.08, width + 0.3, face + 0.12, y - height / 2 - 0.1, slot));
         }
       }
       if (mz === 1) {
         if (s === broken) {
-          push(box(C.hole, 0.7, 0.56, 0.1, slot, y, face));
+          push(box(C.hole, width + 0.24, 0.56, 0.1, slot, y, face));
         } else {
-          push(box(FRAME, 0.62, height + 0.14, 0.08, slot, y, face));
-          push(box(glass, 0.46, height, 0.12, slot, y, face + 0.01));
+          push(box(FRAME, width + 0.16, height + 0.14, 0.08, slot, y, face));
+          push(box(glass, width, height, 0.12, slot, y, face + 0.01));
+          if (sill)
+            push(box(C.steel, width + 0.3, 0.08, 0.3, slot, y - height / 2 - 0.1, face + 0.12));
         }
       }
     });
+    // G-42: cracks run across the wall of a module that was built on a risky decision.
+    if (damage >= 1) {
+      if (mx === 1) {
+        push(box(C.hole, 0.06, 0.5, 0.07, face + 0.03, 0.3, 0.05));
+        push(box(C.hole, 0.06, 0.07, 0.34, face + 0.03, 0.06, 0.2));
+      }
+      if (mz === 1) {
+        push(box(C.hole, 0.07, 0.5, 0.06, -0.05, 0.3, face + 0.03));
+        push(box(C.hole, 0.34, 0.07, 0.06, -0.2, 0.06, face + 0.03));
+      }
+    }
   }
 
   function addCrane(parts: TowerPart[], chunk: number, x: number, z: number, flip: number): void {
@@ -322,7 +408,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
 
   function addRoof(parts: TowerPart[], chunk: number, kind: BuildingKind): void {
     const push = (part: Part) => parts.push({ ...part, chunk });
-    const accent = ACCENTS[kind][0];
+    const accent = FACADES[kind].walls[0] ?? C.white;
     push(box(C.roofSlab, MODULE * 2 + 0.1, 0.16, MODULE * 2 + 0.1, 0, 0.08, 0));
     switch (kind) {
       case 'wohnhaus':
@@ -411,6 +497,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     // Things that stand on the ground and do not lean with the tower.
     const base: Part[] = [];
     const locked = lot.status === 'locked';
+    const roofed = lot.status === 'done' || lot.finished;
     base.push(box(locked ? C.plotLocked : C.plot, 8.4, 0.14, 8.4, 0, PLOT_TOP - 0.07, 0));
     if (locked) {
       for (let k = -2; k <= 2; k++) {
@@ -423,11 +510,13 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
         base.push(box(C.yellow, 8, 0.14, 0.08, 0, PLOT_TOP + 0.7, side * 4));
         base.push(box(C.yellow, 0.08, 0.14, 8, side * 4, PLOT_TOP + 0.7, 0));
       }
-    } else if (lot.status !== 'done') {
-      addWorker(base, 3.2, 3.4, index);
-      addWorker(base, 3.8, 2.6, index + 1);
-      addWorker(base, -3.3, 3.5, index + 2);
-      addWorker(base, 3.4, -3.2, index + 3);
+    } else if (!roofed) {
+      // G-43: with a gauge in the critical range the workers keep their distance.
+      const back = lot.building && lot.building.warnings.length > 0 ? 1.22 : 1;
+      addWorker(base, 3.2 * back, 3.4 * back, index);
+      addWorker(base, 3.8 * back, 2.6 * back, index + 1);
+      addWorker(base, -3.3 * back, 3.5 * back, index + 2);
+      addWorker(base, 3.4 * back, -3.2 * back, index + 3);
       base.push(box(C.crate, 0.9, 0.5, 0.9, -3.2, PLOT_TOP + 0.25, 2.2));
       base.push(box(C.crateLight, 0.7, 0.4, 0.7, -3.1, PLOT_TOP + 0.7, 2.3));
       for (const [cx, cz] of [
@@ -439,14 +528,36 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
         base.push(box(C.orange, 0.3, 0.5, 0.3, cx, PLOT_TOP + 0.25, cz));
       }
     }
-    if (lot.status === 'done') {
+    if (roofed) {
+      // G-44: the site fence gives way to a forecourt with trees.
       for (const [cx, cz] of [
         [-3.5, 3.5],
         [3.5, 3.4],
         [3.4, -3.5],
       ] as const) {
-        base.push(box(C.bush, 0.9, 0.7, 0.9, cx, PLOT_TOP + 0.35, cz));
+        base.push(box(C.trunk, 0.3, 0.7, 0.3, cx, PLOT_TOP + 0.35, cz));
+        base.push(box(C.treeMid, 1.1, 0.8, 1.1, cx, PLOT_TOP + 1.05, cz));
+        base.push(box(C.treeLight, 0.8, 0.6, 0.8, cx, PLOT_TOP + 1.7, cz));
       }
+      base.push(box(C.pavement, 2.2, 0.04, 3.4, 0, PLOT_TOP + 0.02, 3.3));
+    }
+    if (lot.collapsed) {
+      // G-45: a red and white barrier closes the site. The word «Baustopp» stands in the result text.
+      for (let stripe = 0; stripe < 6; stripe++) {
+        base.push(
+          box(
+            stripe % 2 === 0 ? C.red : C.white,
+            0.8,
+            0.5,
+            0.12,
+            -2 + stripe * 0.8,
+            PLOT_TOP + 1,
+            4.3,
+          ),
+        );
+      }
+      base.push(box(C.steel, 0.14, 1.3, 0.14, -2.5, PLOT_TOP + 0.65, 4.3));
+      base.push(box(C.steel, 0.14, 1.3, 0.14, 2.5, PLOT_TOP + 0.65, 4.3));
     }
     const baseMesh = buildMesh(base);
     group.add(baseMesh);
@@ -468,6 +579,11 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       construction: lot.construction,
       dropStart: null,
       collapseStart: null,
+      effectStart: null,
+      roofStart: null,
+      roofed,
+      rotX: previous?.rotX ?? 0,
+      rotZ: previous?.rotZ ?? 0,
       animated: false,
       dirty: true,
     };
@@ -483,9 +599,14 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     visual.dirX = building.dirX;
     visual.dirZ = building.dirZ;
     visual.floorCount = building.floors.length;
-    pivot.rotation.set(visual.baseRotX, 0, visual.baseRotZ);
+    // The lean eases from where the tower stood before; with reduced motion it is simply there.
+    if (reducedMotion || !previous) {
+      visual.rotX = visual.baseRotX;
+      visual.rotZ = visual.baseRotZ;
+    }
+    pivot.rotation.set(visual.rotX, 0, visual.rotZ);
 
-    const palette = paletteFor(building.kind);
+    const palette = FACADES[building.kind].walls;
     const parts = visual.parts;
     const chunks = visual.chunks;
     const footprint = MODULE * 2;
@@ -517,7 +638,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
           ),
         });
         const color = palette[Math.floor(hash(seed) * palette.length)] ?? C.white;
-        addModule(parts, chunk, color, mx, mz, f === 0, jitter, seed);
+        addModule(parts, chunk, building.kind, color, mx, mz, f === 0, jitter, seed);
       }
     });
 
@@ -533,7 +654,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       home: new Vector3(topX, topY, topZ),
       rotation: new Euler(),
     });
-    if (lot.status === 'done') {
+    if (roofed) {
       addRoof(parts, topChunk, building.kind);
     } else if (lot.construction) {
       addCrane(parts, topChunk, -1, -1, 1);
@@ -551,12 +672,77 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
         rotation: new Euler(0, 0.3, 0),
       });
       const color = palette[(building.floors.length + index) % palette.length] ?? C.white;
-      addModule(parts, hang, color, 1, 1, false, 0, 99);
+      addModule(parts, hang, building.kind, color, 1, 1, false, 0, 99);
       parts.push({
         ...box(C.cable, 0.07, 60, 0.07, 0, 30 + FLOOR_HEIGHT / 2 + 0.3, 0),
         chunk: hang,
       });
       parts.push({ ...box(C.amber, 0.5, 0.3, 0.5, 0, FLOOR_HEIGHT / 2 + 0.15, 0), chunk: hang });
+    }
+
+    if (top && !lot.collapsed) {
+      const floorY = topY - FLOOR_HEIGHT;
+      for (let d = 0; d < 6; d++) {
+        const angle = (d / 6) * Math.PI * 2;
+        const dust = chunks.length;
+        chunks.push({
+          kind: 'dust',
+          floor: 0,
+          seed: d,
+          home: new Vector3(
+            topX + Math.cos(angle) * 2.5,
+            floorY + 0.1,
+            topZ + Math.sin(angle) * 2.5,
+          ),
+          rotation: new Euler(0, angle, 0),
+        });
+        parts.push({ ...box(C.smoke, 0.8, 0.6, 0.8, 0, 0, 0), chunk: dust });
+      }
+      if (top.damage === 0) {
+        const flash = chunks.length;
+        chunks.push({
+          kind: 'flash',
+          floor: 0,
+          seed: 0,
+          home: new Vector3(topX, floorY + FLOOR_HEIGHT / 2, topZ),
+          rotation: new Euler(),
+        });
+        const reach = footprint / 2 + 0.22;
+        parts.push(
+          { ...box(C.green, footprint + 0.6, 0.16, 0.16, 0, 0, reach), chunk: flash },
+          { ...box(C.green, footprint + 0.6, 0.16, 0.16, 0, 0, -reach), chunk: flash },
+          { ...box(C.green, 0.16, 0.16, footprint + 0.6, reach, 0, 0), chunk: flash },
+          { ...box(C.green, 0.16, 0.16, footprint + 0.6, -reach, 0, 0), chunk: flash },
+        );
+      }
+    }
+    // A piece lies on the ground for every floor built on a risky decision; the newest one falls.
+    building.floors.forEach((floor, f) => {
+      if (floor.damage < 1) return;
+      const debris = chunks.length;
+      const isTop = f === building.floors.length - 1;
+      chunks.push({
+        kind: isTop ? 'debris' : 'fixed',
+        floor: f,
+        seed: f,
+        home: new Vector3(2.9 + hash(f + 80) * 0.8, 0.2, 2.6 - f * 0.45),
+        rotation: new Euler(0, hash(f + 90) * 3, 0),
+      });
+      parts.push({ ...box(C.debris, 0.5, 0.4, 0.5, 0, 0, 0), chunk: debris });
+    });
+    if (lot.collapsed) {
+      for (let d = 0; d < 8; d++) {
+        const angle = (d / 8) * Math.PI * 2;
+        const cloud = chunks.length;
+        chunks.push({
+          kind: 'collapseDust',
+          floor: 0,
+          seed: d,
+          home: new Vector3(Math.cos(angle) * 2.8, 0.6, Math.sin(angle) * 2.8),
+          rotation: new Euler(0, angle, 0),
+        });
+        parts.push({ ...box(C.smoke, 1, 1, 1, 0, 0, 0), chunk: cloud });
+      }
     }
 
     // One sign per gauge that core reports as critical, each with its own symbol (A6).
@@ -606,6 +792,14 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       !reducedMotion
     ) {
       visual.dropStart = clock;
+      visual.effectStart = clock;
+    }
+    if (roofed && previous && !previous.roofed && !reducedMotion) visual.roofStart = clock;
+    if (
+      visual.collapseStart === clock &&
+      resultSequence('collapsed', 0, reducedMotion).cameraShake
+    ) {
+      shakeStart = clock;
     }
     visual.animated = lot.status === 'active' && !reducedMotion;
     return visual;
@@ -629,7 +823,7 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
   const chunkScale = new Vector3();
   const chunkMatrices: Matrix4[] = [];
 
-  function updateTower(visual: LotVisual, time: number): void {
+  function updateTower(visual: LotVisual, time: number, dt: number): void {
     const tower = visual.tower;
     if (!tower) return;
 
@@ -637,11 +831,29 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     const fallTime = collapsing
       ? Math.min(time - (visual.collapseStart as number), TUNING.tower.collapseMaxSeconds)
       : 0;
+    const T = TUNING.tower;
     let drop = 0;
+    let dropProgress = 1;
     if (visual.dropStart !== null) {
-      const progress = Math.min(1, (time - visual.dropStart) / TUNING.tower.dropSeconds);
-      drop = (1 - progress) * (1 - progress) * HANG_HEIGHT;
-      if (progress >= 1) visual.dropStart = null;
+      dropProgress = Math.min(1, (time - visual.dropStart) / T.dropSeconds);
+      drop = (1 - dropProgress) * (1 - dropProgress) * HANG_HEIGHT;
+      if (dropProgress >= 1) visual.dropStart = null;
+    }
+    // Everything that follows the landing: the floor gives a little, dust rises, a piece may fall.
+    const sinceLanding =
+      visual.effectStart === null ? -1 : time - visual.effectStart - T.dropSeconds;
+    const effectSeconds = T.bounceSeconds + T.dustSeconds;
+    if (sinceLanding > effectSeconds) visual.effectStart = null;
+    const bounce =
+      sinceLanding >= 0 && sinceLanding < T.bounceSeconds
+        ? Math.sin((sinceLanding / T.bounceSeconds) * Math.PI) * 0.08
+        : 0;
+    const dust = sinceLanding >= 0 ? Math.min(1, sinceLanding / effectSeconds) : -1;
+    let roofDrop = 0;
+    if (visual.roofStart !== null) {
+      const progress = Math.min(1, (time - visual.roofStart) / T.roofSeconds);
+      roofDrop = (1 - progress) * (1 - progress) * HANG_HEIGHT;
+      if (progress >= 1) visual.roofStart = null;
     }
     const topFloor = visual.floorCount - 1;
 
@@ -652,25 +864,32 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       if (chunk.kind === 'module') {
         if (collapsing) {
           const s = chunk.seed;
-          const gravity = TUNING.tower.collapseGravity;
+          const gravity = T.collapseGravity;
           const vx = visual.dirX * (1.4 + 0.45 * chunk.floor) + (hash(s + 600) - 0.5) * 3.2;
           const vz = visual.dirZ * (1.4 + 0.45 * chunk.floor) + (hash(s + 610) - 0.5) * 3.2;
           const vy = 1 + hash(s + 620) * 2.4;
           const rest = MODULE * 0.45 + hash(s + 650) * 0.9;
           const height = Math.max(0, chunk.home.y - rest);
           const landing = (vy + Math.sqrt(vy * vy + 2 * gravity * height)) / gravity;
-          const t = Math.min(fallTime, landing);
+          // G-45: the floors go one after the other, from the top down.
+          const started = Math.max(0, fallTime - (topFloor - chunk.floor) * T.collapseStagger);
+          const t = Math.min(started, landing);
           chunkPosition.x += vx * t;
           chunkPosition.z += vz * t;
           chunkPosition.y = Math.max(rest, chunk.home.y + vy * t - (gravity / 2) * t * t);
           chunkEuler.x += t * (hash(s + 630) - 0.5) * 3.4;
           chunkEuler.z += t * (hash(s + 640) - 0.5) * 3.4;
         } else if (chunk.floor === topFloor) {
-          chunkPosition.y += drop;
+          chunkPosition.y += drop - bounce * FLOOR_HEIGHT * 0.5;
+          chunkScale.y = 1 - bounce;
         }
       } else if (chunk.kind === 'top') {
         if (collapsing) chunkScale.set(0, 0, 0);
-        else chunkPosition.y += drop;
+        else {
+          chunkPosition.y += drop + roofDrop - bounce * FLOOR_HEIGHT;
+          // G-41: the cranes swing round while the floor comes down.
+          if (!visual.roofed) chunkEuler.y += Math.sin(dropProgress * Math.PI) * 0.45;
+        }
       } else if (chunk.kind === 'hang') {
         if (collapsing) chunkScale.set(0, 0, 0);
         else if (!reducedMotion) {
@@ -680,6 +899,33 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
       } else if (chunk.kind === 'bubble') {
         if (collapsing) chunkScale.set(0, 0, 0);
         else if (!reducedMotion) chunkPosition.y += Math.sin(time * 4 + chunk.seed * 2) * 0.16;
+      } else if (chunk.kind === 'dust') {
+        if (dust < 0 || collapsing) chunkScale.set(0, 0, 0);
+        else {
+          const size = Math.sin(dust * Math.PI) * 0.9;
+          chunkScale.set(size, size, size);
+          chunkPosition.y += dust * 0.7;
+        }
+      } else if (chunk.kind === 'flash') {
+        if (dust < 0 || collapsing) chunkScale.set(0, 0, 0);
+        else chunkScale.set(1 + dust * 0.12, 1 - dust, 1 + dust * 0.12);
+      } else if (chunk.kind === 'debris') {
+        // Falls from the edge of the new floor and then stays where it landed.
+        if (dust >= 0 && dust < 1 && !collapsing) {
+          const from = topFloor * FLOOR_HEIGHT + FLOOR_HEIGHT / 2;
+          chunkPosition.x -= (1 - dust) * 1.3;
+          chunkPosition.z -= (1 - dust) * 1.1;
+          chunkPosition.y += (1 - dust * dust) * from;
+          chunkEuler.x += dust * 5;
+        }
+      } else if (chunk.kind === 'collapseDust') {
+        // Billows up as the floors hit the ground, then settles and is gone.
+        const life = Math.min(1, fallTime / 2.4);
+        const size = Math.sin(life * Math.PI) * 2.6;
+        chunkScale.set(size, size * 0.7, size);
+        chunkPosition.y += life * 1.6;
+        chunkPosition.x *= 1 + life * 0.6;
+        chunkPosition.z *= 1 + life * 0.6;
       }
       const target = chunkMatrices[i] ?? (chunkMatrices[i] = new Matrix4());
       target.compose(chunkPosition, chunkQuaternion.setFromEuler(chunkEuler), chunkScale);
@@ -691,11 +937,14 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     });
     tower.instanceMatrix.needsUpdate = true;
 
-    if (visual.wobble > 0 && !reducedMotion && !collapsing) {
-      const amplitude = visual.wobble * TUNING.tower.wobbleAmplitude;
-      visual.pivot.rotation.z = visual.baseRotZ + Math.sin(time * 9) * amplitude;
-      visual.pivot.rotation.x = visual.baseRotX + Math.cos(time * 7.3) * amplitude * 0.6;
-    }
+    // G-43: the lean follows its new value smoothly instead of jumping there.
+    const follow = reducedMotion ? 1 : 1 - Math.exp(-dt * T.tiltEaseRate);
+    visual.rotX += (visual.baseRotX - visual.rotX) * follow;
+    visual.rotZ += (visual.baseRotZ - visual.rotZ) * follow;
+    const shaking = visual.wobble > 0 && !reducedMotion && !collapsing;
+    const amplitude = shaking ? visual.wobble * T.wobbleAmplitude : 0;
+    visual.pivot.rotation.z = visual.rotZ + Math.sin(time * 9) * amplitude;
+    visual.pivot.rotation.x = visual.rotX + Math.cos(time * 7.3) * amplitude * 0.6;
   }
 
   // --- Camera ---
@@ -744,6 +993,16 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
     camera.updateProjectionMatrix();
     camera.position.copy(target).addScaledVector(viewDirection, TUNING.haze.cameraDistance);
     camera.lookAt(target);
+    // G-45: a short shake when a tower comes down; never with reduced motion (the director decides).
+    if (shakeStart !== null) {
+      const elapsed = clock - shakeStart;
+      if (elapsed > TUNING.tower.shakeSeconds) shakeStart = null;
+      else {
+        const strength = (1 - elapsed / TUNING.tower.shakeSeconds) * TUNING.tower.shakeAmplitude;
+        camera.position.x += Math.sin(elapsed * 61) * strength;
+        camera.position.y += Math.cos(elapsed * 47) * strength * 0.6;
+      }
+    }
     // The shadow box travels with the camera so shadows stay sharp wherever it looks.
     sun.target.position.copy(target);
     sun.position.set(target.x + 40, 80, target.z + 14);
@@ -809,9 +1068,17 @@ export function createThreeView(host: HTMLElement, options: ThreeViewOptions): S
         : Array.from({ length: lotCount }, (_, i) => lotPosition(i, lotCount)),
     });
     for (const visual of visuals) {
-      const moving = visual.animated || visual.dropStart !== null || visual.collapseStart !== null;
+      const leaning =
+        Math.abs(visual.rotX - visual.baseRotX) + Math.abs(visual.rotZ - visual.baseRotZ) > 1e-4;
+      const moving =
+        visual.animated ||
+        leaning ||
+        visual.dropStart !== null ||
+        visual.effectStart !== null ||
+        visual.roofStart !== null ||
+        visual.collapseStart !== null;
       if (visual.dirty || moving) {
-        updateTower(visual, clock);
+        updateTower(visual, clock, dt);
         visual.dirty = false;
       }
     }

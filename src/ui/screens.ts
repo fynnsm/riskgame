@@ -530,6 +530,11 @@ export function resultScreen(level: Level, run: LevelRun, handlers: ResultHandle
     children.push(
       heading(T.result.collapsed),
       el('p', {
+        class: 'stamp',
+        text: T.result.siteClosed,
+        attrs: { 'data-testid': 'site-closed' },
+      }),
+      el('p', {
         class: 'lead',
         attrs: { 'data-testid': 'collapse-reason' },
         text: T.result.collapsedLead(gauges.map((key) => T.gauges[key]).join(', ')),

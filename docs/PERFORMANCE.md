@@ -48,3 +48,4 @@ gibt pro Szene eine Zeile `MEASURE …` mit Zeichenaufrufen und Dreiecken aus. V
 | 24.11.2026 | vor dem Grafik-Update (Pull Request 12) | 7 | 8 | 12 | 213.9 kB |
 | 24.11.2026 | Himmel, Licht, Tageszeiten (B2): Strassenlampen, Nachtlichter, Schattenflächen | 8 | 9 | 13 | 215.0 kB |
 | 24.11.2026 | Leben in Himmel und Stadt (B3): Wolken, Flugzeug, Ballon, Vögel, Verkehr, Fussgänger, Rauch | 9 | 10 | 14 | 218.6 kB |
+| 24.11.2026 | Gebäudetypen und Baustelle (B4) | 9 | 10 | 14 | 220.2 kB |
